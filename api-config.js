@@ -1,57 +1,36 @@
-/* =====================================================================
-   api-config.js — Central API endpoint configuration
-   =====================================================================
-   Set BASE_URL to the PHP API host to switch all stubs from demo
-   fixtures to live HTTP at once. Leave null to keep demo mode.
-
-   Example (once php-api/ is deployed on the server):
-     const BASE_URL = 'https://atelierby.online/api';
-
-   Individual overrides are also supported — useful while endpoints are
-   being built out one by one (comment out the ones not yet ready).
-   ===================================================================== */
-
+/* API address is supplied by VITE_API_BASE_URL at dev startup / build time.
+ * No same-origin fallback or user-editable endpoint. Feature contracts are
+ * migrated separately from the old WebShop/php-api adapter.
+ */
 (function () {
-  // ─── API endpoint resolution ─────────────────────────────────────────
-  //   • On GitHub Pages (*.github.io) → demo mode (in-memory fixtures).
-  //   • Anywhere else (the client's own hosting) → the PHP API on the SAME
-  //     origin, under the SAME base path as the app, at "api". Works whether the
-  //     site is served at the domain root (→ /api) OR in a subfolder like
-  //     /webshop/ (→ /webshop/api). Deploy php-api/ to <web-root>/api.
-  //
-  //   To force a specific URL (e.g. API on a different host), replace the
-  //   line below with:  const BASE_URL = 'https://api.example.com';
-  // Go-live : plus de « mode démo » (les fixtures mémoire ont été purgées).
-  // L'API est TOUJOURS câblée sur la même origine ; si elle est injoignable
-  // (ex. GitHub Pages), les écrans affichent des erreurs/états vides — jamais
-  // de données de démonstration.
-  // Base path where the app is served: strip the file part of the pathname
-  // ('/webshop/index.html' → '/webshop/', '/' → '/').
-  const basePath = location.pathname.replace(/[^/]*$/, '');
-  const BASE_URL = location.origin + basePath + 'api';
-  // ─────────────────────────────────────────────────────────────────────
+  const BASE_URL = __WS_API_BASE_URL__;
 
-  /* Endpoints served by the PHP API (php-api/index.php). */
+  // Existing feature suffixes: connectivity configuration only at this stage.
   if (window.WSShops)        window.WSShops.endpoint        = BASE_URL + '/shops';
-  if (window.WSCatalog)      window.WSCatalog.endpoint      = BASE_URL + '/catalog';
-  if (window.WSPricing)      window.WSPricing.endpoint      = BASE_URL + '/pricing';
-  if (window.WSVouchers)     window.WSVouchers.endpoint     = BASE_URL + '/vouchers';
-  if (window.WSPromo)        window.WSPromo.endpoint        = BASE_URL + '/promo';
+  if (window.WSCatalog) {
+    window.WSCatalog.endpoint = BASE_URL + '/catalog';
+    window.WSCatalog.shopsEndpoint = BASE_URL + '/shops';
+    // Optional service: central API does not yet implement cross-sell rules.
+    window.WSCatalog.crossSellEndpoint = null;
+    window.WSCatalog.crossSellStatsEndpoint = null;
+  }
   if (window.WSDeliveryFees) window.WSDeliveryFees.endpoint = BASE_URL + '/delivery-fees';
+  if (window.WSOffices) window.WSOffices.consumerEndpoint = BASE_URL + '/webshop/offices';
   if (window.WSOffices)      window.WSOffices.endpoint      = BASE_URL + '/offices';
   if (window.WSTours)        window.WSTours.endpoint        = BASE_URL + '/tours';
-  if (window.WSOrders)       window.WSOrders.endpoint       = BASE_URL + '/orders';
+  if (window.WSOrders)       window.WSOrders.endpoint       = BASE_URL + '/webshop/orders';
   if (window.WSOrders)       window.WSOrders.payEndpoint    = BASE_URL + '/payments/checkout';
   if (window.WSCompanies)    window.WSCompanies.setEndpoint(BASE_URL + '/companies');
-  if (window.WSPayments)     window.WSPayments.endpoint     = BASE_URL + '/payment-methods';
-  if (window.WSAuth)         window.WSAuth.endpoint         = BASE_URL + '/auth';
+  if (window.WSPayments)     window.WSPayments.endpoint     = BASE_URL + '/webshop/payment-methods';
+  if (window.WSAuth)         window.WSAuth.endpoint         = BASE_URL + '/clients/auth';
+  if (window.WSQuote)        window.WSQuote.endpoint        = BASE_URL + '/webshop/cart/quote';
   if (window.WSAvailability) window.WSAvailability.endpoint = BASE_URL + '/availability';
   if (window.WSSlots)        window.WSSlots.endpoint        = BASE_URL + '/slots';
   if (window.WSCalendar)     window.WSCalendar.endpoint     = BASE_URL + '/calendar';
   if (window.WSBrand)        window.WSBrand.endpoint        = BASE_URL + '/brand';
-  /* i18n : source unique = table ws_i18n via GET /i18n. On lance le chargement
-     tout de suite pour que les libellés soient prêts au premier rendu. */
-  if (window.WSI18n) { window.WSI18n.setEndpoint(BASE_URL + '/i18n'); window.WSI18n.load(); }
+  // Interface translations are local assets. The API only picks the initial
+  // language from the visitor's IP before the storefront is mounted.
+  if (window.WSI18n) window.WSI18n.setLocaleEndpoint(BASE_URL + '/webshop/locale');
   /* VIES: template endpoint — the stub fills {country}/{vat}. */
   if (window.WSVies)         window.WSVies.endpoint         = BASE_URL + '/vies/{country}/{vat}';
 

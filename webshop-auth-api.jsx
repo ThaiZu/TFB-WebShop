@@ -1,28 +1,60 @@
 /* =====================================================================
-   WSAuth : authentification / session : SERVEUR UNIQUEMENT
+   WSAuth : authentification / session : central API uniquement
    ---------------------------------------------------------------------
    Go-live : aucun store local, aucun repli. Sans endpoint (ou en cas de
    panne réseau), les helpers renvoient une erreur explicite, jamais une
    session fabriquée. Câblage :
-     window.WSAuth.endpoint = 'https://your-host/auth';
+     window.WSAuth.endpoint = 'https://your-host/clients/auth';
    Endpoints expected:
-     POST {endpoint}/register            -> { user, token }
-     POST {endpoint}/login               -> { user, token }
-     POST {endpoint}/logout              -> { ok }
+     POST {endpoint}/register            -> session tokens
+     POST {endpoint}/login               -> session tokens
+     POST {endpoint}/refresh             -> rotated session tokens
+     POST {endpoint}/logout              -> { ok }, accepts refresh_token
      GET  {endpoint}/me                  -> { user }
      PATCH {endpoint}/me                 -> { user }
-     POST {endpoint}/password-reset      -> { ok }
 
    Session: the storefront and API may live on different domains, so
-   auth is by BEARER TOKEN (not cookies). login/register return a token
-   which is stored in localStorage and sent as `Authorization: Bearer …`
-   on authenticated calls.
+   auth is by BEARER TOKEN (not cookies). The access and rotating refresh
+   tokens are stored locally and the access token is sent as
+   `Authorization: Bearer …` on authenticated calls.
    ===================================================================== */
 (function () {
   const TOKEN_KEY = 'ws_auth_token';
+  const REFRESH_TOKEN_KEY = 'ws_auth_refresh_token';
+  let refreshPending = null;
   const getToken = () => { try { return localStorage.getItem(TOKEN_KEY); } catch (_) { return null; } };
+  const getRefreshToken = () => { try { return localStorage.getItem(REFRESH_TOKEN_KEY); } catch (_) { return null; } };
   const setToken = (t) => { try { t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY); } catch (_) {} };
+  const setRefreshToken = (t) => { try { t ? localStorage.setItem(REFRESH_TOKEN_KEY, t) : localStorage.removeItem(REFRESH_TOKEN_KEY); } catch (_) {} };
+  const clearSession = () => { setToken(null); setRefreshToken(null); };
+  const setSession = (session) => {
+    const accessToken = session && (session.access_token || session.accessToken);
+    const refreshToken = session && (session.refresh_token || session.refreshToken);
+    if (!accessToken || !refreshToken) return false;
+    setToken(accessToken);
+    setRefreshToken(refreshToken);
+    return true;
+  };
   const authHeaders = () => { const t = getToken(); return t ? { 'Authorization': 'Bearer ' + t } : {}; };
+  const expiresSoon = () => {
+    try {
+      const payload = getToken()?.split('.')[1];
+      const claims = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+      return Number(claims.exp) * 1000 <= Date.now() + 120000;
+    } catch (_) { return false; }
+  };
+  const errorMessage = (response, fallback) => response?.description || response?.message || response?.error?.message || response?.error || fallback;
+  const shopPhone = (phone, prefix) => {
+    const value = String(phone || '').trim().replace(/^00/, '+');
+    if (!value || value.startsWith('+') || value.includes('@')) return value;
+    const callingCode = String(prefix || '+32').trim();
+    const digits = value.replace(/[^0-9]/g, '');
+    // Italy keeps the leading zero in international landline numbers.
+    return callingCode + (callingCode === '+39' ? digits : digits.replace(/^0+/, ''));
+  };
+  const currentLocale = () => {
+    try { return window.WSI18n?.getLang() || localStorage.getItem('ws.lang') || navigator.language || 'en'; } catch (_) { return 'en'; }
+  };
 
   const api = {
     endpoint: null,
@@ -36,9 +68,6 @@
     authHeaders,
 
     /* ── Login (identifiant = email OU téléphone) ──────────────────── */
-    // Go-live : SERVEUR UNIQUEMENT. Aucun repli sur un store local, un échec
-    // réseau doit dire « réseau », jamais « identifiants incorrects » (le repli
-    // faisait passer une panne pour un mauvais mot de passe).
     async login({ identifier, email, password, phonePrefix, authMethod }) {
       const ident = (identifier || email || '').trim();
       if (!api.endpoint) return { ok: false, error: 'Service de connexion non configuré, please debug.' };
@@ -46,36 +75,58 @@
         const r = await fetch(`${api.endpoint}/login`, {
           method: 'POST', credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ identifier: ident, password, phonePrefix: phonePrefix || '+32', authMethod }),
+          body: JSON.stringify({ login: shopPhone(ident, phonePrefix), password }),
         });
         const j = await r.json().catch(() => ({}));
-        if (r.ok) { if (j.token) setToken(j.token); return { ok: true, user: j.user }; }
-        // Compte existant sans mot de passe -> le front bascule sur "définir un mot de passe".
-        return { ok: false, needsPassword: !!j.needsPassword, error: j.message || j.error?.message || 'Identifiants incorrects.' };
+        if (!r.ok) return { ok: false, error: errorMessage(j, 'Unable to sign in.'), status: r.status };
+        if (!setSession(j)) return { ok: false, error: 'Invalid session response.' };
+        const user = await api.me();
+        if (user) return { ok: true, user };
+        clearSession();
+        return { ok: false, error: 'Could not load the account profile.' };
       } catch (_) {
         return { ok: false, error: 'Réseau indisponible, connexion impossible.' };
       }
     },
 
     /* ── Register ──────────────────────────────────────────────────── */
+    async resendActivation(email) {
+      if (!api.endpoint) return { ok: false, error: 'CLIENT_ACTIVATION_UNAVAILABLE' };
+      try {
+        const r = await fetch(`${api.endpoint}/activation/resend`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        const j = await r.json().catch(() => ({}));
+        return r.ok ? { ok: true } : { ok: false, error: errorMessage(j, 'CLIENT_ACTIVATION_MAIL_FAILED') };
+      } catch (_) { return { ok: false, error: 'CLIENT_ACTIVATION_MAIL_FAILED' }; }
+    },
+
     async register({ email, phone, phonePrefix, password, firstName, lastName, postalCode, locality, authMethod, shopId }) {
       if (api.endpoint) {
         try {
           const r = await fetch(`${api.endpoint}/register`, {
             method: 'POST', credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, phone, phonePrefix: phonePrefix || '+32', password, firstName, lastName, postalCode, locality, authMethod, shopId }),
+            body: JSON.stringify({
+              id_main_shop: Number(shopId), name: firstName, surname: lastName, email,
+              phone: shopPhone(phone, phonePrefix), password, password_confirm: password,
+              zip: postalCode || null, locality: locality || null, locale: currentLocale(),
+            }),
           });
-          const j = await r.json();
-          // `connuEnBoutique` : la boutique reconnaît ce numéro. Transporté
-          // tel quel jusqu'à l'écran : il ne porte QUE le prénom et des
-          // libellés de corroboration, jamais la fiche (cf. erp_link.php).
-          if (r.ok) { if (j.token) setToken(j.token); return { ok: true, user: j.user, connuEnBoutique: j.connuEnBoutique || null }; }
-          // 409 { exists:true } -> le compte existe déjà (proposer set-password).
-          return { ok: false, error: j.error || j.message || "Erreur lors de l'inscription.", exists: !!j.exists, status: r.status };
-        } catch (_) {}
+          const j = await r.json().catch(() => ({}));
+          if (!r.ok) return { ok: false, error: errorMessage(j, 'Unable to create the account.'), exists: r.status === 409, status: r.status };
+          if (j.registered === true && j.activation_required === false) return api.login({ identifier: email, password });
+          if (j.activation_required === true) return { ok: true, activationRequired: true, emailSent: j.activation_email_sent === true };
+          if (!setSession(j)) return { ok: false, error: 'Invalid session response.' };
+          const user = await api.me();
+          if (user) return { ok: true, user };
+          clearSession();
+          return { ok: false, error: 'Could not load the account profile.' };
+        } catch (_) {
+          return { ok: false, error: 'Réseau indisponible, inscription impossible.' };
+        }
       }
-      // Go-live : plus de creation de compte local fictif.
       return { ok: false, error: 'Service inscription indisponible, réessayez.' };
     },
 
@@ -112,39 +163,31 @@
       } catch (_) { return { ok: false }; }
     },
 
-    /* ── CODE SMS : prouver qu'on est bien le titulaire du numéro ─────
-       Le serveur envoie le code au numéro DE LA FICHE, pas à celui qui vient
-       d'être saisi : sinon la preuve ne prouverait rien. Il ne rend jamais le
-       code ; on n'obtient ici que le numéro masqué, à afficher pour que la
-       personne sache sur quel téléphone regarder. */
-    async otpRequest({ identifier, phonePrefix }) {
-      if (!api.endpoint) return { ok: false, error: 'Service indisponible.' };
+    /* Password reset via SMS: no legacy ERP session and no automatic login. */
+    async otpRequest({ phone, phonePrefix }) {
+      if (!api.endpoint) return { ok: false, error: 'SMS_RESET_UNAVAILABLE' };
       try {
-        const r = await fetch(`${api.endpoint}/otp-request`, {
+        const r = await fetch(`${api.endpoint}/password/reset/sms/request`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ identifier, phonePrefix: phonePrefix || '+32' }),
+          body: JSON.stringify({ phone: shopPhone(phone, phonePrefix), locale: currentLocale() }),
         });
-        const j = await r.json().catch(() => ({}));
-        if (r.ok) return { ok: true, phoneMasked: j.phoneMasked || '', expiresIn: j.expiresIn || 180 };
-        return { ok: false, code: j.code || null, error: j.error || "Envoi impossible." };
-      } catch (_) { return { ok: false, error: 'Réseau indisponible.' }; }
+        const j = await r.json();
+        if (r.ok && /^[a-f0-9]{64}$/.test(j.request_token || '')) return { ok: true, ...j };
+        return { ok: false, error: errorMessage(j, 'SMS_RESET_UNAVAILABLE') };
+      } catch (_) { return { ok: false, error: 'SMS_RESET_UNAVAILABLE' }; }
     },
 
-    /* Code ET mot de passe en un seul appel : rien à garder entre les deux,
-       donc aucune fenêtre où quelqu'un pourrait s'intercaler. Connecte
-       directement en cas de succès. */
-    async otpSetPassword({ identifier, phonePrefix, code, password }) {
-      if (!api.endpoint) return { ok: false, error: 'Service indisponible.' };
+    async otpSetPassword({ requestToken, code, password, passwordConfirm }) {
+      if (!api.endpoint) return { ok: false, error: 'SMS_RESET_UNAVAILABLE' };
       try {
-        const r = await fetch(`${api.endpoint}/otp-set-password`, {
-          method: 'POST', credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ identifier, phonePrefix: phonePrefix || '+32', code, password }),
+        const r = await fetch(`${api.endpoint}/password/reset/sms/confirm`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ request_token: requestToken, code, new_password: password, new_password_confirm: passwordConfirm }),
         });
-        const j = await r.json().catch(() => ({}));
-        if (r.ok) { if (j.token) setToken(j.token); return { ok: true, user: j.user }; }
-        return { ok: false, code: j.code || null, error: j.error || 'Échec.' };
-      } catch (_) { return { ok: false, error: 'Réseau indisponible.' }; }
+        const j = await r.json();
+        if (r.ok && j.ok === true) { clearSession(); return { ok: true }; }
+        return { ok: false, error: errorMessage(j, 'SMS_RESET_UNAVAILABLE') };
+      } catch (_) { return { ok: false, error: 'SMS_RESET_UNAVAILABLE' }; }
     },
 
     /* ── Set / update password (compte existant) ─────────────────────── */
@@ -192,18 +235,29 @@
        POST /client/billing : VIES côté serveur, puis raison sociale/adresse/
        verified_at écrits sur la fiche client partagée. */
     async billingVerify({ vat, country }) {
-      if (!api.endpoint) return { ok: false, error: { code: 'unavailable', message: 'Service indisponible.' } };
+      const failure = (code) => {
+        const keys = {
+          VIES_INPUT_INVALID: 'error.viesInput', VIES_VAT_INVALID: 'error.vat',
+          VIES_BUSY: 'error.viesBusy', VIES_UNAVAILABLE: 'error.vies', VIES_AUTH_REQUIRED: 'error.viesAuth',
+          VIES_SAVE_FAILED: 'error.viesSave', VIES_ENDPOINT_UNAVAILABLE: 'error.verifyUnavailable',
+          VIES_COMPANY_MANAGED_BY_SHOP: 'error.viesCompanyManaged',
+        };
+        const key = keys[code] || 'error.verifyUnavailable';
+        return { ok: false, error: { code: code === 'VIES_VAT_INVALID' || code === 'VIES_INPUT_INVALID' ? 'invalid' : 'unavailable', message: window.WSI18n?.t?.(key) || 'Verification failed. Please try again.' } };
+      };
+      if (!api.endpoint) return failure('VIES_ENDPOINT_UNAVAILABLE');
       try {
         const r = await fetch(`${api.endpoint}/billing-verify`, {
           method: 'POST', credentials: 'include',
           headers: { 'Content-Type': 'application/json', ...authHeaders() },
           body: JSON.stringify({ vat, country }),
         });
-        const j = await r.json();
-        if (r.ok && j.valid) return { ok: true, data: j.data, user: j.user };
-        return { ok: false, error: j.error || { code: 'invalid', message: j.message || 'TVA non reconnue.' } };
+        const j = await r.json().catch(() => null);
+        if (r.ok && j?.valid === true && j.user) return { ok: true, data: j.data, user: j.user };
+        if (r.status === 401 || r.status === 403) return failure('VIES_AUTH_REQUIRED');
+        return failure(j?.description || 'VIES_ENDPOINT_UNAVAILABLE');
       } catch (_) {
-        return { ok: false, error: { code: 'unavailable', message: 'VIES indisponible. Réessayez.' } };
+        return failure('VIES_ENDPOINT_UNAVAILABLE');
       }
     },
 
@@ -307,13 +361,17 @@
     async changePassword({ currentPassword, password }) {
       if (!api.endpoint) return { ok: false, error: 'Service indisponible.' };
       try {
-        const r = await fetch(`${api.endpoint}/password`, {
+        const r = await fetch(`${api.endpoint}/password/change`, {
           method: 'POST', credentials: 'include',
           headers: { 'Content-Type': 'application/json', ...authHeaders() },
-          body: JSON.stringify({ currentPassword, password }),
+          body: JSON.stringify({
+            current_password: currentPassword,
+            new_password: password,
+            new_password_confirm: password,
+          }),
         });
         const j = await r.json().catch(() => ({}));
-        return r.ok ? { ok: true } : { ok: false, error: j.message || j.error || 'Échec.' };
+        return r.ok ? { ok: true } : { ok: false, error: errorMessage(j, 'Password update rejected.') };
       } catch (_) { return { ok: false, error: 'Réseau indisponible.' }; }
     },
 
@@ -322,7 +380,7 @@
     async resetRequest({ email }) {
       if (!api.endpoint) return { ok: false, error: 'Service indisponible.' };
       try {
-        const r = await fetch(`${api.endpoint}/password-reset/request`, {
+        const r = await fetch(`${api.endpoint}/password/reset/request`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email }),
         });
@@ -333,9 +391,9 @@
     async resetConfirm({ token, password }) {
       if (!api.endpoint) return { ok: false, error: 'Service indisponible.' };
       try {
-        const r = await fetch(`${api.endpoint}/password-reset/confirm`, {
+        const r = await fetch(`${api.endpoint}/password/reset/confirm`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token, password }),
+          body: JSON.stringify({ token, new_password: password, new_password_confirm: password }),
         });
         const j = await r.json().catch(() => ({}));
         return r.ok ? { ok: true } : { ok: false, error: j.message || j.error || 'Échec.' };
@@ -357,24 +415,39 @@
       } catch (_) { return { ok: false, error: 'Réseau indisponible.' }; }
     },
     async unlinkCompany() {
-      if (!api.endpoint) return { ok: false, error: 'Service indisponible.' };
+      const error = (key = 'error.billingUnlink') => ({ ok: false, error: window.WSI18n?.t?.(key) || 'Could not remove billing details. Please try again.' });
+      if (!api.endpoint) return error();
       try {
         const r = await fetch(`${api.endpoint}/billing-company/unlink`, {
           method: 'POST', credentials: 'include',
           headers: { 'Content-Type': 'application/json', ...authHeaders() },
         });
-        const j = await r.json();
-        if (r.ok) return { ok: true, user: j.user };
-        return { ok: false, error: j.error || 'Échec.' };
-      } catch (_) { return { ok: false, error: 'Réseau indisponible.' }; }
+        const j = await r.json().catch(() => null);
+        if (r.ok && j?.ok === true && j.user) return { ok: true, user: j.user };
+        if (r.status === 401 || r.status === 403) return error('error.viesAuth');
+        if (j?.description === 'VIES_COMPANY_MANAGED_BY_SHOP') return error('error.viesCompanyManaged');
+        return error();
+      } catch (_) { return error(); }
     },
 
     /* ── Logout ─────────────────────────────────────────────────────── */
     async logout() {
+      const refreshToken = getRefreshToken();
+      clearSession(); // Local logout must not wait for the network.
+      try {
+        sessionStorage.removeItem('ws.pendingPay');
+        sessionStorage.removeItem('ws.lastPay');
+        Object.keys(sessionStorage).filter(key => key.startsWith('ws.order.token.')).forEach(key => sessionStorage.removeItem(key));
+      } catch (_) {}
+      window.dispatchEvent(new Event('ws:payment-logout'));
       if (api.endpoint) {
-        try { await fetch(`${api.endpoint}/logout`, { method: 'POST', credentials: 'include', headers: authHeaders() }); } catch (_) {}
+        try {
+          await fetch(`${api.endpoint}/logout`, {
+            keepalive: true, method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh_token: refreshToken || '' }),
+          });
+        } catch (_) {}
       }
-      setToken(null);
       return { ok: true };
     },
 
@@ -383,9 +456,13 @@
       if (api.endpoint) {
         if (!getToken()) return null; // no session → don't bother the server
         try {
-          const r = await fetch(`${api.endpoint}/me`, { credentials: 'include', headers: authHeaders() });
-          if (r.ok) { const j = await r.json(); return j.user || j || null; }
-          if (r.status === 401) setToken(null); // stale/expired token
+          const r = await api.authenticatedFetch(`${api.endpoint}/me`, { credentials: 'include' });
+          if (!getToken()) return null;
+          if (r.ok) {
+            const j = await r.json();
+            return getToken() ? (j.user || j || null) : null;
+          }
+          if (r.status === 401 || r.status === 403) clearSession();
           // Toute autre réponse était avalée : une session perdue pour cause de
           // panne serveur ressemblait trait pour trait à « pas de session ».
           else console.error('[auth] session non restaurée, /me a répondu HTTP ' + r.status);
@@ -405,17 +482,67 @@
             body: JSON.stringify(patch),
           });
           if (r.ok) { const j = await r.json(); return { ok: true, user: j.user || j }; }
+          const j = await r.json().catch(() => ({}));
+          if (r.status === 401 || r.status === 403) clearSession();
+          return { ok: false, error: errorMessage(j, 'Profile update rejected.') };
         } catch (_) {}
       }
       // Go-live : plus de mutation d'un store local fictif.
       return { ok: false, error: 'Service profil indisponible, réessayez.' };
     },
 
+    async authenticatedFetch(url, options = {}) {
+      await api.ensureFreshSession();
+      const token = getToken();
+      const request = () => {
+        const headers = { ...options.headers };
+        delete headers.Authorization;
+        return fetch(url, { ...options, headers: { ...headers, ...authHeaders() } });
+      };
+      let response = await request();
+      if (response.status === 401 && getRefreshToken()) {
+        if (token !== getToken() || await api.refresh()) response = await request();
+      }
+      return response;
+    },
+
+    async refresh() {
+      if (refreshPending) return refreshPending;
+      const originalRefresh = getRefreshToken();
+      const renew = () => originalRefresh !== getRefreshToken() ? Promise.resolve(Boolean(getToken())) : api.refreshSession();
+      refreshPending = typeof navigator !== 'undefined' && navigator.locks?.request
+        ? navigator.locks.request('webshop-session-refresh', renew)
+        : renew();
+      try { return await refreshPending; }
+      finally { refreshPending = null; }
+    },
+
+    async ensureFreshSession() {
+      if (api.endpoint && getRefreshToken() && expiresSoon()) return api.refresh();
+      return Boolean(getToken());
+    },
+
+    async refreshSession() {
+      const refreshToken = getRefreshToken();
+      if (!api.endpoint || !refreshToken) return false;
+      try {
+        const r = await fetch(`${api.endpoint}/refresh`, {
+          method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh_token: refreshToken }),
+        });
+        const j = await r.json().catch(() => ({}));
+        if (refreshToken !== getRefreshToken()) return Boolean(getToken() && getRefreshToken());
+        if (r.ok && setSession(j)) return true;
+        if ((r.status === 401 || r.status === 403) && refreshToken === getRefreshToken()) clearSession();
+      } catch (_) { /* A network failure does not invalidate the stored session. */ }
+      return false;
+    },
+
     /* ── Password reset ─────────────────────────────────────────────── */
     async requestPasswordReset({ email }) {
       if (api.endpoint) {
         try {
-          const r = await fetch(`${api.endpoint}/password-reset`, {
+          const r = await fetch(`${api.endpoint}/password/reset/request`, {
             method: 'POST', credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email }),
@@ -428,4 +555,12 @@
   };
 
   window.WSAuth = api;
+  // Timers may pause on mobile. Also renew when returning to the shop or going online.
+  const renewInBackground = () => {
+    if (document.visibilityState !== 'hidden') api.ensureFreshSession().catch(() => {});
+  };
+  window.setInterval(renewInBackground, 30000);
+  window.addEventListener('focus', renewInBackground);
+  window.addEventListener('online', renewInBackground);
+  document.addEventListener('visibilitychange', renewInBackground);
 })();

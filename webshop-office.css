@@ -1,0 +1,69 @@
+.ws-office-menus{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0 18px}.ws-office-menus button{border:1px solid #d9d2c8;border-radius:99px;padding:9px 14px;background:#fff;color:#4d423c;font:inherit;cursor:pointer}.ws-office-menus button[aria-pressed="true"]{background:#fff;color:#8D1D2C;border-color:#8D1D2C;box-shadow:inset 0 0 0 1px #8D1D2C}.ws-office-menus .ws-office-manage{margin-left:auto}.ws-office-intro,.ws-office-context{padding:12px 16px;background:#f4efe8;border-radius:10px;margin:10px 0;font-size:13px}.ws-office-intro button{display:block;margin-top:8px}.ws-office-overlay{position:fixed;inset:0;z-index:10010;background:#0006;display:flex;align-items:center;justify-content:center;padding:20px}.ws-office-modal{background:#fff;border-radius:18px;padding:24px;width:min(620px,100%);max-height:85dvh;overflow:auto;color:#433a35;box-shadow:0 20px 65px #0003}.ws-office-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.ws-office-heading h2{margin:0;font-size:22px}.ws-office-heading button{border:0;background:none;font-size:28px;cursor:pointer}.ws-office-search label{display:block;margin:12px 0 6px}.ws-office-search>div{display:flex;gap:10px}.ws-office-search input{min-width:0;flex:1;border:1px solid #d9d2c8;border-radius:8px;padding:10px;font:inherit}.ws-office-result{display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid #e7e0d8;padding:12px 0}.ws-office-result span{display:block;font-size:12px;margin-top:4px}.ws-office-success{color:#276941}.ws-office-confirm-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}.ws-office-confirm-actions button{padding:10px 14px}.ws-office-cart-context{font-size:12px;padding:10px 0;color:#8D1D2C;font-weight:600}.ws-office-billing{padding:12px 16px;border:1px solid #d9d2c8;border-radius:10px;margin:14px 0}.ws-office-billing strong{display:block;margin-bottom:5px}@media(max-width:480px){.ws-office-overlay{padding:10px}.ws-office-modal{padding:18px}.ws-office-search>div{flex-wrap:wrap}.ws-office-menus .ws-office-manage{margin-left:0}}
+
+/* Desktop header controls share one row; mobile stacks the purchasing controls. */
+.ws .ws-nav--A{position:relative;z-index:20;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;align-items:center}
+.ws-nav--A>.ws-nav__left{display:flex;flex:0 0 auto;width:auto;max-width:none;order:0}
+.ws-nav--A>.ws-nav__right{flex:0 0 auto;width:auto;max-width:none;order:2;margin-left:auto}
+.ws-nav--A>.ws-nav__left>*{flex-shrink:0}
+.ws-nav--A .ws-nav__ordering{display:flex;flex:1 0 auto;width:auto;min-width:max-content;max-width:none;order:1;gap:14px;align-items:center;overflow:visible;padding:0}
+.ws-nav--A .ws-nav__ordering>.ws-modewrap{flex:0 0 auto;order:0;margin:0}
+.ws-nav--A .ws-nav__ordering>.ws-office-menus{display:flex;flex:1 0 auto;width:max-content;min-width:max-content;max-width:none;gap:12px;margin:0;padding:0;border:0;align-items:center;flex-wrap:nowrap;white-space:nowrap}
+.ws-office-menu-links{display:flex;flex:1;gap:8px;flex-wrap:nowrap;justify-content:flex-start}
+.ws-office-menus .ws-office-manage{margin-left:auto;flex-shrink:0}
+.ws-office-menus .ws-office-manage{display:inline-flex;align-items:center;gap:7px}
+.ws-office-menus .ws-office-manage img{width:18px;height:18px;display:block;flex:0 0 auto}
+.ws-basket__office{padding:0 16px 12px;background:#fff;color:#433a35;font-family:var(--font-ui);font-size:14px;font-style:normal;font-weight:600;line-height:1.5;letter-spacing:normal;text-transform:none;overflow-wrap:anywhere}
+@media(max-width:767px){
+  .ws .ws-nav--A{flex-wrap:wrap;overflow:visible;gap:10px}
+  .ws-nav--A>.ws-nav__left{flex:1 1 0;min-width:0;gap:6px}
+  .ws-nav--A>.ws-nav__left>.ws-nav__shopchip{flex:1 1 0;min-width:0}
+  .ws-nav--A>.ws-nav__right{order:1}
+  .ws-nav--A .ws-nav__ordering{order:3;flex:0 0 100%;width:100%;min-width:0;max-width:100%;flex-direction:column;align-items:stretch;gap:10px}
+  .ws-nav--A .ws-nav__ordering>.ws-modewrap{flex:0 0 auto;min-width:0;width:100%;max-width:100%}
+  .ws-nav--A .ws-nav__ordering>.ws-office-menus{flex:0 0 auto;width:100%;min-width:0;max-width:100%;white-space:normal}
+  .ws-nav--A .ws-office-menu-links{min-width:0;max-width:100%;flex-wrap:wrap;gap:6px}
+  .ws-nav--A .ws-office-menu-links button{max-width:100%;min-width:0;padding:8px 10px;font-size:12px;white-space:normal;text-align:left;overflow-wrap:anywhere}
+  .ws-nav--A .ws-office-menu-links button span{min-width:0}
+  .ws-nav--A .ws-office-menus .ws-office-manage{display:none}
+}
+
+
+.ws-office-identity{display:inline-flex;align-items:center;gap:8px;min-width:0}
+.ws-office-identity .ws-office-catalog-logo{display:block;width:32px;height:28px;object-fit:contain;flex-shrink:0;border-radius:4px;background:#fff}
+.ws-office-result .ws-office-identity{display:inline-flex}
+.ws-office-membership-list{list-style:none;padding:0}
+.ws-office-membership-list li{padding:10px 0;border-bottom:1px solid #e7e0d8}
+
+.ws-office-menu-links:empty{display:none}
+.ws-office-secondary,.ws-office-manage-action{
+  display:inline-flex;align-items:center;justify-content:center;min-height:42px;
+  border:1px solid #d9d2c8;border-radius:10px;padding:0 14px;background:#fff;
+  color:#4d423c;font:600 13px/1 var(--font-ui);cursor:pointer;
+}
+.ws-office-secondary:hover,.ws-office-manage-action:hover{border-color:#8d1d2c;color:#8d1d2c;background:#fff8f8}
+.ws-office-secondary:disabled,.ws-office-manage-action:disabled{opacity:.55;cursor:not-allowed}
+.ws-office-manage-action{margin-left:6px;color:#8d1d2c;border-color:#8d1d2c}
+.ws-pickup-dates{margin:16px 0}
+.ws-pickup-dates h4{font-size:14px;margin:0 0 10px}
+.ws-pickup-dates>div{display:flex;flex-wrap:wrap;gap:8px}
+.ws-pickup-dates button{background:#fff;border:1px solid #d9d2c8;border-radius:10px;padding:12px;color:#433a35;font:inherit;cursor:pointer}
+.ws-pickup-dates button[aria-pressed="true"]{border-color:#8d1d2c;color:#8d1d2c;box-shadow:inset 0 0 0 1px #8d1d2c}
+
+/* Shared hit area and vertical alignment for top-level navigation controls. */
+.ws-nav--A{--ws-nav-control-height:44px}
+.ws-nav--A .ws-nav__shopchip,
+.ws-nav--A .ws-nav__date,
+.ws-nav--A .ws-nav__icon,
+.ws-nav--A .ws-langchip__btn,
+.ws-nav--A .ws-mode,
+.ws-nav--A .ws-nav__office-info,
+.ws-nav--A .ws-office-menus button{
+  height:var(--ws-nav-control-height);min-height:var(--ws-nav-control-height);
+  box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;
+  padding-top:0;padding-bottom:0;line-height:1.2;margin-top:0;margin-bottom:0;
+}
+.ws-nav--A .ws-nav__icon,.ws-nav--A .ws-nav__office-info{width:var(--ws-nav-control-height);flex-shrink:0}
+.ws-nav--A .ws-modes{height:52px;box-sizing:border-box;padding:3px;margin:0;align-items:center}
+.ws-nav--A .ws-datepill,.ws-nav--A .ws-nav__left,.ws-nav--A .ws-nav__right{align-items:center}
+
+.ws-pickup-dates button{max-width:100%;text-align:left}

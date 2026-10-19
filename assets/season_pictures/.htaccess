@@ -1,0 +1,6 @@
+<IfModule mod_headers.c>
+  Header set Cache-Control "no-cache, must-revalidate"
+</IfModule>
+<FilesMatch "\.(json|log)$">
+  Require all denied
+</FilesMatch>

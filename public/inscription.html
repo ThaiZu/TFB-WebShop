@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Créer mon compte — L'Atelier By</title>
+<title data-i18n="ui.register"></title>
 <link rel="icon" href="favicon-32.png" sizes="32x32">
 <!--
   « Créer mon compte » — la page d'arrivée du lien magique d'invitation.
@@ -107,8 +107,8 @@
   <div class="top">
     <img src="logo-white.png" alt="L'Atelier By">
     <div>
-      <h1 id="titre">Créer mon compte</h1>
-      <p id="sousTitre">Commandez au bureau, aux conditions négociées par votre entreprise.</p>
+      <h1 id="titre" data-i18n="ui.register"></h1>
+      <p id="sousTitre" data-i18n="page.inviteIntro"></p>
     </div>
   </div>
 
@@ -119,23 +119,23 @@
       <div class="b" id="raison"></div>
       <div class="d" id="detail"></div>
     </div>
-    <span class="verrou">✓ pré-lié</span>
+    <span class="verrou" data-i18n="page.prelinked"></span>
   </div>
 
   <form id="form" hidden novalidate>
     <div class="duo">
       <div>
-        <label for="prenom">Prénom</label>
-        <input id="prenom" type="text" autocomplete="given-name" placeholder="Marie">
+        <label for="prenom" data-i18n="form.firstName"></label>
+        <input id="prenom" type="text" autocomplete="given-name" data-i18n-placeholder="form.firstName">
       </div>
       <div>
-        <label for="nom">Nom</label>
-        <input id="nom" type="text" autocomplete="family-name" placeholder="Dupont">
+        <label for="nom" data-i18n="form.lastName"></label>
+        <input id="nom" type="text" autocomplete="family-name" data-i18n-placeholder="form.lastName">
       </div>
     </div>
 
     <div>
-      <label for="email">E-mail professionnel</label>
+      <label for="email" data-i18n="page.workEmail"></label>
       <input id="email" type="email" autocomplete="email" aria-describedby="aideEmail">
       <div class="err" id="errEmail" role="alert" hidden></div>
       <div class="aide" id="aideEmail"></div>
@@ -143,17 +143,17 @@
 
     <div class="duo">
       <div>
-        <label for="tel">Téléphone</label>
+        <label for="tel" data-i18n="ui.phone"></label>
         <input id="tel" type="tel" autocomplete="tel" placeholder="+32 4xx xx xx xx">
       </div>
       <div>
-        <label for="cp">Code postal</label>
+        <label for="cp" data-i18n="ui.postal"></label>
         <input id="cp" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="1300">
       </div>
     </div>
 
     <div id="blocDept" hidden>
-      <label for="dept">Département</label>
+      <label for="dept" data-i18n="page.department"></label>
       <select id="dept"></select>
     </div>
 
@@ -162,25 +162,24 @@
          pour le pavé numérique sur téléphone ; la règle reste appliquée par
          POST /inscription, ces attributs ne sont qu'un confort. -->
     <div>
-      <label for="mdp">Code PIN</label>
+      <label for="mdp" data-i18n="page.pin"></label>
       <input id="mdp" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password" aria-describedby="aideMdp">
-      <div class="aide" id="aideMdp">Exactement 4 chiffres — avec votre e-mail, il vous servira à vous connecter.</div>
+      <div class="aide" id="aideMdp" data-i18n="page.pinHint"></div>
     </div>
 
     <div>
-      <label for="mdp2">Confirmer le code PIN</label>
+      <label for="mdp2" data-i18n="page.confirmPin"></label>
       <input id="mdp2" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password" aria-describedby="errMdp2">
-      <div class="err" id="errMdp2" role="alert" hidden>Les deux codes ne correspondent pas.</div>
+      <div class="err" id="errMdp2" role="alert" hidden data-i18n="page.pinMismatch"></div>
     </div>
 
     <div class="cgv">
       <input id="cgv" type="checkbox">
-      <label for="cgv" style="font:inherit;text-transform:none;letter-spacing:0;margin:0;color:inherit">
-        J'accepte les conditions générales et la politique de confidentialité de L'Atelier By.</label>
+      <label for="cgv" style="font:inherit;text-transform:none;letter-spacing:0;margin:0;color:inherit" data-i18n="page.terms"></label>
     </div>
 
     <div style="display:grid;gap:14px;margin-top:2px">
-      <button type="submit" id="envoyer" disabled>Créer mon compte</button>
+      <button type="submit" id="envoyer" disabled data-i18n="ui.register"></button>
       <div class="err" id="errEnvoi" role="alert" hidden></div>
       <p class="apres" id="apres"></p>
     </div>
@@ -189,30 +188,34 @@
   <!-- Succès, et lien inactif : la carte remplace le formulaire, elle ne s'y ajoute pas. -->
   <div class="fin" id="succes" hidden>
     <div class="rond">✓</div>
-    <div class="t">Compte créé — en attente de validation</div>
+    <div class="t" data-i18n="page.accountPending"></div>
     <p id="succesTexte"></p>
     <div class="sep" id="succesMail"></div>
   </div>
 
   <div class="fin" id="inactif" hidden>
-    <div class="t" id="inactifTitre">Ce lien d'invitation est inactif.</div>
+    <div class="t" id="inactifTitre" data-i18n="page.inviteInactive"></div>
     <p id="inactifTexte"></p>
-    <div class="sep">Besoin d'aide ? <a href="mailto:aide@latelierby.be">aide@latelierby.be</a></div>
+    <div class="sep"><span data-i18n="page.help"></span> <a href="mailto:aide@latelierby.be">aide@latelierby.be</a></div>
   </div>
 </div>
 
 <div class="pied" id="pied"></div>
 
+<script src="./api-runtime-config.js"></script>
+<script src="./i18n-runtime.js"></script>
+<script src="./i18n-page.js"></script>
 <script>
+window.WSPageReady.then(function () {
+
 (function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
   var txt = function (el, s) { el.textContent = s; };
 
-  /* L'API vit dans <racine>/api, la page est servie à la racine du webshop —
-     que l'URL soit /webshop/inscription ou /webshop/inscription.html, le
-     dossier courant est le même. Aucune constante à tenir à jour. */
-  var API = location.pathname.replace(/[^/]*$/, '') + 'api';
+  // Deployment configuration shared with the React application.
+  var API = window.WS_API_BASE_URL;
+  if (!API) throw new Error('API configuration unavailable.');
   /* Deux formes du même lien : ?i= le jeton signé reçu par e-mail, ?c= le code
      court imprimé sous le QR de l'affiche (et recopiable à la main). Le serveur
      accepte les deux ; la page transmet ce qu'elle a reçu, sans le réécrire. */
@@ -226,8 +229,8 @@
   function ecranInactif(titre, texte) {
     $('prelie').hidden = true; $('form').hidden = true; $('succes').hidden = true;
     $('inactif').hidden = false;
-    txt($('titre'), 'Lien d’invitation inactif');
-    txt($('sousTitre'), 'Ce lien ne permet plus de créer un compte.');
+    txt($('titre'), window.WSI18n.t('page.inviteTitle'));
+    txt($('sousTitre'), window.WSI18n.t('page.inviteInactiveHint'));
     txt($('inactifTitre'), titre);
     txt($('inactifTexte'), texte || '');
   }
@@ -260,7 +263,7 @@
     if ((d.depts || []).length === 1) bouts.push(d.depts[0].name);
     var lignes = [];
     if (bouts.length) lignes.push(bouts.join(' · '));
-    if (d.shop && d.shop.name) lignes.push('Livré par ' + d.shop.name);
+    if (d.shop && d.shop.name) lignes.push(window.WSI18n.t('page.deliveredBy', { shop: d.shop.name }));
     return lignes;
   }
 
@@ -272,7 +275,7 @@
   function dateFr(iso) {
     if (!iso) return '';
     var d = new Date(String(iso).replace(' ', 'T'));
-    return isNaN(d) ? '' : d.toLocaleDateString('fr-BE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return isNaN(d) ? '' : d.toLocaleDateString(window.WSI18n.getLang(), { day: '2-digit', month: '2-digit', year: 'numeric' });
   }
 
   function peupler(d) {
@@ -300,20 +303,17 @@
 
     // Exigence de domaine retirée (14/08/2026) : le serveur renvoie domain
     // null et POST /inscription ne la contrôle plus — toute adresse passe.
-    txt($('aideEmail'), 'Utilisez votre adresse professionnelle : c’est elle qui identifie votre compte.');
+    txt($('aideEmail'), window.WSI18n.t('page.emailHint'));
     if (d.cp) $('cp').value = d.cp;
 
     var boutique = (d.shop && d.shop.name) || '';
-    $('apres').innerHTML = boutique
-      ? 'Votre compte est transmis à <b>' + echap(boutique) + '</b> pour validation.<br>Vous recevrez un e-mail dès qu’il est actif.'
-      : 'Votre compte est transmis à votre boutique livreuse pour validation.<br>Vous recevrez un e-mail dès qu’il est actif.';
-
+    $('apres').textContent = window.WSI18n.t('page.accountReview', { shop: boutique || window.WSI18n.t('ui.yourShop') });
     var pied = [];
-    if (boutique && raison) pied.push('Lien d’invitation émis par <b>' + echap(boutique) + '</b> pour <b>' + echap(raison) + '</b>.');
-    else if (boutique)      pied.push('Lien d’invitation émis par <b>' + echap(boutique) + '</b>.');
+    if (boutique) pied.push(window.WSI18n.t('page.inviteIssuer', { shop: boutique, company: raison }));
     var jusqu = dateFr(d.expiresAt);
-    pied.push((jusqu ? 'Valable jusqu’au ' + jusqu + ' · ' : '') + 'besoin d’aide ? <a href="mailto:aide@latelierby.be">aide@latelierby.be</a>');
-    $('pied').innerHTML = pied.join('<br>');
+    if (jusqu) pied.push(window.WSI18n.t('page.validUntil', { date: jusqu }));
+    pied.push(window.WSI18n.t('page.help') + ' aide@latelierby.be');
+    $('pied').textContent = pied.join(' · ');
 
     $('form').hidden = false;
     valider();
@@ -331,7 +331,7 @@
     var formeOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail);
 
     var eMail = '';
-    if (vu.email && mail && !formeOk) eMail = 'Adresse e-mail incomplète.';
+    if (vu.email && mail && !formeOk) eMail = window.WSI18n.t('error.email');
     $('errEmail').hidden = !eMail;
     if (eMail) $('errEmail').textContent = eMail;
     $('aideEmail').hidden = !!eMail;
@@ -366,7 +366,7 @@
     if (!valider()) return;
     $('errEnvoi').hidden = true;
     $('envoyer').disabled = true;
-    $('envoyer').textContent = 'Création…';
+    $('envoyer').textContent = window.WSI18n.t('page.creating');
     fetch(API + '/inscription', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -379,25 +379,24 @@
         cgv: $('cgv').checked
       })
     }).then(function (r) {
-      return r.json().catch(function () { return { error: 'Réponse illisible du serveur (HTTP ' + r.status + ').' }; });
+      return r.json().catch(function () { return { error: window.WSI18n.t('error.emptyResponse') }; });
     }).then(function (d) {
-      $('envoyer').textContent = 'Créer mon compte';
+      $('envoyer').textContent = window.WSI18n.t('ui.register');
       if (d && d.ok) return reussi(d);
       $('envoyer').disabled = false;
       // Le motif du serveur est affiché TEL QUEL : c'est lui qui sait pourquoi.
-      var msg = (d && d.error) || 'La création du compte a échoué.';
+      var msg = window.WSI18n.message(d && d.error) || window.WSI18n.t('error.register');
       if (d && d.exists) {
-        $('errEmail').innerHTML = echap(msg) + ' <a href="./">Se connecter</a>';
+        $('errEmail').innerHTML = echap(msg) + ' <a href="./" data-i18n="ui.login"></a>';
         $('errEmail').hidden = false; $('aideEmail').hidden = true;
         $('email').focus();
       } else {
         txt($('errEnvoi'), msg); $('errEnvoi').hidden = false;
       }
     }).catch(function (err) {
-      $('envoyer').textContent = 'Créer mon compte';
+      $('envoyer').textContent = window.WSI18n.t('ui.register');
       $('envoyer').disabled = false;
-      txt($('errEnvoi'), 'Le serveur n’a pas répondu (' + (err && err.message ? err.message : 'réseau') +
-        '). Vérifiez votre connexion et réessayez.');
+      txt($('errEnvoi'), window.WSI18n.t('error.network'));
       $('errEnvoi').hidden = false;
     });
   });
@@ -405,24 +404,24 @@
   function reussi(d) {
     $('form').hidden = true;
     $('succes').hidden = false;
-    txt($('titre'), 'Bienvenue chez L’Atelier By');
-    txt($('sousTitre'), 'Votre demande est entre les mains de votre boutique livreuse.');
+    txt($('titre'), window.WSI18n.t('page.welcome'));
+    txt($('sousTitre'), window.WSI18n.t('page.requestPending'));
     // Le message vient du serveur : lui seul sait si la demande de rattachement
     // a bien été enregistrée, et un « tout va bien » écrit ici serait faux le
     // jour où elle échoue.
-    txt($('succesTexte'), d.message || '');
-    $('succesMail').innerHTML = 'Confirmation envoyée à <b>' + echap($('email').value.trim()) + '</b>';
+    txt($('succesTexte'), window.WSI18n.t('page.requestPending'));
+    $('succesMail').innerHTML = echap(window.WSI18n.t('page.confirmationEmail', { email: $('email').value.trim() }));
     window.scrollTo(0, 0);
   }
 
   /* ── Ouverture : le jeton décide de tout ────────────────────────────────── */
   if (!JETON) {
-    ecranInactif('Ce lien d’invitation est incomplet.',
-      'L’adresse ouverte ne contient pas d’invitation. Ouvrez le lien reçu par e-mail sans le modifier, ou demandez-en un nouveau à votre responsable.');
+    ecranInactif(window.WSI18n.t('page.inviteIncomplete'),
+      window.WSI18n.t('page.inviteMissing'));
   } else {
     fetch(API + '/inscription?i=' + encodeURIComponent(JETON), { headers: { Accept: 'application/json' } })
       .then(function (r) {
-        return r.json().catch(function () { return { error: 'Réponse illisible du serveur (HTTP ' + r.status + ').' }; });
+        return r.json().catch(function () { return { error: window.WSI18n.t('error.emptyResponse') }; });
       })
       .then(function (d) {
         if (d && d.ok) return peupler(d);
@@ -431,19 +430,20 @@
            invitation valable ne serait rattaché à rien.
            Le motif porte déjà la marche à suivre (« demandez-en un nouveau ») :
            on le COUPE en titre + suite au lieu de la répéter en dessous. */
-        var motif = (d && d.error) || 'Ce lien d’invitation n’est plus valable.';
+        var motif = window.WSI18n.message(d && d.error) || window.WSI18n.t('page.inviteExpired');
         var coupe = motif.indexOf('. ');
         ecranInactif(coupe > 0 ? motif.slice(0, coupe + 1) : motif,
           coupe > 0 ? motif.slice(coupe + 2)
-                    : 'Demandez un nouveau lien à votre responsable : il peut le régénérer depuis l’e-mail reçu de L’Atelier By.');
+                    : window.WSI18n.t('page.inviteRenew'));
       })
       .catch(function (err) {
-        ecranInactif('Le serveur n’a pas répondu.',
-          'Impossible de vérifier votre invitation (' + (err && err.message ? err.message : 'réseau') +
-          '). Réessayez dans un instant ; si cela persiste, prévenez votre responsable.');
+        ecranInactif(window.WSI18n.t('error.network'),
+          window.WSI18n.t('page.inviteRenew'));
       });
   }
 })();
+
+});
 </script>
 </body>
 </html>

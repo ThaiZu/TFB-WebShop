@@ -10,14 +10,16 @@ import '../webshop-detail.css';
 import '../webshop-i18n.css';
 import '../webshop-profile-extras.css';
 import '../webshop-allergens.css';
+import '../webshop-office.css';
+import '../webshop-pwa-install.css';
 
 // Bandeau d'erreur : EN PREMIER : il doit pouvoir signaler l'échec de
 // n'importe quel import qui suit, y compris celui qui monte l'application.
 import '../webshop-bug-banner.jsx';
+import '../webshop-pwa-install.jsx';
 
 // API stubs : must run before the components (they expose window.WSXxx).
-import '../webshop-vouchers.jsx';
-import '../webshop-promo-api.jsx';
+import '../webshop-deep-link.js';
 import '../webshop-i18n.jsx';
 import '../webshop-vies.jsx';
 import '../webshop-shops-api.jsx';
@@ -29,8 +31,8 @@ import '../webshop-slots-api.jsx';
 import '../webshop-delivery-fees-api.jsx';
 import '../webshop-catalog-api.jsx';
 import '../webshop-brand-api.jsx';
-import '../webshop-pricing-api.jsx';
 import '../webshop-auth-api.jsx';
+import '../webshop-quote-api.jsx';
 import '../webshop-tours-api.jsx';
 import '../webshop-orders-api.jsx';
 import '../webshop-companies-api.jsx';

@@ -47,10 +47,21 @@
           body: JSON.stringify(payload),
         });
         const j = await r.json().catch(() => ({}));
-        if (r.ok) return { ok: true, ...j };
+        if (r.ok) {
+          const result = { ok: true, ...j };
+          if (result.guestAccessToken && result.orderRef) {
+            try { sessionStorage.setItem('ws.order.token.' + result.orderRef, result.guestAccessToken); } catch (_) {}
+          }
+          if (result.paymentType === 'stripe' && result.orderRef) {
+            try { sessionStorage.setItem('ws.pendingPay', JSON.stringify({ orderRef: result.orderRef })); sessionStorage.setItem('ws.lastPay', result.orderRef); } catch (_) {}
+          }
+          return result;
+        }
         // L'API renvoie {error:"…", detail:"…"}, on AFFICHE la cause réelle
         // (avant : « Erreur 500 » générique alors que le motif était dans la réponse).
-        const base = (typeof j.error === 'string' && j.error) ? j.error : (j.error?.message || `Erreur ${r.status}`);
+        const base = (typeof j.error === 'string' && j.error)
+          ? j.error
+          : (j.error?.message || j.description || `Error ${r.status}`);
         // « Stock insuffisant » sans nom de produit est inutilisable sur un
         // panier de dix lignes : le client ne sait pas quoi retirer. Le serveur
         // renvoie product et available, on les affiche.
@@ -58,7 +69,10 @@
         const reste = (typeof j.available === 'number')
           ? (j.available > 0 ? ` (il en reste ${j.available})` : ' (il n\'en reste aucune)')
           : '';
-        throw new Error(base + quoi + reste + (j.detail ? (', ' + j.detail) : ''));
+        const error = new Error(base + quoi + reste + (j.detail ? (', ' + j.detail) : ''));
+        error.code = j.code || j.error?.code || j.description;
+        error.quote = j.errors?.quote || j.error?.errors?.quote;
+        throw error;
       }
       // Go-live : plus de simulation de commande. Sans API configurée, on
       // refuse : une commande ne peut jamais « réussir » à blanc.
@@ -69,18 +83,55 @@
        enregistrée par place(). Rend { ok, orderId, checkoutUrl } ; jette avec
        le motif serveur sinon (503 Stripe non configuré, 502 échec Stripe).
        Étape séparée de place() : l'enregistrement et l'encaissement sont deux
-       routes serveur distinctes, et seul le webhook Stripe marque « payé ». */
-    async pay(orderId) {
-      if (!orderId) throw new Error('orderId requis');
-      if (!api.payEndpoint) throw new Error('API paiement indisponible.');
-      const r = await fetch(api.payEndpoint, {
+       routes serveur distinctes, le serveur confirme le paiement auprès de Stripe. */
+    async pay(orderRef) {
+      if (!orderRef || !api.endpoint) throw new Error('Payment API is unavailable.');
+      let guestToken = null;
+      try { guestToken = sessionStorage.getItem('ws.order.token.' + orderRef); } catch (_) {}
+      const returnUrl = new URL(window.location.pathname, window.location.origin);
+      const response = await window.WSAuth.authenticatedFetch(`${api.endpoint}/${encodeURIComponent(orderRef)}/stripe-checkout`, {
         method: 'POST', credentials: 'include',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify({ orderId }),
+        headers: { 'Content-Type': 'application/json', ...authHeaders(), ...(guestToken ? { 'X-Webshop-Order-Token': guestToken } : {}) },
+        body: JSON.stringify({ return_url: returnUrl.href, locale: window.WSI18n?.getLang?.() || 'en', ui_mode: 'embedded' }),
       });
-      const j = await r.json().catch(() => ({}));
-      if (r.ok && j && j.checkoutUrl) return j;
-      throw new Error((typeof j.error === 'string' && j.error) || `Erreur ${r.status}`);
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const code = result.code || result.error?.code || result.description;
+        const allowed = ['WEBSHOP_STRIPE_AMOUNT_INVALID', 'WEBSHOP_STRIPE_NOT_CONFIGURED', 'WEBSHOP_STRIPE_RECONCILIATION_REQUIRED', 'WEBSHOP_STRIPE_RETURN_URL_INVALID'];
+        const error = new Error('Payment session could not be created.');
+        if (allowed.includes(code)) error.code = code;
+        throw error;
+      }
+      if (result.status === 'paid') return result;
+      if (result.uiMode === 'embedded' && result.status === 'open') {
+        if (!/^pk_(test|live)_[A-Za-z0-9]+$/.test(result.publishableKey || '') || !/^acct_[A-Za-z0-9]+$/.test(result.stripeAccount || '') || !/^cs_[A-Za-z0-9_]+_secret_/.test(result.clientSecret || '')) throw new Error('Payment session is invalid.');
+        return result;
+      }
+      if (result.status === 'pending') {
+        returnUrl.searchParams.set('stripe', 'return'); returnUrl.searchParams.set('orderRef', orderRef);
+        return { ...result, pendingUrl: returnUrl.href };
+      }
+      let url;
+      try { url = new URL(result.url); } catch (_) { throw new Error('Payment redirect is invalid.'); }
+      if (url.protocol !== 'https:' || url.hostname !== 'checkout.stripe.com' || url.username || url.password || (url.port && url.port !== '443')) throw new Error('Payment redirect is invalid.');
+      return { ...result, checkoutUrl: url.href };
+    },
+
+    // Reconcile an existing payment. This endpoint never creates a payment or order.
+    async paymentStatus(orderRef) {
+      if (!orderRef || !api.endpoint) throw new Error('Payment API is unavailable.');
+      let guestToken = null;
+      try { guestToken = sessionStorage.getItem('ws.order.token.' + orderRef); } catch (_) {}
+      const response = await window.WSAuth.authenticatedFetch(`${api.endpoint}/${encodeURIComponent(orderRef)}/stripe-status`, {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json', ...authHeaders(), ...(guestToken ? { 'X-Webshop-Order-Token': guestToken } : {}) },
+        body: '{}',
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !['paid', 'unpaid', 'processing', 'expired', 'not_started', 'pending'].includes(result?.status)) {
+        throw new Error('Payment status could not be verified.');
+      }
+      return result;
     },
 
     /* Fetch a single order (e.g. for the confirmation page). */
@@ -88,7 +139,10 @@
       if (!id) return null;
       if (api.endpoint) {
         try {
-          const r = await fetch(`${api.endpoint}/${encodeURIComponent(id)}`, { credentials: 'include', headers: authHeaders() });
+          let guestToken = null;
+          try { guestToken = sessionStorage.getItem('ws.order.token.' + id); } catch (_) {}
+          const headers = { ...authHeaders(), ...(guestToken ? { 'X-Webshop-Order-Token': guestToken } : {}) };
+          const r = await fetch(`${api.endpoint}/${encodeURIComponent(id)}`, { credentials: 'include', headers });
           if (r.ok) return await r.json();
           console.error('[commandes] lecture refusée, HTTP ' + r.status);
         } catch (e) { console.error('[commandes] lecture injoignable', e); }
@@ -98,16 +152,17 @@
 
     /* List the current customer's orders. */
     async listMine() {
-      if (api.endpoint) {
-        try {
-          const r = await fetch(`${api.endpoint}/me`, { credentials: 'include', headers: authHeaders() });
-          if (r.ok) return await r.json();
-          // « Aucune commande » et « le serveur a refusé » ne doivent pas se
-          // ressembler : les deux affichent une liste vide.
-          console.error('[commandes] liste indisponible, HTTP ' + r.status);
-        } catch (e) { console.error('[commandes] liste injoignable', e); }
+      if (!api.endpoint) throw new Error('Order API is unavailable.');
+      let r;
+      try {
+        r = await fetch(`${api.endpoint}/me`, { credentials: 'include', headers: authHeaders() });
+      } catch (_) {
+        throw new Error('Order history could not be loaded.');
       }
-      return [];
+      if (!r.ok) throw new Error('Order history could not be loaded (HTTP ' + r.status + ').');
+      const payload = await r.json().catch(() => null);
+      if (!Array.isArray(payload)) throw new Error('Order history response is invalid.');
+      return payload;
     },
 
     /* Cancel an order (server enforces cutoff rules). */
@@ -115,8 +170,10 @@
       if (!id) return { ok: false };
       if (api.endpoint) {
         try {
+          let guestToken = null;
+          try { guestToken = sessionStorage.getItem('ws.order.token.' + id); } catch (_) {}
           const r = await fetch(`${api.endpoint}/${encodeURIComponent(id)}/cancel`, {
-            method: 'POST', credentials: 'include', headers: authHeaders(),
+            method: 'POST', credentials: 'include', headers: { ...authHeaders(), ...(guestToken ? { 'X-Webshop-Order-Token': guestToken } : {}) },
           });
           const j = await r.json().catch(() => ({}));
           return { ok: r.ok, ...j };

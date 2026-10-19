@@ -1,0 +1,77 @@
+const {chromium}=require('playwright');
+const assert=require('node:assert/strict');
+(async()=>{
+ const browser=await chromium.launch({headless:true,args:['--no-sandbox','--host-resolver-rules=MAP webshop.tfbuddy.local 127.0.0.1']});
+ try{for(const width of [1440,390]){
+ const context=await browser.newContext({ignoreHTTPSErrors:true,viewport:{width,height:950}});
+ await context.addInitScript(()=>{localStorage.setItem('ws_auth_token','test');localStorage.setItem('ws.lang','pl');});
+ let catalogReads=0, delay=false, paymentUpdated=false; const errors=[];
+ await context.route('**/*',async route=>{
+ const url=new URL(route.request().url());
+ if(!['webshop.tfbuddy.local','tfb.tfbuddy.local'].includes(url.hostname))return route.abort();
+ if(!url.pathname.includes('/api/v1/'))return route.continue();
+ let data=[];
+ if(url.pathname.endsWith('/shops'))data=[{id:2,name:'Test shop',default_lang:'pl',languages:'pl,fr,nl',collect_enabled:1}];
+ else if(url.pathname.endsWith('/clients/auth/me'))data={user:{id:7,email:'test@example.invalid',firstName:'Test',lastName:'Client',postalCode:'00-001',activationRequired:false}};
+ else if(url.pathname.endsWith('/products/available')){catalogReads++; if(delay)await new Promise(resolve=>setTimeout(resolve,800));data=[{id:11,name:'Test baguette',id_category:3,is_active:1,webshop_active:1,click_and_collect:1,category:{id:3,name:'Bread',groups:[]},webshop:{price_gross:'10.00',allergen_codes:[],ingredients:''},portions:[],availability_periods:[],webshop_availability:{status:'not_enforced',inventory_enforced:false}}];}
+ else if(url.pathname.endsWith('/webshop/offices/me'))data={offices:[{id:20,name:'Office A',shop_id:2,shop_name:'Test shop'},{id:21,name:'Office B',shop_id:3,shop_name:'Other shop'}]};
+ else if(url.pathname.endsWith('/webshop/offices'))data={offices:[{id:20,name:'Office A',offers:[{id:9,name:'Offer A'}]}]};
+ else if(url.pathname.endsWith('/webshop/orders/me'))data=[{orderRef:'WEB-2-20260914-ABCDEF',status:'new',total:18,itemsCount:2,mode:'collect',payment:{method:'shop',status:paymentUpdated?'paid':'pending'},slot:{dateTime:'2026-09-20 12:00:00'}},{orderRef:'WEB-2-20260914-AAAAAA',status:'new',total:9.8,itemsCount:1,mode:'collect',payment:{method:'stripe',status:'paid'},slot:{dateTime:'2026-09-20 12:00:00'}},{orderRef:'WEB-2-20260914-BBBBBB',status:'new',total:12,itemsCount:1,mode:'collect',payment:{method:'stripe',status:'pending'},slot:{dateTime:'2026-09-20 12:00:00'}},{orderRef:'WEB-2-20260914-CCCCCC',status:'cancelled',total:10,itemsCount:1,mode:'collect',payment:{method:'stripe',status:'pending'},slot:{dateTime:'2026-09-20 12:00:00'}}];
+ else if(url.pathname.endsWith('/stripe-checkout'))throw new Error('Processing payment must not create checkout');
+ else if(url.pathname.endsWith('/stripe-status'))data={status:'pending',orderRef:'WEB-2-20260914-ABCDEF',amountMinor:1800,currency:'eur'};
+ else if(url.pathname.endsWith('/webshop/orders/WEB-2-20260914-ABCDEF'))data={orderRef:'WEB-2-20260914-ABCDEF',status:'new',payment:{method:'shop',status:'pending'},slot:{dateTime:'2026-09-20 12:00:00'},billing:{mode:'person'},items:[{id:1,name:'Historical baguette',quantity:2,unitGrossPrice:10,discountValue:2,totalGross:18,options:[{label:'Sesame'}]}]};
+ else if(url.pathname.endsWith('/config')||url.pathname.endsWith('/brand'))data={};
+ return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(data)});
+ });
+ const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('https://webshop.tfbuddy.local/?shop=2');
+ await page.locator('.ws-card').first().waitFor();
+ delay=true; const before=catalogReads;
+ await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+ await page.waitForTimeout(150);
+ assert.ok(catalogReads>before); assert.ok(await page.locator('.ws-card').count()>0);assert.equal(await page.locator('.ws-catalogue-loading').count(),0);
+ await page.waitForTimeout(900);
+  // Desktop header / mobile bottom navigation share the profile label.
+ const trigger=page.locator('.ws-tabbar__btn--account:visible');
+ if(await trigger.count())await trigger.click();else await page.getByRole('button',{name:'Konto',exact:true}).first().click();
+ assert.equal(await page.getByRole('button',{name:'Wyloguj się',exact:true}).count(),1);
+ await page.getByRole('button',{name:'Moje zakupy',exact:true}).click();
+ assert.equal(await page.getByRole('button',{name:'Wyloguj się',exact:true}).count(),0);
+ await page.locator('.ws-purchase-payment--paid').waitFor();
+ assert.equal(await page.locator('.ws-purchase--paid').count(),1);
+ await page.getByRole('tab',{name:'Anulowane',exact:true}).click();
+ assert.equal(await page.locator('.ws-purchase-actions').count(),1);
+ assert.equal(await page.locator('.ws-purchase--cancelled').count(),1);
+ assert.equal(await page.locator('.ws-purchase--cancelled').getByText('-', {exact:true}).count(),1);
+ await page.getByRole('tab',{name:'Wszystkie',exact:true}).click();
+ await page.locator('.ws-purchase-payment--pending').first().waitFor();
+ assert.equal(await page.locator('.ws-acc__foot').getByRole('button',{name:'Odśwież',exact:true}).count(),1);
+ const actions=page.locator('.ws-purchase-actions').first();
+ const cancel=await actions.getByRole('button',{name:'Anuluj zamówienie',exact:true}).boundingBox();
+ const details=await actions.getByRole('button',{name:'Szczegóły zamówienia',exact:true}).boundingBox();
+ assert.ok(cancel.x>details.x,'cancel must be on the right');
+ assert.equal(await page.locator('.ws-purchase-payment-notice').count(),1,'only unpaid Stripe should block fulfilment');
+ await page.locator('.ws-purchase-payment-notice').getByRole('button',{name:'Przejdź do płatności',exact:true}).click();
+ await page.locator('.ws-purchase-payment-notice').getByText('Oczekujemy na potwierdzenie płatności.',{exact:false}).waitFor();
+ await page.getByRole('tab',{name:'Moje biura',exact:true}).click();
+ await page.getByText('Office A',{exact:true}).last().waitFor();
+ await page.getByText('Office B',{exact:true}).waitFor();
+ await page.getByText('Sklep: Other shop',{exact:true}).waitFor();
+ await page.getByRole('tab',{name:'Moje zakupy',exact:true}).click();
+ await page.getByRole('button',{name:'Szczegóły zamówienia',exact:true}).first().click();
+ await page.getByText('Historical baguette',{exact:true}).waitFor();
+ assert.equal(await page.locator('.ws-acc__foot').getByRole('button',{name:'Odśwież',exact:true}).count(),0,'list refresh must not leak into details');
+ assert.match(await page.locator('.ws-purchase-details').innerText(),/Sesame/);
+ assert.match(await page.locator('.ws-purchase-details').innerText(),/18,00/);
+ paymentUpdated=true;
+ await page.locator('.ws-purchase-details').getByRole('button',{name:/Moje zakupy/}).click();
+ await page.waitForFunction(()=>document.querySelectorAll('.ws-purchase-payment--paid').length===2);
+ await page.goto('https://webshop.tfbuddy.local/?shop=2&stripe=return&orderRef=WEB-2-20260914-ABCDEF');
+ await page.getByRole('dialog',{name:'Płatność',exact:true}).waitFor();
+ await page.getByText('Oczekujemy na potwierdzenie płatności.',{exact:false}).waitFor();
+ assert.equal(await page.getByText('Opłacone',{exact:true}).count(),0,'return URL cannot mark payment as paid');
+ assert.deepEqual(errors,[]);
+ console.log(`PASS ${width}: office memberships, saved purchase details, focus refresh retains products`);
+ await context.close();
+ }}finally{await browser.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;});

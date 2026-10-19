@@ -1,0 +1,25 @@
+/* Installation sheet: only shown when the current mobile browser can install
+   the PWA or Safari can explain its native Add to Home Screen flow. */
+.ws-pwa-install { position: fixed; z-index: 1200; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: 20px 12px 0; background: rgba(34, 24, 21, .48); animation: ws-pwa-fade-in .2s ease-out both; }
+.ws-pwa-install__sheet { width: min(100%, 540px); max-height: calc(100dvh - 20px); overflow: auto; padding: 12px 20px calc(20px + env(safe-area-inset-bottom)); border-radius: 24px 24px 0 0; background: var(--color-bg-secondary, #F4EFE8); box-shadow: 0 -12px 40px rgba(32, 18, 20, .22); animation: ws-pwa-sheet-in .28s cubic-bezier(.2,.8,.25,1) both; }
+.ws-pwa-install__handle { display: block; width: 42px; height: 4px; margin: 0 auto 18px; border-radius: 999px; background: rgba(34, 34, 34, .22); }
+.ws-pwa-install__heading { display: flex; align-items: center; gap: 14px; }
+.ws-pwa-install__icon { width: 56px; height: 56px; flex: 0 0 auto; border-radius: 14px; box-shadow: 0 3px 10px rgba(34, 24, 21, .18); }
+.ws-pwa-install__heading h2 { margin: 0; color: var(--color-text, #222); font: 600 19px/1.18 var(--font-ui, sans-serif); }
+.ws-pwa-install__heading p { margin: 6px 0 0; color: var(--color-text-muted, #666); font: 400 13px/1.45 var(--font-ui, sans-serif); }
+.ws-pwa-install__benefits, .ws-pwa-install__steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 20px 0; padding: 0; list-style: none; }
+.ws-pwa-install__benefits li, .ws-pwa-install__steps li { min-width: 0; padding: 10px 8px; border: 1px solid rgba(141, 29, 44, .13); border-radius: 12px; background: #fff; color: var(--color-text, #222); font: 600 11px/1.35 var(--font-ui, sans-serif); text-align: center; }
+.ws-pwa-install__benefits span, .ws-pwa-install__steps span { display: block; margin-bottom: 4px; color: var(--color-primary, #8D1D2C); font: 700 20px/1 sans-serif; }
+.ws-pwa-install__steps { grid-template-columns: 1fr; counter-reset: ws-pwa-steps; }
+.ws-pwa-install__steps li { display: flex; align-items: center; gap: 10px; padding: 11px 12px; text-align: left; font-size: 13px; }
+.ws-pwa-install__steps span { width: 24px; margin: 0; text-align: center; }
+.ws-pwa-install__actions { display: grid; gap: 8px; }
+.ws-pwa-install__primary, .ws-pwa-install__later { min-height: 46px; border-radius: 12px; font: 600 14px/1 var(--font-ui, sans-serif); }
+.ws-pwa-install__primary { border: 1px solid var(--color-primary, #8D1D2C); background: var(--color-primary, #8D1D2C); color: #fff; }
+.ws-pwa-install__primary:hover, .ws-pwa-install__primary:focus-visible { background: #741724; }
+.ws-pwa-install__later { border: 0; background: transparent; color: var(--color-primary, #8D1D2C); }
+.ws-pwa-install button:focus-visible { outline: 3px solid rgba(141, 29, 44, .35); outline-offset: 2px; }
+@keyframes ws-pwa-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ws-pwa-sheet-in { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@media (max-width: 360px) { .ws-pwa-install { padding-inline: 0; } .ws-pwa-install__sheet { padding-inline: 16px; } .ws-pwa-install__heading h2 { font-size: 17px; } .ws-pwa-install__benefits li { padding-inline: 5px; font-size: 10px; } }
+@media (prefers-reduced-motion: reduce) { .ws-pwa-install, .ws-pwa-install__sheet { animation: none; } }

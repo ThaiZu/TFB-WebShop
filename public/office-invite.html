@@ -1,0 +1,7 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="no-referrer"><meta name="robots" content="noindex"><title>Webshop</title></head>
+<body><script>
+const destination = new URL('./', location.href);
+destination.searchParams.set('office_invite', new URLSearchParams(location.search).get('token') || 'invalid');
+location.replace(destination.href);
+</script></body></html>

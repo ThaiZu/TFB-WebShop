@@ -89,18 +89,21 @@
     // Returns an array of {iso, available, reason?} for every day
     // in the from–to range. The frontend uses this to grey out dates in
     // the DatePill calendar. Reason codes: 'closed' | 'holiday' | 'exception'.
-    async listAvailableDays({ shopId, mode, from, to } = {}) {
+    async listAvailableDays({ shopId, mode, from, to, basket = [], strict = false } = {}) {
       if (api.endpoint) {
         try {
+          const productIds = productIdsFromBasket(basket);
           const r = await fetch(
             `${api.endpoint}/days?shopId=${encodeURIComponent(shopId||'')}` +
             `&mode=${encodeURIComponent(mode||'')}` +
-            `&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+            `&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}` +
+            (productIds.length ? `&productIds=${encodeURIComponent(productIds.join(','))}` : ''),
             { credentials: 'include' }
           );
           if (r.ok) return await r.json();
         } catch (_) {}
       }
+      if (strict) throw new Error('Available days unavailable');
       return []; // pas d'API -> aucun jour annonce
     },
 
@@ -108,19 +111,16 @@
     // Returns slots enriched with {capacity, current_orders, available, reason?}.
     // When no endpoint is set, returns the seed with a simulated load.
     // reason codes: 'full' | 'cutoff_passed'
-    async listSlots({ shopId, mode, date } = {}) {
-      if (api.endpoint) {
-        try {
-          const r = await fetch(
-            `${api.endpoint}/slots?shopId=${encodeURIComponent(shopId||'')}` +
-            `&mode=${encodeURIComponent(mode||'')}` +
-            `&date=${encodeURIComponent(date||'')}`,
-            { credentials: 'include' }
-          );
-          if (r.ok) return await r.json();
-        } catch (_) {}
-      }
-      return []; // pas d'API -> aucun creneau propose
+    async listSlots({ shopId, mode, date, basket = [] } = {}) {
+      if (!api.endpoint) throw new Error('Availability API missing');
+      const query = new URLSearchParams({shopId: String(shopId || ''), mode: mode || '', date: date || ''});
+      const productIds = productIdsFromBasket(basket);
+      if (productIds.length) query.set('productIds', productIds.join(','));
+      const response = await fetch(`${api.endpoint}/slots?${query}`, {credentials:'include'});
+      if (!response.ok) throw new Error('Slots unavailable');
+      const slots = await response.json();
+      if (!Array.isArray(slots)) throw new Error('Invalid slots response');
+      return slots;
     },
 
     // ── Cart validation ───────────────────────────────────────────────────
@@ -166,6 +166,13 @@
     parseISO,
     fmtCutoff,
   };
+
+  function productIdsFromBasket(basket) {
+    if (!Array.isArray(basket)) return [];
+    return [...new Set(basket
+      .flatMap((line) => [line?.productId ?? line?.id_product ?? line?.id, ...(line?.menu_product_ids || [])].map(Number))
+      .filter((id) => Number.isInteger(id) && id > 0))];
+  }
 
   window.WSAvailability = api;
 })();

@@ -1,0 +1,14 @@
+# Add these labels to the production webshop service.
+#
+# The API service must already expose the Traefik service named `tfb` (the same
+# name used by the existing atelierby.tfbuddy.com router). This route keeps the
+# browser on webshop.atelierby.be and forwards only API calls to that service.
+labels:
+  - "traefik.http.routers.webshop-api.rule=Host(`webshop.atelierby.be`) && PathPrefix(`/api/v1`)"
+  - "traefik.http.routers.webshop-api.entrypoints=websecure"
+  - "traefik.http.routers.webshop-api.tls=true"
+  - "traefik.http.routers.webshop-api.priority=100"
+  - "traefik.http.routers.webshop-api.service=tfb@docker"
+
+  # www is redirected to the canonical host by the existing router. If it is
+  # intentionally served directly instead, add an analogous API router for it.

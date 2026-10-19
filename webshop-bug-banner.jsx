@@ -26,7 +26,7 @@
 
   function corps() {
     return erreurs.map(function (e) {
-      return '• [' + e.quoi + '] ' + e.detail;
+      return '• [' + e.quoi + '] ' + (window.WSI18n?.isLoaded() ? window.WSI18n.message(e.detail) : e.detail);
     }).join('\n');
   }
 
@@ -42,7 +42,7 @@
           'box-shadow:0 3px 14px rgba(0,0,0,.3);white-space:pre-wrap';
         var x = document.createElement('button');
         x.textContent = '✕';
-        x.setAttribute('aria-label', 'Fermer');
+        x.setAttribute('aria-label', window.WSI18n?.t('common.close2') || '×');
         x.style.cssText = 'position:absolute;top:6px;right:8px;background:none;border:none;' +
                           'color:#fff;font-size:16px;cursor:pointer';
         x.onclick = function () { el.remove(); el = null; };
@@ -53,7 +53,7 @@
         (document.body || document.documentElement).appendChild(el);
       }
       var c = document.getElementById('ws-bug-corps');
-      if (c) c.textContent = '⚠ ERREUR : PLEASE DEBUG (' + erreurs.length + ')\n' + corps();
+      if (c) c.textContent = '⚠ ' + (window.WSI18n?.isLoaded() ? window.WSI18n.t('ui.bugTitle', { count: erreurs.length }) : '⚠') + '\n' + corps();
     } catch (_) { /* si même ça échoue, il reste la console */ }
   }
 
@@ -61,6 +61,7 @@
      et sert de clé de déduplication : un appel qui échoue à chaque frappe ne
      doit pas empiler cinquante lignes identiques. */
   function note(quoi, detail) {
+    console.warn('[webshop:' + quoi + ']', detail);
     var txt = (detail && detail.message) ? detail.message : String(detail || 'échec');
     for (var i = 0; i < erreurs.length; i++) {
       if (erreurs[i].quoi === quoi) { erreurs[i].detail = txt; rendre(); return; }
@@ -69,7 +70,14 @@
     rendre();
   }
 
-  window.WSBug = { note: note, list: function () { return erreurs.slice(); } };
+  window.addEventListener('ws:language', function () { if (el) rendre(); });
+
+  function clear(source) {
+    erreurs = erreurs.filter(function (error) { return error.quoi !== source; });
+    if (!erreurs.length) { if (el) el.remove(); el = null; }
+    else if (el) rendre();
+  }
+  window.WSBug = { note: note, clear: clear, list: function () { return erreurs.slice(); } };
 
   /* Ce que le code applicatif ne peut pas attraper : une promesse rejetée sans
      .catch, une exception de rendu. Sans ça, l'écran reste blanc sans un mot. */

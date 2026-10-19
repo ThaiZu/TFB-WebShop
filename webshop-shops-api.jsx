@@ -30,7 +30,21 @@
       try {
         if (!endpoint) throw new Error('API boutiques non configurée.');
         const shops = await fetchRemote(endpoint);
-        cache = shops.slice();
+        // Public-facing shop name; keep the API contract unchanged for POS/admin.
+        cache = shops.map((shop) => {
+          const streetAddress = String(
+            shop.address || [shop.street, shop.street_num].filter(Boolean).join(' ')
+          ).trim();
+          const locality = [shop.zip, shop.city].filter(Boolean).join(' ').trim();
+
+          return {
+            ...shop,
+            // The central API exposes street/street_num. Normalize it at the
+            // storefront boundary so every picker can show the same address.
+            address: [streetAddress, locality].filter(Boolean).join(', '),
+            name: String(shop.representative_name || '').trim() || shop.name,
+          };
+        });
         return cache;
       } finally {
         inflight = null;

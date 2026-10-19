@@ -21,7 +21,7 @@
     { id: 'eggs',        label: 'Œufs',            aliases: ['egg','eggs','oeuf','oeufs', 'œufs', 'œuf'] },
     { id: 'fish',        label: 'Poisson',         aliases: ['fish','poisson'] },
     { id: 'peanuts',     label: 'Arachides',       aliases: ['peanut','peanuts','arachide','arachides'] },
-    { id: 'soy',         label: 'Soja',            aliases: ['soy','soja','soya'] },
+    { id: 'soy',         label: 'Soja',            aliases: ['soy','soja','soya','soybeans'] },
     { id: 'milk',        label: 'Lait',            aliases: ['milk','lait','dairy','lactose'] },
     { id: 'nuts',        label: 'Fruits à coque',  aliases: ['nut','nuts','almond','almonds','amande','amandes','hazelnut','walnut','noix', 'fruits à coque', 'fruits a coque'] },
     { id: 'celery',      label: 'Céleri',          aliases: ['celery','celeri','céleri'] },
@@ -282,13 +282,14 @@
     const labels = ids.map((i) => tAllergen(ALLERGENS.find((a) => a.id === i)))
       .concat(inconnus).join(', ');
     return (
-      <span className="al-row" aria-label={`Allergènes: ${labels}`}>
+      <span className={'al-row' + (ids.length > 5 && max === 5 ? ' al-row--mobile-compact' : '')} aria-label={window.WSI18n.t('allergen.names', { names: labels })}>
         {shown.map((id) => (
           <AllergenIcon key={id} name={id} size={size}/>
         ))}
         {extra > 0 && <span className="al-row__more">+{extra}</span>}
+        {ids.length > 5 && max === 5 && <span className="al-row__more-mobile" aria-hidden="true">+{ids.length - 3}</span>}
         {inconnus.map((b) => (
-          <span key={b} className="al-row__raw" title={`Allergène : ${b}`}>{b}</span>
+          <span key={b} className="al-row__raw" title={window.WSI18n.t('allergen.names', { names: b })}>{b}</span>
         ))}
       </span>
     );

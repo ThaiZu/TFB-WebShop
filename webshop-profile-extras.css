@@ -211,3 +211,8 @@
   .ws-pref-nudge { flex-direction: column; align-items: stretch; gap: 10px; }
   .ws-pref-nudge__btns { justify-content: flex-end; }
 }
+
+.ws-purchase-values { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:16px 0 0; }
+.ws-purchase-values dt { font-size:.85rem; opacity:.75; }
+.ws-purchase-values dd { margin:4px 0 0; font-weight:600; }
+.ws-purchase-details h3,.ws-purchase-details p,.ws-purchase-details li { overflow-wrap:anywhere; }

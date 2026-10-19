@@ -17,8 +17,13 @@
 
   /* ---------- hook ------------------------------------------------- */
   function useT() {
-    const [lang, setLangState] = useState(I.getLang());
-    useEffect(() => I.onChange((l) => setLangState(l)), []);
+    const [, refresh] = useState(0);
+    useEffect(() => {
+      const unsubscribe = I.onChange(() => refresh((revision) => revision + 1));
+      refresh((revision) => revision + 1); // Include loads completed before subscription.
+      return unsubscribe;
+    }, []);
+    const lang = I.getLang();
     const setLang = useCallback((l) => I.setLang(l), []);
     return {
       lang,

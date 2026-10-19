@@ -1,0 +1,851 @@
+sync_product_photos : 40 produit(s) avec recette ; 0 nouvelle(s) photo(s), 0 rafraîchie(s) (source ERP changée), 7 à jour ; 16 photo(s) manuelle(s) intouchée(s) ; 17 recette(s) sans photo, 0 disparue(s) côté ERP (fichier conservé) ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 35 fichier(s) ; 35 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 35 déjà OK ; 0 fichier(s) SANS produit correspondant.
+sync_product_photos : 40 produit(s) avec recette ; 0 nouvelle(s) photo(s), 0 rafraîchie(s) (source ERP changée), 7 à jour ; 16 photo(s) manuelle(s) intouchée(s) ; 17 recette(s) sans photo, 0 disparue(s) côté ERP (fichier conservé) ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 35 fichier(s) ; 35 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 35 déjà OK ; 0 fichier(s) SANS produit correspondant.
+sync_product_photos : 42 produit(s) avec recette ; 0 nouvelle(s) photo(s), 0 rafraîchie(s) (source ERP changée), 9 à jour ; 16 photo(s) manuelle(s) intouchée(s) ; 17 recette(s) sans photo, 0 disparue(s) côté ERP (fichier conservé) ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 37 fichier(s) ; 37 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 37 déjà OK ; 0 fichier(s) SANS produit correspondant.
+sync_product_photos : 42 produit(s) avec recette ; 0 nouvelle(s) photo(s), 0 rafraîchie(s) (source ERP changée), 9 à jour ; 16 photo(s) manuelle(s) intouchée(s) ; 17 recette(s) sans photo, 0 disparue(s) côté ERP (fichier conservé) ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 37 fichier(s) ; 37 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 37 déjà OK ; 0 fichier(s) SANS produit correspondant.
+sync_product_photos (source unique : ERP) : 42 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 23 à jour ; 19 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 35 fichier(s) ; 35 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 35 déjà OK ; 0 fichier(s) SANS produit correspondant.
+sync_product_photos (source unique : ERP) : 42 produit(s) avec recette ; 0 nouvelle(s), 7 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 16 à jour ; 19 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 34 fichier(s) ; 34 produit(s) correspondant(s) ; 7 mis à jour (dont 0 ancienne(s) img remplacée(s)), 27 déjà OK ; 0 fichier(s) SANS produit correspondant.
+sync_product_photos (source unique : ERP) : 42 produit(s) avec recette ; 0 nouvelle(s), 2 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 21 à jour ; 19 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 34 fichier(s) ; 34 produit(s) correspondant(s) ; 2 mis à jour (dont 0 ancienne(s) img remplacée(s)), 32 déjà OK ; 0 fichier(s) SANS produit correspondant.
+sync_product_photos (source unique : ERP) : 49 produit(s) avec recette ; 3 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 23 à jour ; 23 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 37 fichier(s) ; 37 produit(s) correspondant(s) ; 3 mis à jour (dont 3 ancienne(s) img remplacée(s)), 34 déjà OK ; 0 fichier(s) SANS produit correspondant.
+sync_product_photos (source unique : ERP) : 49 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 26 à jour ; 23 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 37 fichier(s) ; 37 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 37 déjà OK ; 0 fichier(s) SANS produit correspondant.
+sync_product_photos (source unique : ERP) : 49 produit(s) avec recette ; 5 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 26 à jour ; 18 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 42 fichier(s) ; 42 produit(s) correspondant(s) ; 5 mis à jour (dont 4 ancienne(s) img remplacée(s)), 37 déjà OK ; 0 fichier(s) SANS produit correspondant.
+sync_product_photos (source unique : ERP) : 56 produit(s) avec recette ; 5 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 31 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 47 fichier(s) ; 47 produit(s) correspondant(s) ; 5 mis à jour (dont 5 ancienne(s) img remplacée(s)), 42 déjà OK ; 0 fichier(s) SANS produit correspondant.
+sync_product_photos (source unique : ERP) : 56 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 36 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 47 fichier(s) ; 47 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 47 déjà OK ; 0 fichier(s) SANS produit correspondant.
+sync_product_photos (source unique : ERP) : 56 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 36 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 47 fichier(s) ; 47 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 47 déjà OK ; 0 fichier(s) SANS produit correspondant.
+sync_product_photos (source unique : ERP) : 56 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 36 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 47 fichier(s) ; 47 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 47 déjà OK ; 0 fichier(s) SANS produit correspondant.
+canaux ERP → ws_products : 63 produit(s) webshop_active côté ERP, 478 ligne(s) mise(s) à jour.
+sync_product_photos (source unique : ERP) : 56 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 36 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 47 fichier(s) ; 47 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 47 déjà OK ; 0 fichier(s) SANS produit correspondant.
+canaux ERP → ws_products : 63 produit(s) webshop_active côté ERP, 1 ligne(s) mise(s) à jour.
+sync_product_photos (source unique : ERP) : 56 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 36 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 47 fichier(s) ; 47 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 47 déjà OK ; 0 fichier(s) SANS produit correspondant.
+canaux ERP → ws_products : 63 produit(s) webshop_active côté ERP, 1 ligne(s) mise(s) à jour.
+sync_product_photos (source unique : ERP) : 56 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 36 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 47 fichier(s) ; 47 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 47 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 67 webshop_active côté ERP, 25 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+  actifs hors ERP (conservés, à créer dans Franchise Buddy si voulus là-bas) : 2130021 Salade de pâtes - Grecque · 6700022 FlipFlap Du jours 1 · 6700023 FlipFlap Du jours 2 · 6700100 FlipFlap - Jambon aux herbes, tomates confites & burrata
+sync_product_photos (source unique : ERP) : 56 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 36 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 47 fichier(s) ; 47 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 47 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 67 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+  actifs hors ERP (conservés, à créer dans Franchise Buddy si voulus là-bas) : 2130021 Salade de pâtes - Grecque · 6700022 FlipFlap Du jours 1 · 6700023 FlipFlap Du jours 2 · 6700100 FlipFlap - Jambon aux herbes, tomates confites & burrata
+sync_product_photos (source unique : ERP) : 60 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 40 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 51 fichier(s) ; 51 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 51 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 67 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+  actifs hors ERP (conservés, à créer dans Franchise Buddy si voulus là-bas) : 2130021 Salade de pâtes - Grecque · 6700022 FlipFlap Du jours 1 · 6700023 FlipFlap Du jours 2 · 6700100 FlipFlap - Jambon aux herbes, tomates confites & burrata
+sync_product_photos (source unique : ERP) : 60 produit(s) avec recette ; 0 nouvelle(s), 1 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 39 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 51 fichier(s) ; 51 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 51 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 67 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+  actifs hors ERP (conservés, à créer dans Franchise Buddy si voulus là-bas) : 2130021 Salade de pâtes - Grecque · 6700022 FlipFlap Du jours 1 · 6700023 FlipFlap Du jours 2 · 6700100 FlipFlap - Jambon aux herbes, tomates confites & burrata
+sync_product_photos (source unique : ERP) : 60 produit(s) avec recette ; 0 nouvelle(s), 1 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 39 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 51 fichier(s) ; 51 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 51 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 67 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+  actifs hors ERP (conservés, à créer dans Franchise Buddy si voulus là-bas) : 2130021 Salade de pâtes - Grecque · 6700022 FlipFlap Du jours 1 · 6700023 FlipFlap Du jours 2 · 6700100 FlipFlap - Jambon aux herbes, tomates confites & burrata
+sync_product_photos (source unique : ERP) : 60 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 40 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 51 fichier(s) ; 51 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 51 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 67 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+  actifs hors ERP (conservés, à créer dans Franchise Buddy si voulus là-bas) : 2130021 Salade de pâtes - Grecque · 6700022 FlipFlap Du jours 1 · 6700023 FlipFlap Du jours 2 · 6700100 FlipFlap - Jambon aux herbes, tomates confites & burrata
+sync_product_photos (source unique : ERP) : 60 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 40 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 51 fichier(s) ; 51 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 51 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 68 webshop_active côté ERP, 1 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+  actifs hors ERP (conservés, à créer dans Franchise Buddy si voulus là-bas) : 2130021 Salade de pâtes - Grecque · 6700022 FlipFlap Du jours 1 · 6700023 FlipFlap Du jours 2 · 6700100 FlipFlap - Jambon aux herbes, tomates confites & burrata
+sync_product_photos (source unique : ERP) : 60 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 40 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 51 fichier(s) ; 51 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 51 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 68 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+  actifs hors ERP (conservés, à créer dans Franchise Buddy si voulus là-bas) : 2130021 Salade de pâtes - Grecque · 6700022 FlipFlap Du jours 1 · 6700023 FlipFlap Du jours 2 · 6700100 FlipFlap - Jambon aux herbes, tomates confites & burrata
+sync_product_photos (source unique : ERP) : 61 produit(s) avec recette ; 1 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 40 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 52 fichier(s) ; 52 produit(s) correspondant(s) ; 1 mis à jour (dont 1 ancienne(s) img remplacée(s)), 51 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 70 webshop_active côté ERP, 2 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+  actifs hors ERP (conservés, à créer dans Franchise Buddy si voulus là-bas) : 2130021 Salade de pâtes - Grecque · 6700022 FlipFlap Du jours 1 · 6700023 FlipFlap Du jours 2 · 6700100 FlipFlap - Jambon aux herbes, tomates confites & burrata
+sync_product_photos (source unique : ERP) : 61 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 41 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 52 fichier(s) ; 52 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 52 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 70 webshop_active côté ERP, 2 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+  actifs hors ERP (conservés, à créer dans Franchise Buddy si voulus là-bas) : 2130021 Salade de pâtes - Grecque · 6700022 FlipFlap Du jours 1 · 6700023 FlipFlap Du jours 2 · 6700100 FlipFlap - Jambon aux herbes, tomates confites & burrata
+sync_product_photos (source unique : ERP) : 63 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 41 à jour ; 22 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 52 fichier(s) ; 52 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 52 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 70 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+  actifs hors ERP (conservés, à créer dans Franchise Buddy si voulus là-bas) : 2130021 Salade de pâtes - Grecque · 6700022 FlipFlap Du jours 1 · 6700023 FlipFlap Du jours 2 · 6700100 FlipFlap - Jambon aux herbes, tomates confites & burrata
+sync_product_photos (source unique : ERP) : 63 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 41 à jour ; 22 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 52 fichier(s) ; 52 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 52 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 70 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 62 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 41 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 52 fichier(s) ; 52 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 52 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 70 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 62 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 41 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 52 fichier(s) ; 52 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 52 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 70 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 62 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 41 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 52 fichier(s) ; 52 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 52 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 70 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 62 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 41 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 52 fichier(s) ; 52 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 52 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 70 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 62 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 41 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 52 fichier(s) ; 52 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 52 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 70 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 62 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 41 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 52 fichier(s) ; 52 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 52 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 70 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 62 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 41 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 52 fichier(s) ; 52 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 52 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 69 webshop_active côté ERP, 1 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 62 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 41 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 52 fichier(s) ; 52 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 52 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 70 webshop_active côté ERP, 1 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 61 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 40 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 52 fichier(s) ; 52 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 52 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 70 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 62 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 41 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 52 fichier(s) ; 52 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 52 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 73 webshop_active côté ERP, 2 mise(s) à jour, 1 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 62 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 41 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 52 fichier(s) ; 52 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 52 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 76 webshop_active côté ERP, 6 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 64 produit(s) avec recette ; 1 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 41 à jour ; 22 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 53 fichier(s) ; 53 produit(s) correspondant(s) ; 1 mis à jour (dont 1 ancienne(s) img remplacée(s)), 52 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 76 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 68 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 46 à jour ; 22 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 57 fichier(s) ; 57 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 57 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 76 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 68 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 46 à jour ; 22 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 57 fichier(s) ; 57 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 57 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 76 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 68 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 46 à jour ; 22 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 57 fichier(s) ; 57 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 57 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 78 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 69 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 48 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 59 fichier(s) ; 59 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 59 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 78 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 69 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 48 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 59 fichier(s) ; 59 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 59 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 78 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 69 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 48 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 59 fichier(s) ; 59 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 59 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 78 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 69 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 48 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 59 fichier(s) ; 59 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 59 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 78 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 69 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 48 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 59 fichier(s) ; 59 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 59 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 79 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 69 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 48 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 59 fichier(s) ; 59 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 59 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 79 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 69 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 48 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 59 fichier(s) ; 59 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 59 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 79 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 69 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 48 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 59 fichier(s) ; 59 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 59 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 79 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 69 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 48 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 59 fichier(s) ; 59 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 59 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 79 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 69 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 48 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 59 fichier(s) ; 59 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 59 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 79 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 69 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 48 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 59 fichier(s) ; 59 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 59 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 79 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 69 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 48 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 59 fichier(s) ; 59 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 59 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 79 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 69 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 48 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 59 fichier(s) ; 59 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 59 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 79 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 69 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 48 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 59 fichier(s) ; 59 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 59 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 79 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 69 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 48 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 59 fichier(s) ; 59 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 59 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 79 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 69 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 48 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 59 fichier(s) ; 59 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 59 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 84 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 74 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 49 à jour ; 25 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 60 fichier(s) ; 60 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 60 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 84 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 74 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 49 à jour ; 25 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 60 fichier(s) ; 60 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 60 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 84 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 74 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 49 à jour ; 25 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 60 fichier(s) ; 60 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 60 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 84 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 74 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 49 à jour ; 25 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 60 fichier(s) ; 60 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 60 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 84 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 74 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 49 à jour ; 25 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 60 fichier(s) ; 60 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 60 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 5 mise(s) à jour, 8 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 74 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 49 à jour ; 25 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 60 fichier(s) ; 60 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 60 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 4 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 49 à jour ; 24 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 64 fichier(s) ; 64 produit(s) correspondant(s) ; 4 mis à jour (dont 4 ancienne(s) img remplacée(s)), 60 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 53 à jour ; 24 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 64 fichier(s) ; 64 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 64 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 53 à jour ; 24 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 64 fichier(s) ; 64 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 64 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 53 à jour ; 24 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 64 fichier(s) ; 64 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 64 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 2 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 53 à jour ; 22 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 66 fichier(s) ; 66 produit(s) correspondant(s) ; 2 mis à jour (dont 2 ancienne(s) img remplacée(s)), 64 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 55 à jour ; 22 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 66 fichier(s) ; 66 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 66 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 55 à jour ; 22 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 66 fichier(s) ; 66 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 66 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 55 à jour ; 22 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 66 fichier(s) ; 66 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 66 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 55 à jour ; 22 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 66 fichier(s) ; 66 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 66 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 55 à jour ; 22 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 66 fichier(s) ; 66 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 66 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 55 à jour ; 22 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 66 fichier(s) ; 66 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 66 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 1 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 55 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 1 mis à jour (dont 1 ancienne(s) img remplacée(s)), 66 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 87 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 89 webshop_active côté ERP, 2 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 77 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 67 fichier(s) ; 67 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 89 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 79 produit(s) avec recette ; 2 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 56 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 69 fichier(s) ; 69 produit(s) correspondant(s) ; 2 mis à jour (dont 2 ancienne(s) img remplacée(s)), 67 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 89 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 79 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 58 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 69 fichier(s) ; 69 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 69 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 89 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 79 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 58 à jour ; 21 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 69 fichier(s) ; 69 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 69 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 94 webshop_active côté ERP, 6 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+  produit 6700129 « Focaccia - Olives » : absent de l'ERP — désactivé (le créer dans Franchise Buddy pour le vendre)
+  1 produit(s) actif(s) absent(s) de l'ERP désactivé(s).
+sync_product_photos (source unique : ERP) : 78 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 58 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 69 fichier(s) ; 69 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 69 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 94 webshop_active côté ERP, 3 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 84 produit(s) avec recette ; 6 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 58 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 75 fichier(s) ; 75 produit(s) correspondant(s) ; 6 mis à jour (dont 6 ancienne(s) img remplacée(s)), 69 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 95 webshop_active côté ERP, 2 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 84 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 64 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 75 fichier(s) ; 75 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 75 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 95 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 85 produit(s) avec recette ; 1 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 64 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 76 fichier(s) ; 76 produit(s) correspondant(s) ; 1 mis à jour (dont 1 ancienne(s) img remplacée(s)), 75 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 95 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 85 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 65 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 76 fichier(s) ; 76 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 76 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 95 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 85 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 65 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 76 fichier(s) ; 76 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 76 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 95 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 85 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 65 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 76 fichier(s) ; 76 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 76 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 95 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 85 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 65 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 76 fichier(s) ; 76 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 76 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 95 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 85 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 65 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 76 fichier(s) ; 76 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 76 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 95 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 85 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 65 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 76 fichier(s) ; 76 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 76 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 95 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 85 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 65 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 76 fichier(s) ; 76 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 76 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 95 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 85 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 65 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 76 fichier(s) ; 76 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 76 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 95 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 85 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 65 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 76 fichier(s) ; 76 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 76 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 95 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 85 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 65 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 76 fichier(s) ; 76 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 76 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 95 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 85 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 65 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 76 fichier(s) ; 76 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 76 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 95 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 85 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 65 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 76 fichier(s) ; 76 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 76 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 95 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 85 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 65 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 76 fichier(s) ; 76 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 76 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 95 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 85 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 65 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 76 fichier(s) ; 76 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 76 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 100 webshop_active côté ERP, 5 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 85 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 65 à jour ; 20 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 76 fichier(s) ; 76 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 76 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 113 webshop_active côté ERP, 13 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 90 produit(s) avec recette ; 2 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 65 à jour ; 23 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 78 fichier(s) ; 78 produit(s) correspondant(s) ; 2 mis à jour (dont 2 ancienne(s) img remplacée(s)), 76 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 113 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 103 produit(s) avec recette ; 6 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 67 à jour ; 30 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 84 fichier(s) ; 84 produit(s) correspondant(s) ; 6 mis à jour (dont 6 ancienne(s) img remplacée(s)), 78 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 122 webshop_active côté ERP, 9 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 103 produit(s) avec recette ; 3 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 73 à jour ; 27 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 87 fichier(s) ; 87 produit(s) correspondant(s) ; 3 mis à jour (dont 3 ancienne(s) img remplacée(s)), 84 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 126 webshop_active côté ERP, 4 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 112 produit(s) avec recette ; 2 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 76 à jour ; 34 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 89 fichier(s) ; 89 produit(s) correspondant(s) ; 2 mis à jour (dont 2 ancienne(s) img remplacée(s)), 87 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 126 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 116 produit(s) avec recette ; 3 nouvelle(s), 0 rafraîchie(s), 1 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 78 à jour ; 34 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 92 fichier(s) ; 92 produit(s) correspondant(s) ; 4 mis à jour (dont 3 ancienne(s) img remplacée(s)), 88 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 126 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 116 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 82 à jour ; 34 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 92 fichier(s) ; 92 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 92 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 129 webshop_active côté ERP, 3 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 116 produit(s) avec recette ; 6 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 82 à jour ; 28 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 98 fichier(s) ; 98 produit(s) correspondant(s) ; 6 mis à jour (dont 6 ancienne(s) img remplacée(s)), 92 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 129 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 119 produit(s) avec recette ; 3 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 88 à jour ; 28 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 101 fichier(s) ; 101 produit(s) correspondant(s) ; 3 mis à jour (dont 3 ancienne(s) img remplacée(s)), 98 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 129 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 119 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 91 à jour ; 28 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 101 fichier(s) ; 101 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 101 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 129 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 119 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 91 à jour ; 28 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 101 fichier(s) ; 101 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 101 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 129 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 119 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 91 à jour ; 28 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 101 fichier(s) ; 101 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 101 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 129 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 119 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 91 à jour ; 28 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 101 fichier(s) ; 101 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 101 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 129 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 119 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 91 à jour ; 28 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 101 fichier(s) ; 101 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 101 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 129 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 119 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 91 à jour ; 28 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 101 fichier(s) ; 101 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 101 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 129 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 119 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 91 à jour ; 28 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 101 fichier(s) ; 101 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 101 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 129 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 119 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 91 à jour ; 28 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 101 fichier(s) ; 101 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 101 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 129 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 119 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 91 à jour ; 28 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 101 fichier(s) ; 101 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 101 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 130 webshop_active côté ERP, 2 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 119 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 91 à jour ; 28 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 101 fichier(s) ; 101 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 101 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 129 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+  produit 1620008 « Mini - Gosette Pomme » : absent de l'ERP — désactivé (le créer dans Franchise Buddy pour le vendre)
+  1 produit(s) actif(s) absent(s) de l'ERP désactivé(s).
+sync_product_photos (source unique : ERP) : 118 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 91 à jour ; 27 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 101 fichier(s) ; 101 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 101 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 129 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 118 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 91 à jour ; 27 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 101 fichier(s) ; 101 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 101 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 129 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 119 produit(s) avec recette ; 4 nouvelle(s), 1 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 90 à jour ; 24 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 105 fichier(s) ; 105 produit(s) correspondant(s) ; 4 mis à jour (dont 4 ancienne(s) img remplacée(s)), 101 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 129 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 119 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 95 à jour ; 24 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 105 fichier(s) ; 105 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 105 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 129 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 119 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 95 à jour ; 24 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 105 fichier(s) ; 105 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 105 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 129 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 122 produit(s) avec recette ; 5 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 95 à jour ; 22 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 110 fichier(s) ; 110 produit(s) correspondant(s) ; 5 mis à jour (dont 5 ancienne(s) img remplacée(s)), 105 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 129 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 122 produit(s) avec recette ; 0 nouvelle(s), 1 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 99 à jour ; 22 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 110 fichier(s) ; 110 produit(s) correspondant(s) ; 1 mis à jour (dont 0 ancienne(s) img remplacée(s)), 109 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 151 webshop_active côté ERP, 22 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 122 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 100 à jour ; 22 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 110 fichier(s) ; 110 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 110 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 151 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 143 produit(s) avec recette ; 2 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 100 à jour ; 41 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 112 fichier(s) ; 112 produit(s) correspondant(s) ; 2 mis à jour (dont 2 ancienne(s) img remplacée(s)), 110 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 151 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 143 produit(s) avec recette ; 1 nouvelle(s), 1 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 101 à jour ; 40 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 113 fichier(s) ; 113 produit(s) correspondant(s) ; 2 mis à jour (dont 1 ancienne(s) img remplacée(s)), 111 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 151 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 143 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 103 à jour ; 40 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 113 fichier(s) ; 113 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 113 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 151 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 143 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 103 à jour ; 40 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 113 fichier(s) ; 113 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 113 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 151 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 143 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 103 à jour ; 40 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 113 fichier(s) ; 113 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 113 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 151 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 143 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 103 à jour ; 40 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 113 fichier(s) ; 113 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 113 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 151 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 143 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 103 à jour ; 40 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 113 fichier(s) ; 113 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 113 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 151 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 143 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 103 à jour ; 40 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 113 fichier(s) ; 113 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 113 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 151 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 143 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 103 à jour ; 40 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 113 fichier(s) ; 113 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 113 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 151 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 143 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 103 à jour ; 40 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 113 fichier(s) ; 113 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 113 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 151 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 143 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 103 à jour ; 40 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 113 fichier(s) ; 113 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 113 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 151 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 143 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 103 à jour ; 40 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 113 fichier(s) ; 113 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 113 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 151 webshop_active côté ERP, 2 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 143 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 103 à jour ; 40 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 113 fichier(s) ; 113 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 113 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 151 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 143 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 103 à jour ; 40 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 113 fichier(s) ; 113 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 113 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 152 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 144 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 103 à jour ; 41 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 113 fichier(s) ; 113 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 113 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 152 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+assortiment ERP → ws_products : 152 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 144 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 103 à jour ; 41 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 113 fichier(s) ; 113 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 113 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 152 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 144 produit(s) avec recette ; 0 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 103 à jour ; 41 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 113 fichier(s) ; 113 produit(s) correspondant(s) ; 0 mis à jour (dont 0 ancienne(s) img remplacée(s)), 113 déjà OK ; 0 fichier(s) SANS produit correspondant.
+assortiment ERP → ws_products : 152 webshop_active côté ERP, 0 mise(s) à jour, 0 créé(s) (masqués tant que sans prix).
+sync_product_photos (source unique : ERP) : 144 produit(s) avec recette ; 1 nouvelle(s), 0 rafraîchie(s), 0 fichier(s) hors ERP remplacé(s), 0 supprimé(s) (plus de photo côté ERP), 103 à jour ; 40 recette(s) sans photo ; échecs : 0 API, 0 téléchargement, 0 contenu non-image.
+→ lancer ensuite sync_product_images.php pour câbler ws_products.img.
+sync_product_images: 114 fichier(s) ; 114 produit(s) correspondant(s) ; 1 mis à jour (dont 1 ancienne(s) img remplacée(s)), 113 déjà OK ; 0 fichier(s) SANS produit correspondant.

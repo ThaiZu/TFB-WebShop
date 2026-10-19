@@ -1,3 +1,70 @@
+import { PickupDates } from './webshop-pickup-dates.jsx';
+import { OfficeIdentity } from './webshop-office-identity.jsx';
+import { OrderConfirmation } from './webshop-order-confirmation.jsx';
+import { orderStatusName, paymentStatusName } from './webshop-order-status.js';
+import { ProfileOffices } from './webshop-profile-offices.jsx';
+import { defaultShoppingContext, normaliseShoppingContext, sameShoppingContext, basketShoppingContext, needsCartReplacement, shoppingContextLabel, hasUnsupportedOfficeConfiguration } from './webshop-office-context.js';
+import { StripeReturnDialog, StripeRetryButton } from './webshop-stripe-return.jsx';
+import { PurchaseDetails } from './webshop-purchase-details.jsx';
+import { OfficeMembershipModal } from './webshop-office-membership.jsx';
+import { OfficeDeliveryModal } from './webshop-office-delivery.jsx';
+import { createPortal } from 'react-dom';
+import { availablePortions, basketProductUnits, stockMessageKey } from './webshop-stock.js';
+import linkedOfficeIcon from './assets/icons/linked_office.svg';
+import noLinkedOfficeIcon from './assets/icons/no_linked_office.svg';
+import { PwaInstallPrompt } from './webshop-pwa-install.jsx';
+
+const wsNumber = (value) => new Intl.NumberFormat(window.WSI18n.getLang(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value));
+// Runtime UI translations; API errors are localised at the display boundary.
+const wsCurrency = (amount) => new Intl.NumberFormat(window.WSI18n.getLang(), { style: 'currency', currency: 'EUR' }).format(amount);
+const wsText = (key, params) => window.WSI18n.t(key, params);
+const wsMessage = (value) => window.WSI18n.message(value);
+
+// The shop acknowledgement prevents an order at the wrong location. Keep a
+// tiny bundle fallback for it: locale JSON files are deployed separately and
+// an older one must never expose internal translation keys to a customer.
+const WS_SHOP_CONFIRM_FALLBACKS = {
+  fr: {
+    'shopConfirm.eyebrow': 'Confirmez votre boutique',
+    'shopConfirm.title': 'Votre atelier',
+    'shopConfirm.intro': 'Votre commande, son paiement et son retrait seront pris en charge par :',
+    'shopConfirm.continue': 'Continuer avec {shop}',
+    'shopConfirm.change': 'Changer de boutique',
+    'shopConfirm.paymentLabel': 'Boutique qui prépare votre commande',
+    'shopConfirm.clearBasketTitle': 'Changer de boutique videra votre panier',
+    'shopConfirm.clearBasketBody': 'Les produits, prix et disponibilités dépendent de la boutique. Pour en choisir une autre, votre panier actuel sera supprimé.',
+    'shopConfirm.clearBasketConfirm': 'Vider le panier et changer de boutique',
+  },
+  nl: {
+    'shopConfirm.eyebrow': 'Bevestig je winkel',
+    'shopConfirm.title': 'Jouw atelier',
+    'shopConfirm.intro': 'Je bestelling, betaling en afhaling worden verzorgd door:',
+    'shopConfirm.continue': 'Doorgaan met {shop}',
+    'shopConfirm.change': 'Winkel wijzigen',
+    'shopConfirm.paymentLabel': 'Winkel die je bestelling verwerkt',
+    'shopConfirm.clearBasketTitle': 'Winkel wijzigen maakt je mandje leeg',
+    'shopConfirm.clearBasketBody': 'Producten, prijzen en beschikbaarheid verschillen per winkel. Om een andere winkel te kiezen, wordt je huidige mandje verwijderd.',
+    'shopConfirm.clearBasketConfirm': 'Mandje wissen en winkel wijzigen',
+  },
+  pl: {
+    'shopConfirm.eyebrow': 'Potwierdź sklep',
+    'shopConfirm.title': 'Twoja pracownia',
+    'shopConfirm.intro': 'Twoje zamówienie, płatność i odbiór zostaną obsłużone przez:',
+    'shopConfirm.continue': 'Kontynuuj w {shop}',
+    'shopConfirm.change': 'Zmień sklep',
+    'shopConfirm.paymentLabel': 'Sklep realizujący zamówienie',
+    'shopConfirm.clearBasketTitle': 'Zmiana sklepu usunie koszyk',
+    'shopConfirm.clearBasketBody': 'Produkty, ceny i dostępność zależą od sklepu. Aby wybrać inny sklep, bieżący koszyk zostanie usunięty.',
+    'shopConfirm.clearBasketConfirm': 'Usuń koszyk i zmień sklep',
+  },
+};
+function wsShopConfirmText(key, params) {
+  const translated = wsText(key, params);
+  if (translated !== key) return translated;
+  const language = window.WSI18n?.getLang?.() || 'fr';
+  const template = WS_SHOP_CONFIRM_FALLBACKS[language]?.[key] || WS_SHOP_CONFIRM_FALLBACKS.fr[key] || key;
+  return String(template).replace(/\{(\w+)\}/g, (_, name) => (params && name in params ? params[name] : `{${name}}`));
+}
 
 // ===== webshop.jsx (full-bleed) =====
 // webshop.jsx : L'Atelier By customer-facing webshop
@@ -93,6 +160,7 @@ function wsTap(fn, opts) {
       el.__wsTapBound = true;
       const st = (e) => { if (el.__wsTapConf.doStop) e.stopPropagation(); };
       const fire = () => {
+        if (el.disabled || el.getAttribute('aria-disabled') === 'true') return;
         const p = el.__wsTap || (el.__wsTap = {});
         p.handled = performance.now();
         if (el.__wsTapConf.doOpen) wsShield();
@@ -207,7 +275,7 @@ const W_SHOP_PRODUCTS = {};
 // =========================================================================
 // Go-live : AUCUN store local. Utilisateurs (WSAuth), bureaux (WSOffices) et
 // tournées (WSTours) viennent du serveur ; sans lui, l'écran affiche une erreur.
-const SRV_REQUIRED = (what) => ({ ok: false, error: 'Service ' + what + ' indisponible, please debug.' });
+const SRV_REQUIRED = () => ({ ok: false, error: wsText('error.service') });
 
 // =========================================================================
 // SHARED PRIMITIVES
@@ -245,7 +313,7 @@ const ICONS = {
    en base se désynchroniserait. Le reste des libellés vient bien de ws_i18n. */
 function wsLocale() {
   const l = (window.WSI18n && window.WSI18n.getLang && window.WSI18n.getLang()) || 'fr';
-  return l === 'nl' ? 'nl-BE' : l === 'en' ? 'en-GB' : l === 'de' ? 'de-DE' : 'fr-BE';
+  return l === 'pl' ? 'pl-PL' : l === 'nl' ? 'nl-BE' : l === 'en' ? 'en-GB' : l === 'de' ? 'de-DE' : 'fr-BE';
 }
 function wsCap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 // Mois en toutes lettres (en-tête du calendrier) : « août » / « augustus ».
@@ -309,11 +377,33 @@ function DatePill({ mode, value, onChange, shopId,
   const [dayMap, setDayMap] = React.useState({});
   const [loadingDays, setLoadingDays] = React.useState(false);
   const wrapRef = React.useRef(null);
+  const calendarRef = React.useRef(null);
+  React.useLayoutEffect(() => {
+    if (!open || window.matchMedia('(max-width: 767px)').matches) return;
+    const position = () => {
+      const anchor = wrapRef.current?.getBoundingClientRect();
+      const calendar = calendarRef.current;
+      if (!anchor || !calendar) return;
+      calendar.style.left = Math.max(12, Math.min(anchor.left, window.innerWidth - calendar.offsetWidth - 12)) + 'px';
+      calendar.style.top = Math.max(12, Math.min(anchor.bottom + 8, window.innerHeight - calendar.offsetHeight - 12)) + 'px';
+    };
+    position();
+    window.addEventListener('resize', position);
+    window.addEventListener('scroll', position, true);
+    return () => {window.removeEventListener('resize', position);window.removeEventListener('scroll', position, true);};
+  });
+  const [mobileCalendar, setMobileCalendar] = React.useState(() => window.matchMedia('(max-width: 767px)').matches);
+  React.useEffect(() => {
+    const media = window.matchMedia('(max-width: 767px)');
+    const update = () => setMobileCalendar(media.matches);
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
 
   // Close on outside click / Escape
   React.useEffect(() => {
     if (!open) return;
-    const off = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false); };
+    const off = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target) && !calendarRef.current?.contains(e.target)) setOpen(false); };
     const esc = (e) => { if (e.key === 'Escape') setOpen(false); };
     document.addEventListener('pointerdown', off, true);
     document.addEventListener('keydown', esc);
@@ -359,7 +449,7 @@ function DatePill({ mode, value, onChange, shopId,
   // Cutoff for the active mode
   const cutoffPassed = mode === 'delivery' ? deliveryCutoffPassed : collectCutoffPassed;
   const cutoffLabel  = mode === 'delivery' ? deliveryCutoffLabel  : collectCutoffLabel;
-  const cutoffTitle  = cutoffLabel ? `Fermé après ${cutoffLabel}` : 'Fermé (heure de commande dépassée)';
+  const cutoffTitle  = cutoffLabel ? wsText('ui.closedAfter', { time: cutoffLabel }) : wsText('ui.cutoffClosed');
 
   // Today is blocked for the active mode if its cutoff passed
   const todayBlocked = cutoffPassed;
@@ -381,25 +471,17 @@ function DatePill({ mode, value, onChange, shopId,
 
   function cellTitle(d, reason) {
     if (reason === 'cutoff')     return cutoffTitle;
-    if (reason === 'lead_time')  return `Commande requise ${minLeadDays} jour${minLeadDays > 1 ? 's' : ''} avant`;
-    if (reason === 'closed')     return 'Boutique fermée';
-    if (reason === 'holiday')    return 'Jour férié';
-    if (reason === 'exception')  return dayMap[isoOf(d)]?.reason || 'Fermeture exceptionnelle';
+    if (reason === 'lead_time')  return wsText('ui.leadDays', { count: minLeadDays });
+    if (reason === 'closed')     return wsText('ui.shopClosed');
+    if (reason === 'holiday')    return wsText('ui.holiday');
+    if (reason === 'exception')  return dayMap[isoOf(d)]?.reason || wsText('ui.exceptionClosed');
     return undefined;
   }
 
   const todayOk = !todayBlocked && !isCellDisabled(today).disabled;
 
-  return (
-    <div ref={wrapRef} className="ws-datepill">
-      <button className="ws-nav__date" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
-        <Pict d={ICONS.cal} s={12}/>
-        <span>{t(mode === 'delivery' ? 'nav.datepill.delivery' : 'nav.datepill.pickup')}</span>
-        <strong>· {wsFormatPill(value)}</strong>
-        <Pict d={ICONS.chev} s={10}/>
-      </button>
-      {open && (
-        <div className={`ws-datepop ws-datepop--${mode}`} onClick={(e) => e.stopPropagation()}>
+  const calendar = (
+        <div ref={calendarRef} className={`ws-datepop ws-datepop--${mode}`} onClick={(e) => e.stopPropagation()}>
           <div className="ws-datepop__head">
             <button className="ws-datepop__nav" onClick={() => shift(-1)} aria-label={t('cal.prevMonth')}>‹</button>
             <span className="ws-datepop__title">
@@ -432,16 +514,26 @@ function DatePill({ mode, value, onChange, shopId,
             })}
           </div>
           <div className="ws-datepop__foot">
-            <span>{mode === 'delivery' ? 'Livraison au bureau' : 'Collecte en magasin'}</span>
+            <span>{mode === 'delivery' ? wsText("ui.delivery") : wsText("ui.collect")}</span>
             <button className="ws-datepop__today"
               disabled={!todayOk}
               title={!todayOk && todayBlocked ? cutoffTitle : undefined}
-              onClick={() => { onChange(today); setOpen(false); }}>
-              Aujourd'hui
-            </button>
+              onClick={() => { onChange(today); setOpen(false); }}> {wsText("ui.today")} </button>
           </div>
         </div>
-      )}
+  );
+
+  return (
+    <div ref={wrapRef} className="ws-datepill">
+      <button className="ws-nav__date" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <Pict d={ICONS.cal} s={12}/>
+        <span>{t(mode === 'delivery' ? 'nav.datepill.delivery' : 'nav.datepill.pickup')}</span>
+        <strong>· {wsFormatPill(value)}</strong>
+        <Pict d={ICONS.chev} s={10}/>
+      </button>
+      {open && (mobileCalendar ? createPortal(
+        <div className="ws-date-backdrop" onClick={() => setOpen(false)}>{calendar}</div>, document.body
+      ) : createPortal(<div className="ws-date-desktop-layer">{calendar}</div>, document.body))}
     </div>
   );
 }
@@ -492,21 +584,17 @@ function OfficeSearchPicker({ chercher, value, onPick, label }) {
       <input type="search" className="ws-acc__input" value={q}
         onChange={(e) => setQ(e.target.value)}
         placeholder={t('office.searchPh')}
-        aria-label={label || 'Rechercher un bureau'} autoComplete="off"/>
+        aria-label={label || wsText("ui.officeSearch")} autoComplete="off"/>
       {q.trim().length < 2 ? (
-        <p className="ws-acc__hint" style={{ margin: '8px 2px 0' }}>
-          Tapez le nom de votre société, ou son adresse. Seuls les bureaux desservis
-          par une tournée de cette boutique apparaissent.
-        </p>
+        <p className="ws-acc__hint" style={{ margin: '8px 2px 0' }}> {wsText("ui.officeSearchHint")} </p>
       ) : busy ? (
         <p className="ws-acc__hint" style={{ margin: '8px 2px 0' }}>{t('common.searchPh')}</p>
       ) : hits.length === 0 && cherche ? (
         <p className="ws-acc__hint" style={{ margin: '8px 2px 0' }}>
-          Aucun bureau desservi ne correspond à «&nbsp;{q.trim()}&nbsp;». S'il s'agit du vôtre,
-          demandez son ajout ci-dessous : votre Atelier le rattachera à une tournée.
+          {wsText('ui.officeNoMatch', { query: q.trim() })}
         </p>
       ) : (
-        <ul className="ws-acc__pick-list" role="listbox" aria-label={label || 'Bureaux'}>
+        <ul className="ws-acc__pick-list" role="listbox" aria-label={label || wsText('ui.offices')}>
           {hits.map((o) => (
             <li key={o.id}>
               <button type="button" role="option"
@@ -517,8 +605,8 @@ function OfficeSearchPicker({ chercher, value, onPick, label }) {
                     servent à la reconnaître, pas à la choisir. */}
                 <span className="ws-acc__pick-name">{o.name}</span>
                 {o.address ? <span className="ws-acc__pick-site">{o.address}
-                  {o.points > 1 ? ' · ' + o.points + ' points de livraison' : ''}</span> : null}
-                {o.tourName ? <span className="ws-acc__pick-tour">Tournée {o.tourName}</span> : null}
+                  {o.points > 1 ? ' · ' + wsText('ui.deliveryPoints', { count: o.points }) : ''}</span> : null}
+                {o.tourName ? <span className="ws-acc__pick-tour">{wsText("ui.route")} {o.tourName}</span> : null}
               </button>
             </li>
           ))}
@@ -529,16 +617,31 @@ function OfficeSearchPicker({ chercher, value, onPick, label }) {
 }
 
 // Mode pill : Ruby (collect) / Abricot (delivery)
-function ModePills({ mode, onChange, collectCutoffPassed, collectCutoffLabel, deliveryCutoffPassed, deliveryCutoffLabel }) {
+function ModePills({ shopId, mode, onChange, collectCutoffPassed, collectCutoffLabel, deliveryCutoffPassed, deliveryCutoffLabel }) {
   const { t } = wsUseT();
   const [hover, setHover] = React.useState(false);
+  const tipAnchor = React.useRef(null);
+  const [tipPosition, setTipPosition] = React.useState({});
+  const tipId = React.useId();
+  React.useEffect(() => {
+    if (!hover) return;
+    const position = () => {
+      const rect = tipAnchor.current?.getBoundingClientRect();
+      if (!rect) return;
+      setTipPosition({top: rect.bottom + 12, left: Math.max(8, Math.min(rect.right - 216, window.innerWidth - 224))});
+    };
+    position();
+    window.addEventListener('resize', position);
+    window.addEventListener('scroll', position, true);
+    return () => { window.removeEventListener('resize', position); window.removeEventListener('scroll', position, true); };
+  }, [hover]);
   const delivTitle = deliveryCutoffPassed
-    ? `Livraison non disponible après ${deliveryCutoffLabel}`
+    ? wsText('ui.deliveryAfter', { time: deliveryCutoffLabel })
     : undefined;
   const collTitle = collectCutoffPassed
-    ? `Collecte non disponible après ${collectCutoffLabel}`
+    ? wsText('ui.collectAfter', { time: collectCutoffLabel })
     : undefined;
-  const effMode = deliveryCutoffPassed && mode === 'delivery' ? 'collect' : mode;
+  const effMode = mode;
   return (
     <div className="ws-modewrap">
     <div className="ws-modes" role="tablist" aria-label={t('nav.modeAria')}>
@@ -570,23 +673,24 @@ function ModePills({ mode, onChange, collectCutoffPassed, collectCutoffLabel, de
           sous le rail. Frère du rail, il reste à côté sans le déformer. */}
       <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', flex: 'none', marginLeft: 4 }}
         onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
-        <button type="button" aria-label={t('office.notYet')}
-          onClick={(e) => { e.stopPropagation(); e.preventDefault(); window.open('/landing/livraison-bureau.html', '_blank', 'noopener'); }}
-          style={{ width: 18, height: 18, borderRadius: '50%', border: 'none', cursor: 'pointer', flex: 'none',
+        <button ref={tipAnchor} className="ws-nav__office-info" type="button" aria-label={t('office.notYet')} aria-describedby={hover ? tipId : undefined}
+          onFocus={() => setHover(true)} onBlur={() => setHover(false)} onKeyDown={event => { if (event.key === 'Escape') setHover(false); }}
+          onClick={(e) => { e.stopPropagation(); e.preventDefault(); const url = new URL(import.meta.env.BASE_URL + 'landing/livraison-bureau.html', window.location.origin); url.searchParams.set('shop', String(shopId)); url.searchParams.set('lang', window.WSI18n?.getLang?.() || 'en'); window.location.assign(url.href); }}
+          style={{ borderRadius: '50%', border: 'none', cursor: 'pointer', flex: 'none',
                    background: '#c17a2a', color: '#fff', font: '700 11px/1 system-ui',
                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                    animation: 'wsBureauPulse 2.2s infinite' }}>i</button>
-        {hover && (
-          <span role="tooltip" style={{ position: 'absolute', top: '160%', right: 0, width: 216, maxWidth: '78vw',
+        {hover && createPortal(
+          <span id={tipId} role="tooltip" style={{ position: 'fixed', ...tipPosition, width: 216, maxWidth: '78vw', pointerEvents: 'none',
             boxSizing: 'border-box', whiteSpace: 'normal', wordBreak: 'break-word',
             background: '#e8a15c', color: '#241a16', borderRadius: 14, padding: '11px 13px',
             font: '600 11.5px/1.45 system-ui', boxShadow: '0 10px 28px rgba(36,26,22,.28)',
-            border: '1px solid rgba(36,26,22,.10)', zIndex: 70, textAlign: 'left' }}>
+            border: '1px solid rgba(36,26,22,.10)', zIndex: 10020, textAlign: 'left' }}>
             <span aria-hidden="true" style={{ position: 'absolute', top: -5, right: 15, width: 11, height: 11,
               background: '#e8a15c', borderTop: '1px solid rgba(36,26,22,.10)', borderLeft: '1px solid rgba(36,26,22,.10)',
               transform: 'rotate(45deg)', borderRadius: 3 }} />
             {t('office.notYetTip')}
-          </span>
+          </span>, document.body
         )}
       </span>
     </div>
@@ -601,169 +705,11 @@ function Allergens({ list }) {
 }
 
 // =========================================================================
-// SPECIAL OFFER LOGIC : buy_x_get_y_free  &  second_at_pct
-// =========================================================================
-// Unified portion accounting: a quarter is the atomic portion unit.
-//   1 quart   = 1 portion
-//   1 demi    = 2 portions
-//   1 entier  = 4 portions
-// All bundle progression, free-item awards, and cross-product offers
-// count in portion-units when offer.unit === 'portion'.
-// TODO[BACKEND]: portion-unit conversion is a backend rule (varies by product
-// type : 6-piece cake vs 4-piece tart). Surface via product schema (e.g.
-// `product.portionUnits = { quart: n, demi: n, entier: n }`) returned by
-// WSCatalog. The constant below is a global fallback only.
-const PORTION_UNITS = { quart: 1, demi: 2, entier: 4 };
-function portionUnitsFor(portion) { return PORTION_UNITS[portion] || 0; }
-
-function computeOffer(offer, qty, unit, ctx = {}) {
-  if (!offer || !qty || !unit) return null;
-  const result = { discount: 0, freebies: 0, threshold: 0, status: 'dormant', cycles: 0, type: offer.type };
-
-  if (offer.type === 'buy_x_get_y_free') {
-    const groupSize = (offer.x || 0) + (offer.y || 0);
-    if (groupSize <= 0) return null;
-
-    // Resolve "effective" count for the offer:
-    //  - unit:'portion' on a portionable line → count in portion-units (1/2/4).
-    //    Free items are awarded as quarter-equivalents valued at basePrice*0.27.
-    //  - otherwise → count in pieces, free items priced at the line unit total.
-    const isPortion = (offer.unit === 'portion') && ctx?.portion && ctx?.basePrice;
-    const effectiveQty = isPortion
-      ? qty * portionUnitsFor(ctx.portion)
-      : qty;
-    // La pièce offerte vaut le prix RÉEL de la ligne, le ×0.27 (« un quart »)
-    // était un facteur qui n'existe nulle part côté serveur ni en base.
-    const freebieValue = unit;
-
-    const cycles = Math.floor(effectiveQty / groupSize);
-    const freebies = cycles * (offer.y || 0);
-    const discount = freebies * freebieValue;
-    result.threshold = groupSize;
-    result.cycles = cycles;
-    result.freebies = freebies;
-    result.discount = discount;
-    result.x = offer.x;
-    result.y = offer.y;
-    result.unit = offer.unit || 'piece';
-    result.effectiveQty = effectiveQty;
-    if (cycles >= 1) result.status = cycles >= 2 ? 'boosted' : 'active';
-    else result.status = 'dormant';
-    result.toNext = groupSize - (effectiveQty % groupSize);
-    return result;
-  }
-
-  if (offer.type === 'second_at_pct') {
-    const pct = offer.pct || 0;
-    if (qty < 2) {
-      result.threshold = 2;
-      result.toNext = 2 - qty;
-      result.pct = pct;
-      result.unit = offer.unit || 'piece';
-      return result;
-    }
-    const pairs = Math.floor(qty / 2);
-    const discount = pairs * unit * (pct / 100);
-    result.discount = discount;
-    result.cycles = pairs;
-    result.freebies = 0;
-    result.threshold = 2;
-    result.pct = pct;
-    result.unit = offer.unit || 'piece';
-    result.status = pairs >= 2 ? 'boosted' : 'active';
-    result.toNext = 2 - (qty % 2);
-    return result;
-  }
-  return null;
-}
-
-function OfferStrip({ offer, qty, unit, calc, onAddOne }) {
-  if (!offer || !calc) return null;
-
-  const isFree = offer.type === 'buy_x_get_y_free';
-  const noun = (calc.unit === 'portion') ? 'portion' : 'pièce';
-  const nounPl = noun + 's';
-
-  let title;
-  let lede;
-  let progressNodes = null;
-
-  if (isFree) {
-    title = `${offer.x} achetées · ${offer.y} offerte${offer.y > 1 ? 's' : ''}`;
-    if (calc.status === 'dormant') {
-      lede = `Plus que ${calc.toNext} ${calc.toNext > 1 ? nounPl : noun} pour profiter de l'offre.`;
-    } else if (calc.status === 'active') {
-      lede = `${calc.freebies} ${calc.freebies > 1 ? nounPl : noun} offerte${calc.freebies > 1 ? 's' : ''} · économie de €${calc.discount.toFixed(2)}.`;
-    } else {
-      lede = `${calc.freebies} ${nounPl} offertes · économie de €${calc.discount.toFixed(2)}.`;
-    }
-    // Progress dots: groupSize segments per cycle, fill = effective count within current cycle
-    const groupSize = calc.threshold;
-    const effective = calc.effectiveQty ?? qty;
-    const inCycle = effective % groupSize === 0 && effective >= groupSize ? groupSize : effective % groupSize;
-    progressNodes = (
-      <div className="pdm-offer__dots" aria-hidden="true">
-        {Array.from({ length: groupSize }).map((_, i) => {
-          let cls = 'pdm-offer__dot';
-          if (i < offer.x) cls += ' is-buy';
-          else cls += ' is-free';
-          if (i < inCycle) cls += ' is-on';
-          return <span key={i} className={cls}/>;
-        })}
-        {calc.cycles > 0 && (
-          <span className="pdm-offer__cycle">×{calc.cycles}</span>
-        )}
-      </div>
-    );
-  } else {
-    title = `Le 2e à −${offer.pct}%`;
-    if (calc.status === 'dormant') {
-      lede = `Ajoutez ${calc.toNext} ${calc.toNext > 1 ? nounPl : noun} pour activer l'offre.`;
-    } else {
-      lede = `Offre active · économie de €${calc.discount.toFixed(2)}.`;
-    }
-  }
-
-  const showAdd = calc.status === 'dormant' && typeof onAddOne === 'function';
-
-  return (
-    <div className={`pdm-offer pdm-offer--${calc.status}`} role="status" aria-live="polite">
-      <div className="pdm-offer__icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M20 7H4v5h16V7Z"/>
-          <path d="M5 12v8h14v-8"/>
-          <path d="M12 7v13"/>
-          <path d="M12 7c-1.5-2.5-5-2.5-5 0 0 1 .5 2 2 2h3"/>
-          <path d="M12 7c1.5-2.5 5-2.5 5 0 0 1-.5 2-2 2h-3"/>
-        </svg>
-      </div>
-      <div className="pdm-offer__body">
-        <div className="pdm-offer__row">
-          <span className="pdm-offer__title">{title}</span>
-          {calc.discount > 0 && (
-            <span className="pdm-offer__save">−€{calc.discount.toFixed(2)}</span>
-          )}
-        </div>
-        <div className="pdm-offer__lede">{lede}</div>
-        {progressNodes}
-      </div>
-      {showAdd && (
-        <button type="button" className="pdm-offer__add" {...wsTap(onAddOne)}>
-          +1
-        </button>
-      )}
-    </div>
-  );
-}
-
-// Portion glyph shapes (1/8, 1/4, 1/2, entier) : shared by card hint + modal
-// options. Glyphes d'affichage uniquement : les PRIX de portion viennent
-// exclusivement de l'ERP (shop_product_portion_price via le catalogue).
 const PORTION_SHAPES = [
   { v: 'huitieme', d: <path d="M12 12L12 3 A9 9 0 0 1 18.36 5.64 Z" fill="currentColor"/>, name: '1/8' },
   { v: 'quart',  d: <path d="M12 12L12 3 A9 9 0 0 1 21 12 Z" fill="currentColor"/>,        name: '1/4' },
   { v: 'demi',   d: <path d="M12 3 A9 9 0 0 1 12 21 Z" fill="currentColor"/>,              name: '1/2' },
-  { v: 'entier', d: <circle cx="12" cy="12" r="9" fill="currentColor"/>,                   name: 'Entière' },
+  { v: 'entier', d: <circle cx="12" cy="12" r="9" fill="currentColor"/>,                   get name() { return wsText("ui.whole"); } },
 ];
 
 // Options de portion d'un produit : UNIQUEMENT les prix explicites de l'ERP
@@ -776,7 +722,7 @@ function portionOptionList(p) {
   if (Array.isArray(p?.portionOptions) && p.portionOptions.length) {
     return p.portionOptions.map((o) => {
       const sh = PORTION_SHAPES.find((s) => s.v === o.v) || PORTION_SHAPES[PORTION_SHAPES.length - 1];
-      return { v: o.v, d: sh.d, name: o.label || sh.name, price: Number(o.price) || 0 };
+      return { v: o.v, d: sh.d, name: sh.name, price: Number(o.price) || 0, id_product_portion: o.id_product_portion ?? null };
     });
   }
   const entier = PORTION_SHAPES.find((s) => s.v === 'entier');
@@ -786,7 +732,7 @@ function portionOptionList(p) {
 // Libellé des portions d'une carte produit : types proposés avec le PRIX de
 // chaque portion : ex. « Entière €24.00 · 1/2 €14.90 · 1/4 €8.90 ».
 function portionPriceHint(p) {
-  return portionOptionList(p).map((o) => `${o.name} €${o.price.toFixed(2)}`).join(' · ');
+  return portionOptionList(p).map((o) => `${o.name} €${wsNumber(o.price)}`).join(' · ');
 }
 
 // Single "portions available" glyph used on the product card, a quartered
@@ -829,7 +775,7 @@ function PortionOptions({ value, onChange, product }) {
                 <svg viewBox="0 0 24 24" width="14" height="14">{o.d}</svg>
               </span>
               <span className="pdm-seg__lbl">{o.name}</span>
-              <span className="pdm-seg__delta">€{price.toFixed(2)}</span>
+              <span className="pdm-seg__delta">€{wsNumber(price)}</span>
             </button>
           );
         })}
@@ -841,7 +787,56 @@ function PortionOptions({ value, onChange, product }) {
 // =========================================================================
 // PRODUCT DETAIL MODAL : options, upsells, bundles
 // =========================================================================
-function ProductDetail({ open, product, mode, onClose, onAdd, stock }) {
+function wsPromotionItemsSummary(promotion, product) {
+  return (promotion.items || []).map((item) => `${Number(item.quantity || 0)} × ${item.product_name || (Number(item.id_product) === Number(product.id) ? product.name : `#${item.id_product}`)}`).join(' · ');
+}
+
+function wsPromotionBenefit(promotion) {
+  return Number(promotion.discount_total || 0) > 0
+    ? `−${wsCurrency(Number(promotion.discount_total))}`
+    : (promotion.bundle_price != null ? wsCurrency(Number(promotion.bundle_price)) : '');
+}
+
+function wsPromotionDateLabel(value, lang, timezone) {
+  if (!value) return '';
+  try {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return new Intl.DateTimeFormat(lang || 'fr', {
+      day: '2-digit', month: '2-digit', year: 'numeric', ...(timezone ? { timeZone: timezone } : {}),
+    }).format(date);
+  } catch (_) {
+    return '';
+  }
+}
+
+function wsPromotionWeekday(day, lang) {
+  try {
+    // 1 January 2024 was a Monday; noon avoids a day shift in every shop timezone.
+    return new Intl.DateTimeFormat(lang || 'fr', { weekday: 'short' })
+      .format(new Date(Date.UTC(2024, 0, 1 + Math.max(0, Number(day || 1) - 1), 12)))
+      .replace(/\.$/, '');
+  } catch (_) {
+    return '';
+  }
+}
+
+function wsUpcomingPromotionSchedule(promotion, lang, t) {
+  const schedule = Array.isArray(promotion.availability_schedule) ? promotion.availability_schedule : [];
+  if (!schedule.length) return t('promotion.inline.everyDay');
+  return schedule.map((entry) => `${wsPromotionWeekday(entry.day_of_week, lang)} ${entry.time_from}–${entry.time_to}`).join(' · ');
+}
+
+function wsUpcomingPromotionValidity(promotion, lang, t) {
+  const from = wsPromotionDateLabel(promotion.availability_valid_from, lang, promotion.timezone);
+  const to = wsPromotionDateLabel(promotion.availability_valid_to, lang, promotion.timezone);
+  if (from && to) return t('promotion.inline.validBetween', { from, to });
+  if (from) return t('promotion.inline.validFrom', { from });
+  if (to) return t('promotion.inline.validUntil', { to });
+  return '';
+}
+
+function ProductDetail({ open, product, mode, onClose, onAdd, onPromotionPreview, promotionSuggestions = [], upcomingPromotionSuggestions = [], promotionLocked = false, optionsLoading = false, stock, basketUnits = 0 }) {
   const { t, lang } = wsUseT();
   // ── Hooks (must run unconditionally; never gate behind early-return) ──
   const initSelections = React.useMemo(() => {
@@ -851,6 +846,7 @@ function ProductDetail({ open, product, mode, onClose, onAdd, stock }) {
     }
     return out;
   }, [product]);
+  const [personalChoices, setPersonalChoices] = React.useState([]);
   const [sel, setSel]                 = React.useState(initSelections);
   const [bundleId, setBundleId]       = React.useState(null);
   const [bundleSlots, setBundleSlots] = React.useState({});
@@ -862,6 +858,7 @@ function ProductDetail({ open, product, mode, onClose, onAdd, stock }) {
   const [carIdx, setCarIdx]           = React.useState(0);
   const [pulse, setPulse]             = React.useState(0);  // re-trigger price pop animation
   const [activeOpt, setActiveOpt]     = React.useState(null); // currently focused option id
+  const [selectedPromotionId, setSelectedPromotionId] = React.useState(null);
   const carRef = React.useRef(null);
   const optRefs = React.useRef({}); // option-id -> DOM node
 
@@ -870,16 +867,17 @@ function ProductDetail({ open, product, mode, onClose, onAdd, stock }) {
     if (!product?.has_menu_options || !product.available_bundles) return [];
     return [
       { id: null, name: t('pd.alaCarte'), description: t('pd.alaCarteDesc'), price_modifier: 0, slots: [], advantages: [], included: [] },
-      ...product.available_bundles,
+      ...product.available_bundles.filter(b => !b.menu_id || Number(b.base_portion_id || 0) === Number(portionOptionList(product).find(o => o.v === portion)?.id_product_portion || 0)),
     ];
     // `lang` en dépendance : « À la carte » et sa description viennent de la
     // table de traduction. Sans elle, changer de langue modale ouverte laissait
     // la première formule dans la langue précédente.
-  }, [product, lang]);
+  }, [product, lang, portion]);
 
   // Reset state when the product changes, and auto-open required option groups + auto-pick recommended bundle.
   React.useEffect(() => {
     setSel(initSelections);
+    setPersonalChoices([]);
     setUpsellIds({});
     setQty(1);
     // Portion par défaut = la PREMIÈRE option proposée (l'entière quand les
@@ -887,6 +885,7 @@ function ProductDetail({ open, product, mode, onClose, onAdd, stock }) {
     setPortion((portionOptionList(product).find((o) => o.v === 'entier') || portionOptionList(product)[0])?.v || 'entier');
     setOfferOn(false);   // le produit seul par défaut ; le bundle se choisit
     setBundleSlots({});
+    setSelectedPromotionId(null);
     setCarIdx(0);
     if (product?.options) {
       const initOpen = {};
@@ -903,14 +902,14 @@ function ProductDetail({ open, product, mode, onClose, onAdd, stock }) {
     // n'y en a qu'une : ses étapes s'ouvrent d'emblée. Sur mobile, le tap
     // « pour rien » qui ne faisait qu'ouvrir la carte passait pour un raté
     // (constaté : « je dois cliquer plusieurs fois pour que ça s'ouvre »).
-    const rec = product?.available_bundles?.find((b) => b.recommended)
-      || (product?.available_bundles?.length === 1 ? product.available_bundles[0] : null);
+    const rec = product?.available_bundles?.find((b) => b.recommended && !b.menu_id)
+      || (product?.available_bundles?.length === 1 && !product.available_bundles[0].menu_id ? product.available_bundles[0] : null);
     setBundleId(rec ? rec.id : null);
     if (rec) {
-      const recIdx = bundleList.findIndex((b) => b.id === rec.id);
+      const recIdx = 1 + product.available_bundles.findIndex((b) => b.id === rec.id);
       if (recIdx >= 0) setCarIdx(recIdx);
     }
-  }, [product, initSelections, bundleList]);
+  }, [product, initSelections]);
 
   // Lock body scroll while open.
   React.useEffect(() => {
@@ -928,16 +927,6 @@ function ProductDetail({ open, product, mode, onClose, onAdd, stock }) {
   // boutique (no_delivery) OU s'il est désactivé pour ce canal côté marque
   // (office_delivery === false). Absent/undefined = disponible (rétro-compat).
   const deliveryBlocked = mode === 'delivery' && (!!product?.no_delivery || product?.office_delivery === false);
-  // qty_available from ws_product_stock API; falls back to delivery_stock on product seed
-  // Le stock du jour vaut pour LES DEUX modes : le serveur refuse une commande
-  // au-delà du disponible en collecte comme en livraison. Le limiter ici au seul
-  // mode livraison laissait le client remplir son panier avec un produit épuisé
-  // et ne l'apprendre qu'à l'étape paiement, après avoir tout saisi.
-  // Le repli `delivery_stock` reste propre à la livraison : en collecte, une
-  // absence de ligne de stock veut dire « pas de plafond », pas « zéro ».
-  const qtyAvailable = stock ? stock.qty_available
-    : (mode === 'delivery' && typeof product?.delivery_stock === 'number' ? product.delivery_stock : null);
-  const deliveryStockLeft = qtyAvailable !== null ? Math.max(0, qtyAvailable) : null;
 
   let unit = product?.price || 0;
   // Portion RÉSOLUE : la portion choisie si elle existe dans la liste, sinon
@@ -947,6 +936,9 @@ function ProductDetail({ open, product, mode, onClose, onAdd, stock }) {
   const portOpt = product?.portions
     ? (_plist.find((o) => o.v === portion) || _plist.find((o) => o.v === 'entier') || _plist[0] || null)
     : null;
+  const deliveryStockLeft = availablePortions(stock, portOpt?.v, basketUnits);
+  const availabilityMessage = stockMessageKey(stock);
+  const uninitialized = stock?.status === 'uninitialized';
   if (portOpt) unit = portOpt.price;
   if (product?.options) {
     for (const o of product.options) {
@@ -957,11 +949,11 @@ function ProductDetail({ open, product, mode, onClose, onAdd, stock }) {
     }
   }
   const activeBundle = bundleId && product?.available_bundles
-    ? product.available_bundles.find((b) => b.id === bundleId)
+    ? product.available_bundles.find((b) => b.id === bundleId && (!b.menu_id || Number(b.base_portion_id || 0) === Number(portOpt?.id_product_portion || 0)))
     : null;
   let bundleDelta = 0;
   if (activeBundle) {
-    bundleDelta += activeBundle.price_modifier || 0;
+    bundleDelta += activeBundle.menu_id ? activeBundle.base_total - unit : (activeBundle.price_modifier || 0);
     for (const slot of (activeBundle.slots || [])) {
       for (const cid of slotPicked(slot)) {
         const c = slot.choices.find((x) => x.id === cid);
@@ -969,6 +961,8 @@ function ProductDetail({ open, product, mode, onClose, onAdd, stock }) {
       }
     }
   }
+
+  const selectedPromotion = !activeBundle && promotionSuggestions.find((item) => Number(item.id_promotion) === Number(selectedPromotionId)) || null;
   const upsellDelta = Object.entries(upsellIds).reduce((t, [id, on]) => {
     if (!on || !product?.upsells) return t;
     const u = product.upsells.find((x) => x.id === id);
@@ -978,17 +972,21 @@ function ProductDetail({ open, product, mode, onClose, onAdd, stock }) {
   // formule et suppléments compris — le bundle fixe sa composition).
   const bundleOffer = product?.bundleOffer || null;
   const offerPicked = offerOn && !!bundleOffer;
-  const unitTotal = offerPicked ? bundleOffer.price : (unit + bundleDelta + upsellDelta);
+  const personalGroups = product?.personalization?.groups || [];
+  const personalEnabled = !activeBundle && !selectedPromotion && !offerPicked && !portOpt?.id_product_portion && !product?.is_weighted;
+  const personalOptions = personalEnabled ? personalGroups.flatMap(g => g.options.filter(o => personalChoices.includes(o.id))) : [];
+  const personalDelta = personalOptions.reduce((sum,o)=>sum+Number(o.price_delta),0);
+  const unitTotal = offerPicked ? bundleOffer.price : (unit + bundleDelta + upsellDelta + personalDelta);
   const grossTotal = unitTotal * qty;
-  const offerCalc = product?.offer ? computeOffer(product.offer, qty, unitTotal, {
-    portion: product.portions ? portion : null,
-    basePrice: product.price,
-  }) : null;
-  const offerDiscount = offerCalc?.discount || 0;
-  const total = Math.max(0, grossTotal - offerDiscount);
+  const total = grossTotal;
+  const displayedTotal = selectedPromotion ? wsPromotionDisplayTotal(selectedPromotion, total) : total;
 
   // Validity
-  let valid = true;
+  let valid = !personalEnabled || (!product?.personalization_error && !product?.personalization?.unavailable);
+  if (personalEnabled) for (const group of personalGroups) {
+    const count=group.options.filter(o=>personalChoices.includes(o.id)).length;
+    if(count<group.min_select || count>group.max_select) valid=false;
+  }
   if (product?.options) {
     for (const o of product.options) if (o.required && !sel[o.id]) { valid = false; break; }
   }
@@ -998,8 +996,21 @@ function ProductDetail({ open, product, mode, onClose, onAdd, stock }) {
     }
   }
 
+  React.useEffect(() => {
+    if (!open || !product || product.is_weighted || offerPicked || activeBundle) return;
+    onPromotionPreview?.({
+      productId: product.id,
+      quantity: qty,
+      id_product_portion: portOpt?.id_product_portion ?? null,
+    });
+  }, [open, product?.id, qty, portOpt?.id_product_portion, valid, offerPicked, activeBundle?.id, onPromotionPreview]);
+
+  React.useEffect(() => {
+    setSelectedPromotionId((current) => !promotionLocked && promotionSuggestions.some((item) => Number(item.id_promotion) === Number(current)) ? current : null);
+  }, [promotionSuggestions, promotionLocked]);
+
   // Re-pulse price on any change
-  React.useEffect(() => { setPulse((p) => p + 1); }, [unit, bundleDelta, upsellDelta, qty, bundleId, offerPicked]);
+  React.useEffect(() => { setPulse((p) => p + 1); }, [unit, bundleDelta, upsellDelta, qty, bundleId, offerPicked, selectedPromotionId, displayedTotal]);
 
   // Sync carIdx to scroll position (snap-based feel)
   function onCarScroll(e) {
@@ -1053,6 +1064,7 @@ function ProductDetail({ open, product, mode, onClose, onAdd, stock }) {
   function pickBundle(bid) {
     if (bid === bundleId) return;
     setBundleId(bid);
+    setSelectedPromotionId(null);
     setBundleSlots({});
     // Glide the picked bundle card so its expanded body sits centered in the
     // modal scroll area, after the slot pickers animate open.
@@ -1068,6 +1080,10 @@ function ProductDetail({ open, product, mode, onClose, onAdd, stock }) {
     }, IS_TOUCH ? 30 : 340);
   }
   function toggleUpsell(id)        { setUpsellIds((s) => ({ ...s, [id]: !s[id] })); }
+  function changeQuantity(updater) {
+    setSelectedPromotionId(null);
+    setQty(updater);
+  }
   // Un accordéon qui vient de s'ouvrir (animation ~300 ms) ne doit pas se
   // REFERMER sur un re-tap réflexe « ça n'a pas marché » : anti-rebond.
   const lastToggle = React.useRef({});
@@ -1092,7 +1108,7 @@ function ProductDetail({ open, product, mode, onClose, onAdd, stock }) {
   }
 
   function handleConfirm() {
-    if (!valid) return;
+    if (!valid || product.is_weighted || deliveryBlocked || uninitialized || (deliveryStockLeft !== null && qty > deliveryStockLeft)) return;
     const optionLabels = (product.options || [])
       .map((o) => { const c = o.choices.find((x) => x.id === sel[o.id]); return c ? c.label : null; })
       .filter(Boolean);
@@ -1116,12 +1132,19 @@ function ProductDetail({ open, product, mode, onClose, onAdd, stock }) {
     }
     onAdd({
       productId: product.id,
+      ...(personalEnabled && personalChoices.length>0 ? {personalization_selection:{version:product.personalization.version,option_ids:personalChoices}} : {}),
+      ...(activeBundle?.menu_id ? {
+        menu_selection: { menu_id: activeBundle.menu_id, version: activeBundle.version, formula_id: activeBundle.id,
+          steps: activeBundle.slots.map(slot => ({step_id: slot.id, choice_ids: slotPicked(slot)})) },
+        lead_time: Math.max(product.lead_time || 0, ...activeBundle.slots.flatMap(slot => slot.choices.filter(c => slotPicked(slot).includes(c.id)).map(c => c.lead_time || 0))),
+        menu_product_ids: [product.id, ...activeBundle.slots.flatMap(slot => slot.choices.filter(c => slotPicked(slot).includes(c.id)).map(c => c.product_id))],
+      } : {}),
       // Libellé dérivé de la portion RÉSOLUE (portOpt) : cohérent avec le prix.
       // Pas de suffixe pour l'Entière.
-      name: offerPicked ? bundleOffer.name : product.name + (portOpt && portOpt.v !== 'entier' ? ', ' + portOpt.name : ''),
+      name: offerPicked ? bundleOffer.name : (activeBundle?.menu_id ? `${activeBundle.menu_name} · ${product.name}` : product.name) + (portOpt && portOpt.v !== 'entier' ? ', ' + portOpt.name : ''),
       qty,
       price: qty > 0 ? total / qty : (unit + bundleDelta + upsellDelta),
-      options: optionLabels.map((label) => ({ label })),
+      options: [...optionLabels.map((label) => ({ label })), ...personalOptions.map(o=>({label:o.name}))],
       /* Composition du menu par IDENTIFIANTS, en plus des libelles d'affichage.
          Elle restait dans le composeur : le panier ne portait que des libelles,
          et la commande ne pouvait donc ecrire aucune ligne pour les choix du
@@ -1134,16 +1157,11 @@ function ProductDetail({ open, product, mode, onClose, onAdd, stock }) {
          articles) pour la boutique ; le navigateur ne décide pas du prix. */
       bundleOfferId: offerPicked ? bundleOffer.id : null,
       portion: offerPicked ? null : (portOpt ? portOpt.v : null),
+      id_product_portion: offerPicked ? null : (portOpt?.id_product_portion ?? null),
       cat: product.cat,
       crossPortion: !!product.crossPortion,
       basePrice: product.price,
-      offerDiscount: offerDiscount || 0,
-      offerLabel: offerCalc && offerCalc.discount > 0
-        ? (offerCalc.type === 'buy_x_get_y_free'
-            ? `${product.offer.x}+${product.offer.y}`
-            : `2e −${product.offer.pct}%`)
-        : null,
-    });
+    }, selectedPromotion);
     onClose();
   }
 
@@ -1189,17 +1207,32 @@ function ProductDetail({ open, product, mode, onClose, onAdd, stock }) {
           <img
             className={product.img ? 'pdm-hero__img' : 'pdm-hero__img pdm-hero__img--lineart'}
             src={product.img || getPlaceholder(product)}
+            onError={(e) => {
+              const el = e.currentTarget;
+              if (el.dataset.imgFallback === '1') return;
+              el.dataset.imgFallback = '1';
+              el.classList.add('pdm-hero__img--lineart');
+              el.src = getPlaceholder(product);
+            }}
             alt={product.name}
           />
         </div>
 
         {/* INFO */}
-        <div className="pdm-info">
+        <div className={`pdm-info${optionsLoading ? ' is-loading' : ''}`} aria-busy={optionsLoading}>
+          {optionsLoading && (
+            <div className="pdm-options-loading" role="status" aria-live="polite">
+              <span className="pdm-options-loading__spinner" aria-hidden="true"/>
+              <span>{t('pd.loadingOptions')}</span>
+            </div>
+          )}
           <div className="pdm-scroll" ref={scrollRef}>
             <div className="pdm-head">
               <p className="pdm-eyebrow">{product.cat === 'sandwiches' ? t('pd.eyebrow.sandwich') : product.cat === 'plats' ? t('pd.eyebrow.dish') : t('pd.eyebrow.selection')}</p>
               <h2 className="pdm-title">{product.name}</h2>
               {product.description ? <p className="pdm-desc">{product.description}</p> : null}
+              {product.ingredients ? <p className="pdm-desc"><strong>{t('pd.ingredients')}: </strong>{product.ingredients}</p> : null}
+              {product.is_weighted ? <p className="pdm-desc">{t('pd.weightedUnavailable')}</p> : null}
               {/* Allergènes : 3 états distincts (sécurité alimentaire) :
                   liste = connus · [] = recette évaluée, aucun · null = NON
                   RENSEIGNÉ (on le dit, on ne laisse jamais croire « aucun »). */}
@@ -1215,22 +1248,13 @@ function ProductDetail({ open, product, mode, onClose, onAdd, stock }) {
               {product.portions && (
                 <PortionOptions
                   value={portion}
-                  onChange={setPortion}
+                  onChange={(value) => { setPortion(value); setBundleId(null); setBundleSlots({}); }}
                   product={product}
                 />
               )}
             </div>
 
             {/* SPECIAL OFFER STRIP */}
-            {offerCalc && (
-              <OfferStrip
-                offer={product.offer}
-                qty={qty}
-                unit={unitTotal}
-                calc={offerCalc}
-                onAddOne={() => setQty((q) => q + 1)}
-              />
-            )}
 
             {/* OPTION ACCORDIONS */}
             {(product.options?.length > 0 || product.upsells?.length > 0) && (
@@ -1257,7 +1281,7 @@ function ProductDetail({ open, product, mode, onClose, onAdd, stock }) {
                               className={'pdm-seg__btn' + (on ? ' is-on' : '')}
                               {...wsTap(() => setOpt(o.id, c.id))}>
                               <span className="pdm-seg__lbl">{c.label}</span>
-                              {c.delta > 0 && <span className="pdm-seg__delta">+{c.delta.toFixed(2)} €</span>}
+                              {c.delta > 0 && <span className="pdm-seg__delta">+{wsNumber(c.delta)} €</span>}
                             </button>
                           );
                         })}
@@ -1277,7 +1301,7 @@ function ProductDetail({ open, product, mode, onClose, onAdd, stock }) {
                       <button className="pdm-opt__head" {...wsTap(() => toggleOpt(id), { open: true })} aria-expanded={isOpen}>
                         <span className="pdm-opt__head-l">
                           <span className="pdm-opt__label">{t('xsell.title')}</span>
-                          {!isOpen && count > 0 && <span className="pdm-opt__sub">{count} ajout{count>1?'s':''}</span>}
+                          {!isOpen && count > 0 && <span className="pdm-opt__sub">{wsText('ui.additions', { count })}</span>}
                         </span>
                         <span className="pdm-opt__head-r">
                           <span className="pdm-opt__req pdm-opt__req--soft">{t('pd.optional')}</span>
@@ -1295,7 +1319,7 @@ function ProductDetail({ open, product, mode, onClose, onAdd, stock }) {
                                   {...wsTap(() => toggleUpsell(u.id))}>
                                   {u.img && <span className="pdm-imgchip__tile"><img src={u.img} alt=""/></span>}
                                   <span>{u.label}</span>
-                                  <span className="pdm-imgchip__delta">+{u.delta.toFixed(2)}</span>
+                                  <span className="pdm-imgchip__delta">+{wsNumber(u.delta)}</span>
                                 </button>
                               );
                             })}
@@ -1321,7 +1345,7 @@ function ProductDetail({ open, product, mode, onClose, onAdd, stock }) {
                        {...wsTap(() => setOfferOn(false), { open: true })}>
                     <div className="pdm-bcard__top">
                       <span className="pdm-bcard__name">{t('pd.offerAlone', { name: product.name })}</span>
-                      <span className="pdm-bcard__price">€{(unit + bundleDelta + upsellDelta).toFixed(2)}</span>
+                      <span className="pdm-bcard__price">€{wsNumber(unit + bundleDelta + upsellDelta)}</span>
                     </div>
                     <p className="pdm-bcard__desc">{t('pd.offerAloneDesc')}</p>
                   </div>
@@ -1331,13 +1355,13 @@ function ProductDetail({ open, product, mode, onClose, onAdd, stock }) {
                     <div className="pdm-bcard__top">
                       <span className="pdm-bcard__name">{bundleOffer.name}</span>
                       <span className="pdm-bcard__price">
-                        <span className="pdm-bcard__strike">€{bundleOffer.regular.toFixed(2)}</span>€{bundleOffer.price.toFixed(2)}
-                        <span className="pdm-bcard__save">{t('pd.offerSave', { amount: bundleOffer.saving.toFixed(2).replace('.', ',') })}</span>
+                        <span className="pdm-bcard__strike">€{wsNumber(bundleOffer.regular)}</span>€{wsNumber(bundleOffer.price)}
+                        <span className="pdm-bcard__save">{t('pd.offerSave', { amount: wsNumber(bundleOffer.saving).replace('.', ',') })}</span>
                       </span>
                     </div>
                     <ul className="pdm-bcard__lines" aria-label={t('pd.offerIn')}>
                       {bundleOffer.items.map((it, k) => (
-                        <li key={k}><span>{it.qty} × {it.name}{it.portionLabel ? ', ' + it.portionLabel : ''}</span><span>€{(it.unit * it.qty).toFixed(2)}</span></li>
+                        <li key={k}><span>{it.qty} × {it.name}{it.portionLabel ? ', ' + it.portionLabel : ''}</span><span>€{wsNumber(it.unit * it.qty)}</span></li>
                       ))}
                     </ul>
                   </div>
@@ -1374,7 +1398,7 @@ function ProductDetail({ open, product, mode, onClose, onAdd, stock }) {
                         <div className="pdm-bcard__top">
                           <span className="pdm-bcard__name">{b.name}</span>
                           <span className={'pdm-bcard__price' + (b.price_modifier > 0 ? '' : ' pdm-bcard__price--free')}>
-                            {b.price_modifier > 0 ? '+' + b.price_modifier.toFixed(2) + ' €' : t('pd.included')}
+                            {b.menu_id ? wsNumber(b.base_total) + ' €' : b.price_modifier > 0 ? '+' + wsNumber(b.price_modifier) + ' €' : t('pd.included')}
                           </span>
                         </div>
                         <p className="pdm-bcard__desc">{b.description}</p>
@@ -1396,7 +1420,7 @@ function ProductDetail({ open, product, mode, onClose, onAdd, stock }) {
                                       {slotIsMulti(slot)
                                         ? <span className={'pdm-opt__req' + (slot.required ? '' : ' pdm-opt__req--soft')} style={{ marginLeft: 8 }}>
                                             {slotPicked(slot).length}/{Math.max(1, slot.max_select || 1)}
-                                            {slot.required ? ', choisissez ' + Math.max(1, slot.min_select || 1) : ''}
+                                            {slot.required ? ', ' + t('menu.choose', {count: Math.max(1, slot.min_select || 1)}) : ''}
                                           </span>
                                         : slot.required && <span className="pdm-opt__req" style={{ marginLeft: 8 }}>{t('pd.required')}</span>}
                                     </span>
@@ -1409,10 +1433,10 @@ function ProductDetail({ open, product, mode, onClose, onAdd, stock }) {
                                       return (
                                         <button key={c.id}
                                           className={klass + (cOn ? ' is-on' : '')}
-                                          {...wsTap(() => multi ? toggleSlotMulti(slot.id, c.id, slot.max_select) : setSlot(slot.id, c.id))}>
+                                          {...wsTap(() => multi ? toggleSlotMulti(slot.id, c.id, slot.max_select) : setSlot(slot.id, !slot.required && cOn ? null : c.id))}>
                                           {c.img && <span className="pdm-imgchip__tile"><img src={c.img} alt=""/></span>}
                                           <span>{c.label}</span>
-                                          {c.delta > 0 && <span className={c.img ? 'pdm-imgchip__delta' : 'pdm-chip__delta'}>+{c.delta.toFixed(2)}</span>}
+                                          {c.delta > 0 && <span className={c.img ? 'pdm-imgchip__delta' : 'pdm-chip__delta'}>+{wsNumber(c.delta)}</span>}
                                         </button>
                                       );
                                     })}
@@ -1429,6 +1453,77 @@ function ProductDetail({ open, product, mode, onClose, onAdd, stock }) {
                 </div>
               </div>
             )}
+            {activeBundle?.menu_id && <p className="pdm-opt__hint">{t('menu.noDiscount')}</p>}
+            {product?.menu_load_error && <p role="alert">{t('menu.loadError')}</p>}
+            {!offerPicked && !activeBundle && promotionSuggestions.length > 0 && (
+              <section className="pdm-promotion" aria-label={t('promotion.inline.title')}>
+                <div className="pdm-promotion__head">
+                  <span>{t('promotion.inline.title')}</span>
+                  <small>{promotionLocked ? t('promotion.inline.locked') : t('promotion.inline.choose')}</small>
+                </div>
+                <div className="pdm-promotion__list">
+                  {promotionSuggestions.map((promotion) => {
+                    const selected = Number(promotion.id_promotion) === Number(selectedPromotionId);
+                    const items = wsPromotionItemsSummary(promotion, product);
+                    const type = t(`promotion.inline.type.${promotion.promotion_type}`);
+                    const benefit = wsPromotionBenefit(promotion);
+                    return <button key={promotion.id_promotion} type="button"
+                      className={`pdm-promotion__card${selected ? ' is-selected' : ''}${promotionLocked ? ' is-locked' : ''}`}
+                      aria-pressed={selected} aria-disabled={promotionLocked} disabled={promotionLocked}
+                      {...wsTap(() => {
+                        if (promotionLocked) return;
+                        setSelectedPromotionId(selected ? null : promotion.id_promotion);
+                      })}>
+                      <span className="pdm-promotion__radio" aria-hidden="true"/>
+                      <span className="pdm-promotion__body"><strong>{promotion.name}</strong><small>{type} · {items}</small></span>
+                      {benefit && <span className="pdm-promotion__price">{benefit}</span>}
+                    </button>;
+                  })}
+                </div>
+              </section>
+            )}
+            {!offerPicked && !activeBundle && upcomingPromotionSuggestions.length > 0 && (
+              <section className="pdm-promotion pdm-promotion--upcoming" aria-label={t('promotion.inline.upcomingTitle')}>
+                <div className="pdm-promotion__head">
+                  <span>{t('promotion.inline.upcomingTitle')}</span>
+                  <small>{t('promotion.inline.upcomingHint')}</small>
+                </div>
+                <div className="pdm-promotion__list">
+                  {upcomingPromotionSuggestions.map((promotion) => {
+                    const items = wsPromotionItemsSummary(promotion, product);
+                    const type = t(`promotion.inline.type.${promotion.promotion_type}`);
+                    const benefit = wsPromotionBenefit(promotion);
+                    const schedule = wsUpcomingPromotionSchedule(promotion, lang, t);
+                    const validity = wsUpcomingPromotionValidity(promotion, lang, t);
+                    return <div key={`upcoming-${promotion.id_promotion}-${promotion.available_from}`} className="pdm-promotion__card pdm-promotion__card--upcoming" aria-disabled="true">
+                      <span className="pdm-promotion__radio pdm-promotion__radio--upcoming" aria-hidden="true"/>
+                      <span className="pdm-promotion__body">
+                        <strong>{promotion.name}</strong>
+                        <small>{type} · {items}</small>
+                        <small className="pdm-promotion__period">{t('promotion.inline.availableDays', { schedule })}</small>
+                        {validity && <small className="pdm-promotion__period">{validity}</small>}
+                      </span>
+                      {benefit && <span className="pdm-promotion__price">{benefit}</span>}
+                    </div>;
+                  })}
+                </div>
+              </section>
+            )}
+            {personalEnabled && personalGroups.length>0 && <div className="pdm-personalization">
+              <h3>{t('personalization.title')}</h3>
+              {personalGroups.map(group=><fieldset key={group.id}>
+                <legend>{group.name} <small>({group.min_select}–{group.max_select})</small></legend>
+                {group.options.map(option=><label key={option.id}>
+                  <input type="checkbox" checked={personalChoices.includes(option.id)}
+                    disabled={!personalChoices.includes(option.id) && group.options.filter(o=>personalChoices.includes(o.id)).length>=group.max_select}
+                    onChange={e=>setPersonalChoices(current=>e.target.checked?[...current,option.id]:current.filter(id=>id!==option.id))}/>
+                  <span>{option.name}</span><strong>+€{wsNumber(Number(option.price_delta))}</strong>
+                </label>)}
+              </fieldset>)}
+              <p>{t('personalization.exclusive')}</p>
+            </div>}
+            {(product?.personalization_error || product?.personalization?.unavailable) && <p role="alert">{t('personalization.unavailable')}</p>}
+
           </div>
 
           {/* In-place swipe hint */}
@@ -1442,30 +1537,28 @@ function ProductDetail({ open, product, mode, onClose, onAdd, stock }) {
           {/* STICKY FOOTER */}
           <div className="pdm-foot">
             {deliveryBlocked && (
-              <div className="pdm-delivery-notice pdm-delivery-notice--blocked">
-                Ce produit n'est pas disponible en livraison · Retrait en boutique uniquement
-              </div>
+              <div className="pdm-delivery-notice pdm-delivery-notice--blocked"> {wsText("ui.collectOnly")} </div>
             )}
             {/* Le NOMBRE d'unités restantes n'est plus affiché (retiré le 23/08,
                 comme le compteur des vignettes avant lui) : c'est une donnée
                 interne de stock, pas une information client. Seul l'état
                 bloquant reste visible : « Épuisé », et la quantité demeure
                 plafonnée en silence par le sélecteur ci-dessous. */}
-            {!deliveryBlocked && deliveryStockLeft === 0 && (
+            {availabilityMessage && <div className="pdm-delivery-notice" role="status">{t(availabilityMessage)}</div>}
+            {!deliveryBlocked && !uninitialized && deliveryStockLeft === 0 && (
               <div className="pdm-delivery-notice">{t('pd.outOfStock')}</div>
             )}
-            <div className="pdm-qty">
-              <button className="pdm-qty__btn" {...wsTap(() => setQty((q) => Math.max(1, q - 1)))} disabled={qty <= 1} aria-label={t('qty.dec')}>−</button>
+            {!availabilityMessage && deliveryStockLeft > 0 && qty > deliveryStockLeft &&
+              <div className="pdm-delivery-notice" role="status">{t('stock.quantityChanged')}</div>}
+            <div className="pdm-qty" style={product.is_weighted ? { display: 'none' } : undefined}>
+              <button className="pdm-qty__btn" {...wsTap(() => changeQuantity((q) => Math.max(1, q - 1)))} disabled={qty <= 1} aria-label={t('qty.dec')}>−</button>
               <span className="pdm-qty__val">{qty}</span>
-              <button className="pdm-qty__btn" {...wsTap(() => setQty((q) => Math.min(q + 1, deliveryStockLeft ?? 99)))} aria-label={t('qty.inc')} disabled={deliveryStockLeft !== null && qty >= deliveryStockLeft}>+</button>
+              <button className="pdm-qty__btn" {...wsTap(() => changeQuantity((q) => Math.min(q + 1, deliveryStockLeft ?? 99)))} aria-label={t('qty.inc')} disabled={deliveryStockLeft !== null && qty >= deliveryStockLeft}>+</button>
             </div>
-            <button className="pdm-cta" disabled={!valid || deliveryBlocked || (deliveryStockLeft !== null && deliveryStockLeft === 0)} {...wsTap(handleConfirm, { shield: true })}>
-              <span>{deliveryBlocked ? t('pd.notForDelivery') : (deliveryStockLeft === 0 ? t('pd.outOfStock') : (valid ? (offerPicked ? t('pd.offerAdd') : t('pd.addToCart')) : t('pd.chooseOptions')))}</span>
+            <button className="pdm-cta" disabled={product.is_weighted || !valid || deliveryBlocked || (deliveryStockLeft !== null && qty > deliveryStockLeft)} {...wsTap(handleConfirm, { shield: true })}>
+              <span>{deliveryBlocked ? t('pd.notForDelivery') : (uninitialized ? t('stock.checkAvailability') : deliveryStockLeft === 0 ? t('pd.outOfStock') : (valid ? (offerPicked ? t('pd.offerAdd') : t('pd.addToCart')) : t('pd.chooseOptions')))}</span>
               <span className="pdm-cta__total" key={pulse}>
-                {offerDiscount > 0 && (
-                  <span className="pdm-cta__strike">€{grossTotal.toFixed(2)}</span>
-                )}
-                <span className="pdm-cta__total-anim">€{total.toFixed(2)}</span>
+                <span className="pdm-cta__total-anim">€{wsNumber(product.is_weighted ? product.price : displayedTotal)}{product.is_weighted ? ' / kg' : ''}</span>
               </span>
             </button>
           </div>
@@ -1478,7 +1571,7 @@ function ProductDetail({ open, product, mode, onClose, onAdd, stock }) {
 // =========================================================================
 // PRODUCT CARD
 // =========================================================================
-const ProductCard = React.memo(function ProductCard({ p, onAdd, onOpen, mode, basketQty, stock, platsBadge }) {
+const ProductCard = React.memo(function ProductCard({ p, onAdd, onOpen, mode, basketQty, stock, platsBadge, imagePriority = false }) {
   const { t } = wsUseT();
   const price = p.price;
   const hasOptions = !!(p.options || p.bundle || p.upsells);
@@ -1486,16 +1579,12 @@ const ProductCard = React.memo(function ProductCard({ p, onAdd, onOpen, mode, ba
   // Canal livraison bureau (« apricot ») : bloqué si non livré par la boutique
   // (no_delivery) ou désactivé marque pour ce canal (office_delivery === false).
   const deliveryBlocked = isDelivery && (!!p.no_delivery || p.office_delivery === false);
-  // qty_available from ws_product_stock API; falls back to delivery_stock on product seed
-  // Même règle que dans le détail : le stock s'applique aux deux modes, le
-  // repli `delivery_stock` seulement à la livraison.
-  const qtyAvailable = stock ? stock.qty_available
-    : (isDelivery && typeof p.delivery_stock === 'number' ? p.delivery_stock : null);
-  const deliveryStockLeft = qtyAvailable !== null
-    ? Math.max(0, qtyAvailable - (basketQty || 0))
-    : null;
-  const stockExhausted = deliveryStockLeft !== null && deliveryStockLeft === 0;
-  const addDisabled = deliveryBlocked || stockExhausted;
+  const portions = p.portions ? portionOptionList(p).map(option => option.v) : ['entier'];
+  const limits = portions.map(portion => availablePortions(stock, portion, basketQty || 0));
+  const availabilityMessage = stockMessageKey(stock);
+  const uninitialized = stock?.status === 'uninitialized';
+  const stockExhausted = !uninitialized && limits.every(limit => limit === 0);
+  const addDisabled = deliveryBlocked || stockExhausted || uninitialized || p.is_weighted;
 
   function handleCardClick() { if (!deliveryBlocked) onOpen(p); }
   return (
@@ -1507,6 +1596,9 @@ const ProductCard = React.memo(function ProductCard({ p, onAdd, onOpen, mode, ba
             ? <span className="ws-badge--plats ws-card__badge">{t('pd.readyMeals')}</span>
             : p.badge && <span className="ws-card__badge">{p.badge}</span>}
         <img
+          loading={imagePriority ? 'eager' : 'lazy'}
+          decoding="async"
+          draggable={false}
           className={p.img ? 'ws-card__photo-img' : 'ws-card__photo-img ws-card__photo-img--lineart'}
           src={p.img || getPlaceholder(p)}
           alt=""
@@ -1529,7 +1621,7 @@ const ProductCard = React.memo(function ProductCard({ p, onAdd, onOpen, mode, ba
         <div className="ws-card__icons">
           <button className="ws-iconcircle" aria-label={t('pd.info')} {...wsTap(() => onOpen(p), { stop: true, open: true })}><Pict d={ICONS.info} s={11}/></button>
           <button className="ws-add" {...wsTap(() => { if (!addDisabled) onOpen(p); }, { stop: true, open: true })} aria-label={t('pd.addToCart')}
-            disabled={addDisabled} title={deliveryBlocked ? 'Non disponible en livraison' : stockExhausted ? 'Stock épuisé pour la livraison' : undefined}>
+            disabled={addDisabled} title={deliveryBlocked ? wsText("ui.noDelivery") : stockExhausted ? wsText("ui.deliverySoldOut") : undefined}>
             {stockExhausted ? '✕' : '+'}
           </button>
         </div>
@@ -1537,7 +1629,7 @@ const ProductCard = React.memo(function ProductCard({ p, onAdd, onOpen, mode, ba
       <div className="ws-card__body">
         {p.portions && (
           <div className="ws-card__portions" aria-label={t('pd.portionsAvailable')}
-               title={'Portions : ' + portionOptionList(p).map((o) => o.name).join(' · ')}>
+               title={wsText('ui.portionNames', { names: portionOptionList(p).map((o) => o.name).join(' · ') })}>
             <PortionGlyph size={12}/>
             <span>{t('pd.portionsAvailable')}</span>
           </div>
@@ -1559,16 +1651,17 @@ const ProductCard = React.memo(function ProductCard({ p, onAdd, onOpen, mode, ba
         )}
         <div className="ws-card__name">{p.name}</div>
         <div className="ws-card__meta">
-          <span className="ws-card__price">€{price.toFixed(2)}{hasOptions && <span className="ws-card__from"> · {t('card.fromPrice')}</span>}</span>
+          <span className="ws-card__price">€{wsNumber(price)}{p.is_weighted ? ' / kg' : ''}{hasOptions && <span className="ws-card__from"> · {t('card.fromPrice')}</span>}</span>
           {p.bundleOffer && (
             <span className="ws-card__offerprice" title={p.bundleOffer.name}>
-              <span>{t('card.offer')} €{p.bundleOffer.price.toFixed(2)}</span>
-              <s>€{p.bundleOffer.regular.toFixed(2)}</s>
+              <span>{t('card.offer')} €{wsNumber(p.bundleOffer.price)}</span>
+              <s>€{wsNumber(p.bundleOffer.regular)}</s>
             </span>
           )}
           {/* Compteur « X dispo » retiré des vignettes (demandé le 15/08) : il
               exposait le stock restant sur la grille. « Épuisé » reste : c'est
               une contrainte que le client doit voir avant d'ajouter. */}
+          {availabilityMessage && <span className="ws-card__stock">{t('stock.checkAvailability')}</span>}
           {stockExhausted && <span className="ws-card__stock ws-card__stock--out">{t('pd.soldOutDelivery')}</span>}
         </div>
       </div>
@@ -1580,166 +1673,174 @@ const ProductCard = React.memo(function ProductCard({ p, onAdd, onOpen, mode, ba
 // BASKET PANEL (right side)
 // =========================================================================
 // =========================================================================
-// CROSS-CATEGORY PORTION OFFER, basket-level
-// =========================================================================
-// Scans the basket for any line marked `crossPortion: true` and totals its
-// portion-units (quart=1, demi=2, entier=4). Every X portion-units earns Y
-// free quarter-equivalents, valued at the cheapest line's basePrice × 0.27.
-// Fallback rule used only when WSPricing.getCrossPortionRule() is unavailable.
-// x paid + y free per group; threshold = portions needed before first freebie.
-// Go-live : plus de regle 4+1 de secours cote client (promotion hors course).
+function wsArrondi(x) { return Math.round(x * 100) / 100; }
 
-function computeCrossPortionOffer(basket, rule) {
-  const r = rule;
-  if (!r) return null; // pas de regle serveur -> pas d'offre affichee
-  if (!Array.isArray(basket) || basket.length === 0) return null;
-  /* MIROIR EXACT du calcul de POST /orders. C'est le serveur qui facture :
-     tout ce qui s'en écarte promet au client une économie qu'il ne recevra pas.
-     Ses trois règles, telles qu'elles sont écrites en PHP :
-       • UNE entrée par PIÈCE (qty), pas par unité de portion, un demi compte
-         pour un, comme un quart ;
-       • valorisée au PRIX RÉEL de la ligne (prix ERP de la portion), et non à
-         27 % du prix du produit entier, ce pourcentage n'existe nulle part
-         dans la base ;
-       • le nombre d'offerts est floor(nb / x) × y, sous réserve d'atteindre le
-         seuil (threshold) ; ce sont les MOINS CHERS qui sont offerts. */
-  const items = [];
-  for (const l of basket) {
-    if (!l.crossPortion) continue;
-    for (let i = 0; i < (l.qty || 0); i++) items.push({ price: l.price || 0, name: l.name });
-  }
-  const eligibleCount = items.length;
-  if (eligibleCount === 0) return null;
-  if (r.threshold != null && eligibleCount < r.threshold) return null;
-  const groupSize = r.x;
-  items.sort((a, b) => a.price - b.price);
-  const cycles = Math.floor(eligibleCount / groupSize);
-  const freeCount = Math.min(cycles * r.y, eligibleCount);
-  let savings = 0;
-  const freeNames = [];
-  for (let i = 0; i < freeCount; i++) {
-    savings += items[i].price;
-    freeNames.push(items[i].name);
-  }
-  const remainder = eligibleCount % groupSize;
-  const toNext = groupSize - remainder;
+function wsMoney(value) {
+  const amount = Number(value);
+  return Number.isFinite(amount) ? amount : 0;
+}
+
+// Checkout may quote the basket twice: once while the customer edits it and
+// once immediately before an order is created. Menu composition deliberately
+// receives a fresh internal group ID on each server calculation, so comparing
+// the raw `items` object would report a price change even when the business
+// result is identical. Keep only stable, customer-relevant quote fields.
+function wsCheckoutQuoteComparable(quote) {
+  const money = (value) => wsMoney(value).toFixed(2);
+  const item = (line) => ({
+    personalization: line?.personalization_selection || null,
+    line_key: String(line?.line_key || ''),
+    id_product: Number(line?.id_product || 0),
+    id_product_portion: line?.id_product_portion == null ? null : Number(line.id_product_portion),
+    quantity: Number(line?.quantity || 0),
+    weight_grams: line?.weight_grams == null ? null : Number(line.weight_grams),
+    unit_gross_price: money(line?.unit_gross_price),
+    item_tax_perc: Number(line?.item_tax_perc || 0),
+    item_discount_value: money(line?.item_discount_value),
+    total_gross_value_before_discount: money(line?.total_gross_value_before_discount),
+    total_gross_value_after_discount: money(line?.total_gross_value_after_discount),
+    total_tax_value_after_discount: money(line?.total_tax_value_after_discount),
+    total_net_value_after_discount: money(line?.total_net_value_after_discount),
+  });
+  const billing = quote?.billing && typeof quote.billing === 'object'
+    ? Object.keys(quote.billing).sort().reduce((result, key) => ({ ...result, [key]: quote.billing[key] }), {})
+    : null;
   return {
-    eligibleCount,
-    groupSize,
-    cycles,
-    freeCount,
-    savings,
-    freeNames,
-    toNext: cycles >= 1 && remainder === 0 ? 0 : toNext,
-    status: cycles >= 1 ? (cycles >= 2 ? 'boosted' : 'active') : 'dormant',
-    threshold: r.x,
+    totals: {
+      gross_before_discount: money(quote?.totals?.gross_before_discount),
+      gross_after_discount: money(quote?.totals?.gross_after_discount),
+      discount: money(quote?.totals?.discount),
+      tax_after_discount: money(quote?.totals?.tax_after_discount),
+    },
+    billing,
+    items: Array.isArray(quote?.items) ? quote.items.map(item) : [],
   };
 }
 
-/* ── LES TOTAUX ────────────────────────────────────────────────────────────
-   Une seule fonction, parce qu'il n'y a qu'une addition qui compte : celle du
-   serveur (POST /orders). Le panier, le tunnel et la confirmation la lisaient
-   chacun à leur façon : le client voyait donc trois montants pour une seule
-   commande, dont aucun n'était forcément celui facturé.
-
-   Formule du serveur, à la ligne près :
-     total = max(0, sous-total − offre croisée − remise boutique − bon + frais)
-   la remise boutique portant sur (sous-total − offre croisée). */
-function wsArrondi(x) { return Math.round(x * 100) / 100; }
-
-/* Remise de la boutique (shops.discount_type / discount_value, servies par
-   /shops sous webshop_discount_*). Elle était APPLIQUÉE par le serveur et
-   AFFICHÉE nulle part : le client lisait un total supérieur à ce qu'il payait,
-   et l'écart, étant en sa faveur, ne remontait jamais. */
-function wsRemiseBoutique(shop, base) {
-  const type = shop && shop.webshop_discount_type;
-  const val  = Number(shop && shop.webshop_discount_value) || 0;
-  if (!type || val <= 0 || base <= 0) return 0;
-  return wsArrondi(type === 'fixed' ? Math.min(base, val) : Math.round(base * val) / 100);
+function wsQuoteLineKey(line, index) {
+  return 'web-' + String(line.line ?? index).replace(/[^A-Za-z0-9-]/g, '-').slice(0, 60);
 }
 
-function wsTotaux({ basket, shop, crossSavings = 0, voucherDiscount = 0, deliveryFee = 0 }) {
-  const sousTotal = (Array.isArray(basket) ? basket : []).reduce((t, l) => t + l.price * l.qty, 0);
-  const croise    = crossSavings || 0;
-  const remise    = wsRemiseBoutique(shop, sousTotal - croise);
-  const total     = Math.max(0, wsArrondi(sousTotal - croise - remise - (voucherDiscount || 0) + (deliveryFee || 0)));
-  return { sousTotal, croise, remise, bon: voucherDiscount || 0, frais: deliveryFee || 0, total,
-           remisePct: (shop && shop.webshop_discount_type === 'percent')
-             ? Number(shop.webshop_discount_value) || 0 : 0 };
+function wsQuoteTotals(quote, deliveryFee) {
+  if (!quote || !quote.totals) return null;
+  const subtotal = wsMoney(quote.totals.gross_before_discount);
+  const discount = wsMoney(quote.totals.discount);
+  const productsTotal = wsMoney(quote.totals.gross_after_discount);
+  const fee = wsMoney(deliveryFee);
+  const voucherDiscount = quote.voucher?.code && quote.voucher?.valid && quote.voucher?.matches_cart ? discount : 0;
+  const weekdayDiscount = wsMoney(quote.weekday_discount?.discount_total);
+  const weekdayMinimum = wsMoney(quote.weekday_discount?.minimum_cart_gross);
+  const weekdayRemaining = wsMoney(quote.weekday_discount?.amount_remaining);
+  return { sousTotal: subtotal, croise: 0, remise: Math.max(0, discount - voucherDiscount - weekdayDiscount), bon: voucherDiscount, weekday: weekdayDiscount, weekdayPercent: wsMoney(quote.weekday_discount?.percent), frais: fee,
+           weekdayMinimum, weekdayRemaining, weekdayThresholdMet: quote.weekday_discount?.threshold_met !== false,
+           total: wsArrondi(productsTotal + fee), productsTotal };
 }
 
-function CrossPortionStrip({ calc }) {
-  const { t } = wsUseT();
-  if (!calc) return null;
-  const { eligibleCount, groupSize, freeCount, savings, freeNames, status, threshold } = calc;
-  const unlocked = status !== 'dormant';
-  // Remainder progress = portions accumulated *toward the next* freebie cycle.
-  const remainder = eligibleCount % groupSize;
-  const inCycle = remainder === 0 && eligibleCount > 0 ? groupSize : remainder;
-  const toNextCycle = groupSize - remainder;
+// A promotion remains split into product lines for receipt, VAT and stock, but
+// is one indivisible object for the customer. This helper creates that logical
+// cart object without duplicating the underlying transaction lines.
+function wsBasketDisplayRows(basket, quote) {
+  const lines = Array.isArray(basket) ? basket : [];
+  const quotedItems = new Map((quote?.items || []).map((item) => [item.line_key, item]));
+  const weekdayDiscountByLineKey = new Map((quote?.weekday_discount?.items || [])
+    .filter((item) => item?.line_key)
+    .map((item) => [item.line_key, wsMoney(item.discount_value)]));
+  const weekdayPercent = wsMoney(quote?.weekday_discount?.percent);
+  const applications = (quote?.applied_promotions || []).filter((application) => application?.source === 'AUTOMATIC');
+  const promotionByLineKey = new Map();
+  applications.forEach((application) => (application.items || []).forEach((item) => {
+    if (item?.line_key) promotionByLineKey.set(item.line_key, application);
+  }));
 
-  let lede;
-  if (unlocked) {
-    const names = freeNames.slice(0, 2).join(', ') + (freeNames.length > 2 ? '…' : '');
-    lede = t(freeCount > 1 ? 'cross.freeMany' : 'cross.freeOne', { n: freeCount })
-         + (names ? ' · ' + names : '');
-  } else {
-    lede = t(calc.toNext > 1 ? 'cross.toNextMany' : 'cross.toNextOne', { n: calc.toNext });
+  const promotionByGroup = new Map();
+  lines.forEach((line, index) => {
+    const promotion = line.promotion_display || promotionByLineKey.get(wsQuoteLineKey(line, index));
+    if (line.promotion_group && promotion) promotionByGroup.set(line.promotion_group, promotion);
+  });
+
+  const groups = new Map();
+  lines.forEach((line, index) => {
+    const lineKey = wsQuoteLineKey(line, index);
+    const groupId = line.promotion_group;
+    const promotion = (groupId && promotionByGroup.get(groupId)) || line.promotion_display || promotionByLineKey.get(lineKey);
+    // Group every component, including bundles made of different products.
+    // A delayed quote must not split a customer-selected promotion again.
+    const key = groupId ? `promotion:${groupId}` : `line:${line.line}`;
+    const row = groups.get(key) || { key, lines: [], quotedItems: [], promotion: promotion || null };
+    row.lines.push(line);
+    row.quotedItems.push(quotedItems.get(lineKey));
+    groups.set(key, row);
+  });
+
+  return [...groups.values()].map((row) => ({
+    ...row,
+    line: row.quotedItems[0]?.personalization_snapshot ? {...row.lines[0], options: row.quotedItems[0].personalization_snapshot.map(o=>({label: `${o.name}: ${o.value}`}))} : row.lines[0],
+    isPromotion: row.lines.some((line) => Boolean(line.promotion_group)),
+    quantity: row.lines.reduce((total, line) => total + Number(line.qty || 0), 0),
+    price: row.quotedItems.reduce((total, item) => total + wsMoney(item?.total_gross_value_after_discount), 0),
+    weekdayDiscount: row.quotedItems.reduce(
+      (total, item) => total + (weekdayDiscountByLineKey.get(item?.line_key) || 0),
+      0,
+    ),
+    weekdayPercent,
+  }));
+}
+
+function wsPromotionBasketNote(application, t) {
+  const snapshot = application?.promotion_snapshot || {};
+  const reward = application?.reward || snapshot.reward || {};
+  const promotionType = application?.promotion_type || snapshot.promotion_type;
+  const applied = t('cart.promotionApplied', { name: application?.display_name || snapshot.name || '' });
+  if (promotionType === 'BUY_X_GET_Y' && reward.type === 'FIXED_PRICE'
+      && Number(reward.quantity || 0) > 0 && Number(reward.value || 0) >= 0) {
+    return `${applied} · ${t('cart.promotionFixedPrice', {
+      quantity: Number(reward.quantity),
+      price: wsCurrency(Number(reward.value)),
+    })}`;
   }
-
-  return (
-    <div className={`ws-cross ws-cross--${status}${unlocked ? ' is-unlocked' : ''}`}>
-      <div className="ws-cross__head">
-        <div className="ws-cross__icon" aria-hidden="true">
-          {unlocked ? (
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M5 12.5l4 4 10-10"/>
-            </svg>
-          ) : (
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 7H4v5h16V7Z"/>
-              <path d="M5 12v8h14v-8"/>
-              <path d="M12 7v13"/>
-              <path d="M12 7c-1.5-2.5-5-2.5-5 0 0 1 .5 2 2 2h3"/>
-              <path d="M12 7c1.5-2.5 5-2.5 5 0 0 1-.5 2-2 2h-3"/>
-            </svg>
-          )}
-        </div>
-        <div className="ws-cross__titles">
-          <div className="ws-cross__title">{t('cross.title', { n: threshold })}</div>
-          <div className="ws-cross__lede">{lede}</div>
-        </div>
-        {savings > 0 && <div className="ws-cross__save">−€{savings.toFixed(2)}</div>}
-      </div>
-      {!unlocked && (
-        <div className="ws-cross__dots" aria-hidden="true">
-          {Array.from({ length: groupSize }).map((_, i) => {
-            let cls = 'ws-cross__dot';
-            if (i < threshold) cls += ' is-buy';
-            else cls += ' is-free';
-            if (i < inCycle) cls += ' is-on';
-            return <span key={i} className={cls}/>;
-          })}
-        </div>
-      )}
-      {!unlocked && (
-        <div className="ws-cross__hint">{t('cross.hint')}</div>
-      )}
-      {unlocked && remainder > 0 && (
-        <div className="ws-cross__nudge">
-          {t(toNextCycle > 1 ? 'cross.nudgeMany' : 'cross.nudgeOne', { n: toNextCycle })}
-        </div>
-      )}
-    </div>
-  );
+  return applied;
 }
 
-/* Suggestions « Panier Croisé ». Le serveur reçoit le panier et rend les
-   produits à proposer, DÉJÀ filtrés sur l'assortiment de la boutique, la gamme
-   saisonnière à la date de retrait et le stock du jour : le navigateur ne
-   décide de rien. L'heure comparée est celle du CRÉNEAU DE RETRAIT, pas de la
-   commande : on commande le soir pour le lendemain midi.
-   Aucune suggestion → aucun bloc : pas de rubrique vide. */
+function wsPromotionDisplayTotal(promotion, fallback) {
+  const value = promotion?.promotion_total_gross_after_discount
+    ?? promotion?.bundle_price
+    ?? promotion?.total_gross_after_discount;
+  return Number.isFinite(Number(value)) ? Number(value) : fallback;
+}
+
+function wsHasPromotionSelection(basket) {
+  return (Array.isArray(basket) && basket.some((line) => typeof line?.promotion_group === 'string' && line.promotion_group !== ''))
+    || wsSelectedAutomaticPromotionId(basket) !== null;
+}
+
+function wsSelectedAutomaticPromotionId(basket) {
+  const ids = new Set((Array.isArray(basket) ? basket : []).map((line) => {
+    const direct = Number(line?.promotion_id || 0);
+    if (direct > 0) return direct;
+    const legacy = String(line?.promotion_group || '').match(/-(\d+)$/);
+    return legacy ? Number(legacy[1]) : 0;
+  }).filter((id) => Number.isInteger(id) && id > 0));
+  return ids.size === 1 ? [...ids][0] : null;
+}
+
+// Removing one product from a multi-product promotion turns its remaining
+// products back into ordinary cart lines. Keeping the local marker would lock
+// the promotion selector even though the server no longer applies the offer.
+function wsRemoveBasketLines(basket, lineIds) {
+  const ids = new Set(Array.isArray(lineIds) ? lineIds : [lineIds]);
+  const affectedGroups = new Set((Array.isArray(basket) ? basket : [])
+    .filter((line) => ids.has(line.line) && line.promotion_group)
+    .map((line) => line.promotion_group));
+
+  // Removing one component must always remove the complete customer-facing
+  // promotion. Retagging its remaining products as ordinary lines was the
+  // source of promotions silently consuming another product in the basket.
+  for (const line of (Array.isArray(basket) ? basket : [])) {
+    if (affectedGroups.has(line.promotion_group)) ids.add(line.line);
+  }
+  return (Array.isArray(basket) ? basket : []).filter((line) => !ids.has(line.line));
+}
+
 function CrossSell({ shopId, mode, date, time, basket, placement, onAdd }) {
   const { t } = wsUseT();
   const [items, setItems] = React.useState([]);
@@ -1747,27 +1848,26 @@ function CrossSell({ shopId, mode, date, time, basket, placement, onAdd }) {
   const key = ids.slice().sort().join(',') + '|' + (date || '') + '|' + (time || '') + '|' + mode;
   React.useEffect(() => {
     let alive = true;
-    const base = window.WSCatalog && window.WSCatalog.endpoint;
+    const base = window.WSCatalog && window.WSCatalog.crossSellEndpoint;
     if (!base || !shopId || ids.length === 0) { setItems([]); return; }
-    fetch(base + '/cross-sell', {
+    fetch(base, {
       method: 'POST', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ shopId, mode, date: date || null, time: time || null, placement, productIds: ids }),
     })
-      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))))
       .then((list) => { if (alive) setItems(Array.isArray(list) ? list : []); })
-      // Une panne de suggestions ne doit RIEN casser du panier, mais elle se
-      // trace, sinon « aucune suggestion » et « serveur muet » se ressemblent.
-      .catch((e) => { if (alive) { setItems([]); bug('cross-sell', 'suggestions indisponibles', e); } });
+      // Recommendation failures are reported independently of the basket.
+      .catch((e) => { if (alive) { setItems([]); bug('cross-sell', wsText("error.service"), e); } });
     return () => { alive = false; };
   }, [key, shopId, placement]);
 
-  // Mesure : une impression comptée par produit réellement affiché.
+  // Track impressions only when a statistics endpoint is configured.
   React.useEffect(() => {
-    const base = window.WSCatalog && window.WSCatalog.endpoint;
+    const base = window.WSCatalog && window.WSCatalog.crossSellStatsEndpoint;
     if (!base || !items.length) return;
     for (const it of items) {
-      fetch(base + '/cross-sell/stat', {
+      fetch(base, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ event: 'impression', ruleId: it.ruleId, productId: it.productId, shopId }),
       }).catch(() => {});
@@ -1783,11 +1883,11 @@ function CrossSell({ shopId, mode, date, time, basket, placement, onAdd }) {
           {it.img ? <img className="ws-xsell__img" src={it.img} alt="" onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }}/>
                   : <span className="ws-xsell__img"/>}
           <span className="ws-xsell__n">{it.name}</span>
-          <span className="ws-xsell__p">€{Number(it.price).toFixed(2)}</span>
+          <span className="ws-xsell__p">€{wsNumber(Number(it.price))}</span>
           <button type="button" className="ws-xsell__add" aria-label={t('xsell.addItem', { name: it.name })} title={t('xsell.add')}
             onClick={() => {
-              const base = window.WSCatalog && window.WSCatalog.endpoint;
-              if (base) fetch(base + '/cross-sell/stat', {
+              const base = window.WSCatalog && window.WSCatalog.crossSellStatsEndpoint;
+              if (base) fetch(base, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ event: 'add', ruleId: it.ruleId, productId: it.productId, shopId }),
               }).catch(() => {});
@@ -1799,34 +1899,21 @@ function CrossSell({ shopId, mode, date, time, basket, placement, onAdd }) {
   );
 }
 
-function Basket({ hidePrices, officeName, shop, mode, basket, onClose, onCheckout, onRemove, onNote, notesEnabled, deliveryFeeResult,
+function Basket({ hidePrices, contextLabel, officeName, shop, mode, basket, quoteState, onClose, onCheckout, onRemove, onNote, notesEnabled, deliveryFeeResult,
                   date, slotTime, onCrossAdd }) {
-  /* Les totaux affichés sont un APERÇU, calculé par wsTotaux() : miroir exact
-     de l'addition du serveur, seule à faire foi. La commande, elle, est
-     recalculée serveur depuis les prix ERP : c'est son total qui s'affiche à
-     la confirmation. (L'ancienne « réduction Webshop · 5 % » codée en dur a
-     disparu : la remise réelle vient de shops.discount_value.) */
+  // Display the authoritative API quote for this cart.
   const { t } = wsUseT();
-  const [crossPortionRule, setCrossPortionRule] = React.useState(null);
-  React.useEffect(() => {
-    if (window.WSPricing && typeof window.WSPricing.getCrossPortionRule === 'function') {
-      window.WSPricing.getCrossPortionRule()
-        .then((r) => { if (r) setCrossPortionRule(r); })
-        .catch(() => {});
-    }
-  }, []);
-  const crossOffer = computeCrossPortionOffer(basket, crossPortionRule);
-  const crossSavings = crossOffer?.savings || 0;
   const deliveryFee = (mode === 'delivery' && deliveryFeeResult) ? (deliveryFeeResult.fee_amount || 0) : 0;
-  // Le bon de réduction se saisit au tunnel : il n'entre pas dans ce total-ci,
-  // exactement comme côté serveur où il s'applique après la remise boutique.
-  const T = wsTotaux({ basket, shop, crossSavings, deliveryFee });
+  const T = wsQuoteTotals(quoteState.quote, deliveryFee)
+    || { sousTotal: 0, croise: 0, remise: 0, bon: 0, frais: 0, total: 0 };
+  const displayRows = wsBasketDisplayRows(basket, quoteState.status === 'ready' ? quoteState.quote : null);
   const subtotal = T.sousTotal;
   const total = T.total;
   return (
     <aside className="ws-basket">
+      {contextLabel && <div className="ws-office-cart-context">{t('officeAccess.basket', { name: contextLabel })}</div>}
       <div className="ws-basket__head">
-        <button className="ws-basket__back"><Pict d={ICONS.back} s={11}/> {t('cart.back')}</button>
+        {onClose && <button className="ws-basket__back" onClick={onClose}><Pict d={ICONS.back} s={11}/> {t('cart.back')}</button>}
         <span className="ws-basket__title">{t('cart.title')}</span>
       </div>
 
@@ -1835,18 +1922,28 @@ function Basket({ hidePrices, officeName, shop, mode, basket, onClose, onCheckou
         {t(mode === 'collect' ? 'cart.mode.collect' : 'cart.mode.delivery')}
       </div>
 
+      {mode === 'delivery' && officeName && <div className="ws-basket__office">{officeName}</div>}
+
       <div className="ws-basket__items">
         {basket.length === 0 && (
           <div className="ws-basket__empty">{t('cart.empty')}</div>
         )}
-        {basket.map((l) => (
-          <div key={l.line} className="ws-line">
-            <div className="ws-line__qty">×{l.qty}</div>
+        {displayRows.map((row) => {
+          const l = row.line;
+          const groupedPromotion = row.isPromotion;
+          const displayName = groupedPromotion && row.promotion ? row.promotion.display_name : l.name;
+          return <div key={row.key} className={`ws-line${groupedPromotion ? ' ws-line--promotion' : ''}`}>
+            <div className="ws-line__qty">×{groupedPromotion ? 1 : row.quantity}</div>
             <div className="ws-line__body">
-              <div className="ws-line__name">{l.name}</div>
-              {l.options.map((o, i) => (<div key={i} className="ws-line__opt">{o.label}</div>))}
-              {l.offerLabel && (
-                <div className="ws-line__offer">{t('cart.offer', { label: l.offerLabel })}{l.offerDiscount ? ` · −€${Number(l.offerDiscount).toFixed(2)}` : ''}</div>
+              <div className="ws-line__name">{displayName}</div>
+              {groupedPromotion
+                ? row.lines.map((line) => <div key={line.line} className="ws-line__opt">×{line.qty} {line.name}</div>)
+                : l.options.map((o, i) => (<div key={i} className="ws-line__opt">{o.label}</div>))}
+              {row.promotion && <div className="ws-line__offer">{wsPromotionBasketNote(row.promotion, t)}</div>}
+              {row.weekdayDiscount > 0 && (
+                <div className="ws-line__offer">
+                  {t('sum.weekdayDiscount')} {row.weekdayPercent > 0 && `(${wsNumber(row.weekdayPercent)}%)`} · −€{wsNumber(row.weekdayDiscount)}
+                </div>
               )}
               {notesEnabled && typeof onNote === 'function' && (
                 <div className="ws-line__notewrap">
@@ -1862,13 +1959,13 @@ function Basket({ hidePrices, officeName, shop, mode, basket, onClose, onCheckou
                 </div>
               )}
             </div>
-            <div className="ws-line__price">€{(l.price * l.qty).toFixed(2)}</div>
+            <div className="ws-line__price">€{wsNumber(row.price)}</div>
             {typeof onRemove === 'function' && (
               <button
                 type="button"
                 className="ws-line__remove"
-                onClick={() => onRemove(l.line)}
-                aria-label={t('cart.removeItem', { name: l.name })}
+                onClick={() => onRemove(row.lines.map((line) => line.line))}
+                aria-label={t('cart.removeItem', { name: displayName })}
                 title={t('cart.remove')}
               >
                 <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
@@ -1880,15 +1977,13 @@ function Basket({ hidePrices, officeName, shop, mode, basket, onClose, onCheckou
                 </svg>
               </button>
             )}
-          </div>
-        ))}
+          </div>;
+        })}
         {typeof onCrossAdd === 'function' && (
           <CrossSell shopId={shop && shop.id} mode={mode} date={date} time={slotTime}
                      basket={basket} placement="cart" onAdd={onCrossAdd}/>
         )}
       </div>
-
-      {crossOffer && <CrossPortionStrip calc={crossOffer}/>}
 
       {hidePrices ? (
         <div className="ws-basket__office">
@@ -1900,47 +1995,55 @@ function Basket({ hidePrices, officeName, shop, mode, basket, onClose, onCheckou
         {basket.length > 0 && (
           <div className="ws-basket__row">
             <span>{t('cart.subtotal')}</span>
-            <span>€{subtotal.toFixed(2)}</span>
-          </div>
-        )}
-
-        {crossSavings > 0 && (
-          <div className="ws-basket__row ws-basket__row--promo">
-            <span>{t((crossOffer?.freeCount || 0) > 1 ? 'cross.freeMany' : 'cross.freeOne',
-                     { n: crossOffer?.freeCount || 0 })}</span>
-            <span>−€{crossSavings.toFixed(2)}</span>
+            <span>€{wsNumber(subtotal)}</span>
           </div>
         )}
 
         {T.remise > 0 && (
           <div className="ws-basket__row ws-basket__row--promo">
-            <span>{t('cart.shopDiscount')}{T.remisePct ? ` · ${T.remisePct} %` : ''}</span>
-            <span>−€{T.remise.toFixed(2)}</span>
+            <span>{t('co.promo.title')}</span>
+            <span>−€{wsNumber(T.remise)}</span>
+          </div>
+        )}
+        {T.bon > 0 && <div className="ws-basket__row ws-basket__row--promo">
+          <span>{t('sum.code')} {quoteState.quote.voucher.code}</span><span>−€{wsNumber(T.bon)}</span>
+        </div>}
+        {T.weekday > 0 && (
+          <div className="ws-basket__row ws-basket__row--promo">
+            <span>{t('sum.weekdayDiscount')}{T.weekdayPercent > 0 && ` (${wsNumber(T.weekdayPercent)}%)`}</span>
+            <span>−€{wsNumber(T.weekday)}</span>
+          </div>
+        )}
+        {T.weekday === 0 && !T.weekdayThresholdMet && T.weekdayMinimum > 0 && (
+          <div className="ws-basket__row ws-basket__row--fee-nudge">
+            <span>{t('sum.weekdayDiscountMinimum', { amount: `€${wsNumber(T.weekdayMinimum)}`, remaining: `€${wsNumber(T.weekdayRemaining)}` })}</span>
           </div>
         )}
 
         {deliveryFeeResult && mode === 'delivery' && (
           <div className={`ws-basket__row${deliveryFee === 0 ? ' ws-basket__row--free' : ''}`}>
             <span>{t('cart.deliveryFee')}{deliveryFee === 0 && deliveryFeeResult.free_delivery_minimum > 0
-              ? ' · ' + t('cart.deliveryFreeFrom', { amount: '€' + deliveryFeeResult.free_delivery_minimum.toFixed(2) })
+              ? ' · ' + t('cart.deliveryFreeFrom', { amount: '€' + wsNumber(deliveryFeeResult.free_delivery_minimum) })
               : ''}</span>
-            <span>{deliveryFee === 0 ? t('cart.deliveryFree') : `+€${deliveryFee.toFixed(2)}`}</span>
+            <span>{deliveryFee === 0 ? t('cart.deliveryFree') : `+€${wsNumber(deliveryFee)}`}</span>
           </div>
         )}
         {deliveryFeeResult && mode === 'delivery' && deliveryFee > 0 && deliveryFeeResult.free_delivery_minimum > 0 && deliveryFeeResult.amount_remaining_for_free > 0 && (
           <div className="ws-basket__row ws-basket__row--fee-nudge">
-            <span>{t('cart.deliveryRemaining', { amount: '€' + deliveryFeeResult.amount_remaining_for_free.toFixed(2) })}</span>
+            <span>{t('cart.deliveryRemaining', { amount: '€' + wsNumber(deliveryFeeResult.amount_remaining_for_free) })}</span>
           </div>
         )}
 
         <div className="ws-basket__total">
           <span>{t('cart.total')}</span>
-          <span className="ws-basket__total-amount">€{total.toFixed(2)}</span>
+          <span className="ws-basket__total-amount">€{wsNumber(total)}</span>
         </div>
       </div>
 
       </>)}
-      <button className="ws-cta" style={{ background: 'var(--color-primary)' }} {...wsTap(onCheckout, { shield: true })} disabled={!basket.length}>
+      {quoteState.status === 'loading' && <p className="ws-basket__empty">{wsText("ui.updatingPrices")}</p>}
+      {quoteState.status === 'error' && <p className="ws-basket__empty" role="alert">{wsMessage(quoteState.error)}</p>}
+      <button className="ws-cta" style={{ background: 'var(--color-primary)' }} {...wsTap(onCheckout, { shield: true })} disabled={!basket.length || quoteState.status !== 'ready' || !quoteState.quote?.totals} aria-busy={quoteState.status === 'loading'}>
         {t('cart.checkout')}
         <Pict d={<path d="M5 12h14M13 5l7 7-7 7"/>} s={13}/>
       </button>
@@ -2004,11 +2107,67 @@ function CategoryRow({ active, sub, onSelect, onSelectSub, onBack, accent, tint,
   // se transforme sans qu'aucun élément n'apparaisse ailleurs : rien ne le
   // signalerait par défaut aux lecteurs d'écran).
   const stripRef = React.useRef(null);
+  React.useEffect(() => {
+    const strip = stripRef.current;
+    if (!strip) return;
+    let gesture = null;
+    let suppressClick = false;
+    const down = (event) => {
+      if (event.pointerType !== 'mouse' || event.button !== 0) return;
+      suppressClick = false;
+      gesture = { id: event.pointerId, x: event.clientX, left: strip.scrollLeft, dragging: false };
+    };
+    const move = (event) => {
+      if (!gesture || gesture.id !== event.pointerId) return;
+      const delta = event.clientX - gesture.x;
+      if (!gesture.dragging && Math.abs(delta) < 6) return;
+      if (!gesture.dragging) {
+        gesture.dragging = true;
+        suppressClick = true;
+        strip.setPointerCapture(event.pointerId);
+        strip.classList.add('is-dragging');
+      }
+      event.preventDefault();
+      strip.scrollLeft = gesture.left - delta;
+    };
+    const end = (event) => {
+      if (!gesture || gesture.id !== event.pointerId) return;
+      const dragged = gesture.dragging;
+      gesture = null;
+      strip.classList.remove('is-dragging');
+      if (strip.hasPointerCapture(event.pointerId)) strip.releasePointerCapture(event.pointerId);
+      // Capture phase prevents the native wsTap pointerup handler from selecting a category.
+      if (dragged) { event.preventDefault(); event.stopPropagation(); }
+    };
+    const click = (event) => {
+      if (suppressClick && event.detail !== 0) {
+        event.preventDefault(); event.stopPropagation(); suppressClick = false;
+      }
+    };
+    const preventImageDrag = (event) => event.preventDefault();
+    strip.addEventListener('pointerdown', down, true);
+    strip.addEventListener('pointermove', move, true);
+    strip.addEventListener('pointerup', end, true);
+    strip.addEventListener('pointercancel', end, true);
+    strip.addEventListener('lostpointercapture', end, true);
+    strip.addEventListener('click', click, true);
+    strip.addEventListener('dragstart', preventImageDrag);
+    return () => {
+      strip.removeEventListener('pointerdown', down, true);
+      strip.removeEventListener('pointermove', move, true);
+      strip.removeEventListener('pointerup', end, true);
+      strip.removeEventListener('pointercancel', end, true);
+      strip.removeEventListener('lostpointercapture', end, true);
+      strip.removeEventListener('click', click, true);
+      strip.removeEventListener('dragstart', preventImageDrag);
+    };
+  }, []);
   const prevLevel = React.useRef(subLevel);
   const [announce, setAnnounce] = React.useState('');
   React.useEffect(() => {
     if (prevLevel.current === subLevel) return;
     prevLevel.current = subLevel;
+    if (stripRef.current) stripRef.current.scrollLeft = 0;
     setAnnounce(subLevel ? t('nav.category.subsOf', { category: catName }) : t('nav.category.cats'));
     const first = stripRef.current && stripRef.current.querySelector('button');
     if (first) first.focus();
@@ -2062,9 +2221,10 @@ function CategoryRow({ active, sub, onSelect, onSelectSub, onBack, accent, tint,
           <>
             {/* Première position : état « retour », porteur du nom de la
                 catégorie courante (dire où on est + permettre d'en sortir). */}
-            <button key="back" className="ws-cat ws-cat--back" onClick={onBack}>
-              <span className="ws-cat__tile">{icons.back ? <img src={icons.back} alt=""/> : null}</span>
-              <span className="ws-cat__lbl">{t('nav.category.back', { category: catName })}</span>
+            <button key="back" type="button" className="ws-categories-back" onClick={onBack} aria-label={t('nav.category.backAll')} title={t('nav.category.backAll')}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+              </svg>
             </button>
             {visibleSubs.map((s) => {
               const isOn = String(sub) === String(s.id);
@@ -2095,107 +2255,9 @@ function CategoryRow({ active, sub, onSelect, onSelectSub, onBack, accent, tint,
 // =========================================================================
 
 // Variant A : Subtle: small shop chip after brand
-// ── Bandeau « objectif d'achat cumulé → produit cadeau » (haut de boutique) ──
-// Lit WSPromo.active(shop) puis la progression du client. Barre de progression,
-// message « plus que X € », et à l'objectif : produit cadeau + code (récupéré via
-// claim, idempotent). Masqué si aucune campagne / pas d'identité (invité non
-// connecté) : l'invité applique son code au checkout.
-function GiftIcon({ size = 22, className }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-         strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
-      <path d="M20 12v9H4v-9"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/>
-      <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
-      <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
-    </svg>
-  );
-}
-function GiftProgressBanner({ shop, user }) {
-  const { t } = wsUseT();
-  const [prog, setProg] = React.useState(null);
-  const [copied, setCopied] = React.useState(false);
-  const shopId = shop && shop.id;
-  const guestEmail = user ? null : null;   // page boutique : identité = client connecté (jeton) ou démo
-
-  React.useEffect(() => {
-    let alive = true;
-    if (!window.WSPromo) return;
-    Promise.resolve(window.WSPromo.active({ shopId }))
-      .then((camps) => {
-        const c = Array.isArray(camps) ? camps[0] : null;
-        if (!c) { if (alive) setProg(null); return; }
-        return Promise.resolve(window.WSPromo.progress(c.id, { guestEmail }))
-          .then((p) => { if (alive) setProg(p && p.campaign ? p : null); });
-      })
-      .catch(() => { if (alive) setProg(null); });
-    return () => { alive = false; };
-  }, [shopId, user && user.id]);
-
-  // Objectif atteint sans code encore émis → claim (idempotent) pour l'obtenir.
-  React.useEffect(() => {
-    if (prog && prog.status === 'unlocked' && !prog.voucherCode && window.WSPromo) {
-      Promise.resolve(window.WSPromo.claim(prog.campaign.id, { guestEmail }))
-        .then((p) => { if (p && p.campaign) setProg(p); }).catch(() => {});
-    }
-  }, [prog && prog.status, prog && prog.voucherCode]);
-
-  if (!prog || !prog.campaign) return null;
-  const c = prog.campaign;
-  const cur = c.currency || 'EUR';
-  const money = (n) => new Intl.NumberFormat('fr-BE', { style: 'currency', currency: cur, maximumFractionDigits: Number.isInteger(n) ? 0 : 2 }).format(n);
-  const pct = Math.max(0, Math.min(100, Math.round((prog.accumulated / c.threshold) * 100)));
-  const unlocked = prog.status === 'unlocked';
-  const reward = c.reward || {};
-  const copy = () => {
-    if (!prog.voucherCode) return;
-    try { navigator.clipboard.writeText(prog.voucherCode); setCopied(true); setTimeout(() => setCopied(false), 1800); } catch (_) {}
-  };
-
-  return (
-    <section className={`ws-giftbar${unlocked ? ' is-unlocked' : ''}`} aria-label={t('gift.campaign')}>
-      <div className="ws-giftbar__head">
-        <GiftIcon size={22} className="ws-giftbar__ic"/>
-        <div>
-          <div className="ws-giftbar__ttl">{unlocked ? 'Cadeau débloqué' : 'Votre cadeau vous attend'}</div>
-          <div className="ws-giftbar__cap">{c.name}{c.endsAt ? ` · jusqu'au ${String(c.endsAt).slice(8, 10)}/${String(c.endsAt).slice(5, 7)}` : ''}</div>
-        </div>
-      </div>
-      <div className="ws-giftbar__bar"><div className="ws-giftbar__fill" style={{ width: pct + '%' }}/></div>
-      <div className="ws-giftbar__amt">
-        <b>{money(prog.accumulated)}</b><span className="ws-giftbar__goal">objectif {money(c.threshold)}</span>
-      </div>
-      {!unlocked && (
-        <div className="ws-giftbar__remain">{tRich(t, 'gift.remaining', { amount: money(prog.remaining) })}</div>
-      )}
-      {unlocked && (
-        <>
-          <div className="ws-giftbar__reward">
-            <span className="ws-giftbar__sw"/>
-            <span>
-              <span className="ws-giftbar__pn">{reward.name || 'Votre cadeau'}</span>
-              <span className="ws-giftbar__pp">Cadeau · {money(0)}</span>
-            </span>
-          </div>
-          {prog.voucherCode && (
-            <div className="ws-giftbar__code">
-              <span>
-                <span className="ws-giftbar__lab">{t('gift.yourCode')}</span>
-                <span className="ws-giftbar__val">{prog.voucherCode}</span>
-              </span>
-              <button type="button" className="ws-giftbar__copy" onClick={copy}>{copied ? 'Copié' : 'Copier'}</button>
-            </div>
-          )}
-          {c.rewardDeliveryDate && (
-            <div className="ws-giftbar__hint">À ajouter à votre commande dès le {String(c.rewardDeliveryDate).slice(8, 10)}/{String(c.rewardDeliveryDate).slice(5, 7)}.</div>
-          )}
-        </>
-      )}
-    </section>
-  );
-}
 
 function NavbarA({ shop, mode, onMode, onSwitchShop, cartCount, date, onDate, user, onAccount, onAllergens,
-                   collectCutoffPassed, collectCutoffLabel, deliveryCutoffPassed, deliveryCutoffLabel, minLeadDays }) {
+                   collectCutoffPassed, collectCutoffLabel, deliveryCutoffPassed, deliveryCutoffLabel, minLeadDays, officeMenus }) {
   const { t } = wsUseT();
   return (
     <header className="ws-nav ws-nav--A">
@@ -2209,9 +2271,7 @@ function NavbarA({ shop, mode, onMode, onSwitchShop, cartCount, date, onDate, us
           collectCutoffPassed={collectCutoffPassed} collectCutoffLabel={collectCutoffLabel}
           deliveryCutoffPassed={deliveryCutoffPassed} deliveryCutoffLabel={deliveryCutoffLabel}
           minLeadDays={minLeadDays}/>
-        <ModePills mode={mode} onChange={onMode}
-          collectCutoffPassed={collectCutoffPassed} collectCutoffLabel={collectCutoffLabel}
-          deliveryCutoffPassed={deliveryCutoffPassed} deliveryCutoffLabel={deliveryCutoffLabel}/>
+
       </div>
       <div className="ws-nav__right">
         {/* Desktop : sélecteur de langue. Mobile : masqué (voir .ws-nav__lang),
@@ -2233,6 +2293,12 @@ function NavbarA({ shop, mode, onMode, onSwitchShop, cartCount, date, onDate, us
           {cartCount > 0 && <span className="ws-nav__cart-badge">{cartCount}</span>}
         </button>
       </div>
+      <div className="ws-nav__ordering">
+        <ModePills shopId={shop.id} mode={mode} onChange={onMode}
+          collectCutoffPassed={collectCutoffPassed} collectCutoffLabel={collectCutoffLabel}
+          deliveryCutoffPassed={deliveryCutoffPassed} deliveryCutoffLabel={deliveryCutoffLabel}/>
+        {officeMenus}
+      </div>
     </header>
   );
 }
@@ -2248,8 +2314,7 @@ function NavbarB({ shop, mode, onMode, onSwitchShop, cartCount, date, onDate, on
           <span className="ws-shopbar__pin"><Pict d={ICONS.pin} s={12}/></span>
           <span className="ws-shopbar__name">{tRich(t, 'nav.orderingAt', { shop: shop.name })}</span>
           <span className="ws-shopbar__city">{shop.city} · {shop.address}</span>
-          <button className="ws-shopbar__switch" onClick={onSwitchShop}>
-            Changer de boutique <Pict d={ICONS.switch} s={12}/>
+          <button className="ws-shopbar__switch" onClick={onSwitchShop}> {wsText("ui.changeShop")} <Pict d={ICONS.switch} s={12}/>
           </button>
         </div>
       </div>
@@ -2260,7 +2325,9 @@ function NavbarB({ shop, mode, onMode, onSwitchShop, cartCount, date, onDate, on
             collectCutoffPassed={collectCutoffPassed} collectCutoffLabel={collectCutoffLabel}
             deliveryCutoffPassed={deliveryCutoffPassed} deliveryCutoffLabel={deliveryCutoffLabel}
             minLeadDays={minLeadDays}/>
-          <ModePills mode={mode} onChange={onMode}
+
+
+          <ModePills shopId={shop.id} mode={mode} onChange={onMode}
             collectCutoffPassed={collectCutoffPassed} collectCutoffLabel={collectCutoffLabel}
             deliveryCutoffPassed={deliveryCutoffPassed} deliveryCutoffLabel={deliveryCutoffLabel}/>
         </div>
@@ -2298,7 +2365,7 @@ function NavbarC({ shop, mode, onMode, onSwitchShop, cartCount, date, onDate, on
           collectCutoffPassed={collectCutoffPassed} collectCutoffLabel={collectCutoffLabel}
           deliveryCutoffPassed={deliveryCutoffPassed} deliveryCutoffLabel={deliveryCutoffLabel}
           minLeadDays={minLeadDays}/>
-        <ModePills mode={mode} onChange={onMode}
+        <ModePills shopId={shop.id} mode={mode} onChange={onMode}
           collectCutoffPassed={collectCutoffPassed} collectCutoffLabel={collectCutoffLabel}
           deliveryCutoffPassed={deliveryCutoffPassed} deliveryCutoffLabel={deliveryCutoffLabel}/>
       </div>
@@ -2382,6 +2449,7 @@ function useSwipeDownToClose(onClose, scrollEl) {
 
 function ModalShell({ onClose, children, narrow }) {
   const { t } = wsUseT();
+  const backdropPress = React.useRef(false);
   const panelRef = useSwipeDownToClose(onClose);
   const [showArrows, setShowArrows] = React.useState({ up: false, down: false });
   React.useEffect(() => {
@@ -2404,7 +2472,17 @@ function ModalShell({ onClose, children, narrow }) {
     el.scrollBy({ top: dir * Math.max(180, el.clientHeight * 0.6), behavior: 'smooth' });
   }
   return (
-    <div className="ws-modal" onClick={onClose}>
+    <div className="ws-modal"
+      onPointerDown={(event) => {
+        backdropPress.current = event.button === 0 && event.target === event.currentTarget;
+      }}
+      onPointerCancel={() => { backdropPress.current = false; }}
+      onClick={(event) => {
+        // A text-selection drag may end on the backdrop without starting there.
+        const startedOnBackdrop = backdropPress.current;
+        backdropPress.current = false;
+        if (startedOnBackdrop && event.target === event.currentTarget) onClose();
+      }}>
       <div ref={panelRef} className={`ws-modal__panel${narrow ? ' ws-modal__panel--narrow' : ''}`} onClick={(e) => e.stopPropagation()}>
         <span className="ws-modal__handle" aria-hidden="true"/>
         <button className="ws-modal__close" onClick={onClose} aria-label={t('common.close2')}><Pict d={ICONS.close} s={14}/></button>
@@ -2473,31 +2551,40 @@ const PHONE_PREFIXES = [
 /* Rend les options groupées : les quatre courants, puis le reste. Un groupe
    nommé vaut mieux qu'un séparateur muet — la liste ouverte dit POURQUOI ces
    quatre-là sont en haut. */
+function splitPhoneInput(value, currentPrefix) {
+  const international = String(value).trim().replace(/^00/, '+').replace(/[\s().-]/g, '');
+  if (international.startsWith('+')) {
+    const match = PHONE_PREFIXES.map(([prefix]) => prefix)
+      .sort((a, b) => b.length - a.length).find((prefix) => international.startsWith(prefix));
+    if (match) return { phonePrefix: match, phone: international.slice(match.length) };
+  }
+  return { phonePrefix: currentPrefix, phone: value };
+}
+
 function phonePrefixOptions() {
   const courants = PHONE_PREFIXES.filter((x) => x[2]);
   const autres   = PHONE_PREFIXES.filter((x) => !x[2]);
   return (
     <>
-      <optgroup label="Courants">
-        {courants.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+      <optgroup label={wsText("ui.commonPrefixes")}>
+        {courants.map(([v, l]) => <option key={v} value={v}>{l.split(' ')[0]} {v} {new Intl.DisplayNames([window.WSI18n.getLang()], { type: 'region' }).of(Array.from(l.split(' ')[0]).map(c => String.fromCharCode(c.codePointAt(0) - 127397)).join(''))}</option>)}
       </optgroup>
-      <optgroup label="Reste de l'Europe">
-        {autres.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+      <optgroup label={wsText("ui.europePrefixes")}>
+        {autres.map(([v, l]) => <option key={v} value={v}>{l.split(' ')[0]} {v} {new Intl.DisplayNames([window.WSI18n.getLang()], { type: 'region' }).of(Array.from(l.split(' ')[0]).map(c => String.fromCharCode(c.codePointAt(0) - 127397)).join(''))}</option>)}
       </optgroup>
     </>
   );
 }
 
-// ── Collecte du code postal client (obligatoire partout) ────────────────
-// Dès que 4 chiffres sont saisis, la LOCALITÉ correspondante s'affiche
-// (référentiel /geo/postcodes), liste déroulante quand un même code couvre
-// plusieurs localités (ex. 1300 → Limal · Wavre). La localité confirmée est
-// envoyée au serveur avec le code postal.
-const CP_RE = /^[1-9][0-9]{3}$/;             // format belge : 4 chiffres
+// International postal-code input. Locality suggestions are currently
+// available only for four-digit Belgian codes.
+// Match the API postal-code contract, including Polish and Dutch codes.
+const CP_RE = /^[A-Za-z0-9][A-Za-z0-9 -]{1,15}$/;
 const _cpLocCache = {};
 async function cpLocalities(cp) {
   cp = String(cp || '').trim();
-  if (!CP_RE.test(cp)) return [];
+  // The locality directory currently contains Belgian postcodes only.
+  if (!/^[1-9][0-9]{3}$/.test(cp)) return [];
   if (_cpLocCache[cp]) return _cpLocCache[cp];
   const base = (window.WSAuth && window.WSAuth.endpoint)
     ? String(window.WSAuth.endpoint).replace(/\/auth\/?$/, '') : '';
@@ -2539,13 +2626,13 @@ function CpField({ cp, locality, onCp, onLocality, onOpts, variant }) {
   const locHint = { margin: '2px 0 0', fontSize: 12.5, opacity: .75 };
   return (
     <>
-      <label className={fieldCls}>{lbl('Code postal')}
+      <label className={fieldCls}>{lbl(wsText("ui.postal"))}
         <input className={inputCls} value={cp} onChange={(e) => onCp(e.target.value)}
-          autoComplete="postal-code" inputMode="numeric" maxLength={4} placeholder="1000" required/>
+          autoComplete="postal-code" maxLength={16} placeholder="1000 / 00-001" required/>
         {opts.length === 1 && locality && <p style={locHint}>📍 {locality}</p>}
       </label>
       {opts.length > 1 && (
-        <label className={fieldCls}>{lbl('Localité')}
+        <label className={fieldCls}>{lbl(wsText("ui.locality"))}
           <select className={inputCls} value={locality} onChange={(e) => onLocality(e.target.value)} required>
             <option value="">{t('cp.pickLocality')}</option>
             {opts.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -2556,38 +2643,107 @@ function CpField({ cp, locality, onCp, onLocality, onOpts, variant }) {
   );
 }
 
-function LoginModal({ open, onClose, onLogin, onRegister, shopId }) {
+function SmsPasswordReset({ onBack }) {
+  const { t } = wsUseT();
+  const [phone, setPhone] = useState('');
+  const [prefix, setPrefix] = useState('+32');
+  const [request, setRequest] = useState(null);
+  const [code, setCode] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [done, setDone] = useState(false);
+  const [retryAt, setRetryAt] = useState(0);
+  const [now, setNow] = useState(Date.now());
+  const mounted = React.useRef(true);
+  const inFlight = React.useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => { mounted.current = false; clearInterval(timer); };
+  }, []);
+  const cooldown = Math.max(0, Math.ceil((retryAt - now) / 1000));
+  const errorText = (value) => t(['SMS_RESET_PHONE', 'SMS_RESET_LIMIT', 'SMS_RESET_INVALID', 'SMS_RESET_PASSWORD'].includes(value) ? 'smsReset.' + value : 'smsReset.SMS_RESET_UNAVAILABLE');
+  async function send(event) {
+    event?.preventDefault();
+    if (inFlight.current || Date.now() < retryAt) return;
+    inFlight.current = true; setBusy(true); setError('');
+    try {
+      const result = await window.WSAuth.otpRequest({ phone, phonePrefix: prefix });
+      if (!mounted.current) return;
+      // Even transport failures may mean a message was sent: never immediately retry.
+      setRetryAt(Date.now() + (result.retry_after || 60) * 1000); setNow(Date.now());
+      if (!result.ok) { setError(errorText(result.error)); return; }
+      setRequest(result); setCode('');
+    } catch { if (mounted.current) setError(errorText('SMS_RESET_UNAVAILABLE')); }
+    finally { inFlight.current = false; if (mounted.current) setBusy(false); }
+  }
+  async function save(event) {
+    event.preventDefault();
+    if (inFlight.current) return;
+    if ([...password].length < 4 || password !== confirm) { setError(errorText('SMS_RESET_PASSWORD')); return; }
+    inFlight.current = true; setBusy(true); setError('');
+    try {
+      const result = await window.WSAuth.otpSetPassword({ requestToken: request.request_token, code, password, passwordConfirm: confirm });
+      if (!mounted.current) return;
+      if (result.ok) { setDone(true); setPassword(''); setConfirm(''); setCode(''); setRequest(null); }
+      else setError(errorText(result.error));
+    } catch { if (mounted.current) setError(errorText('SMS_RESET_UNAVAILABLE')); }
+    finally { inFlight.current = false; if (mounted.current) setBusy(false); }
+  }
+  if (done) return <div className="ws-form"><p role="status">{t('smsReset.success')}</p><button type="button" className="ws-cta ws-cta--block" onClick={onBack}>{t('ui.backLogin')}</button></div>;
+  return <form className="ws-form" onSubmit={request ? save : send}>
+    <p className="ws-modal__lede" role="status">{t(request ? 'smsReset.sent' : 'smsReset.hint')}</p>
+    {!request && <div className="ws-form__row2">
+      <label className="ws-field"><span>{t('smsReset.prefix')}</span><input type="tel" value={prefix} maxLength={4} required pattern="[+]?[0-9]{1,3}" onChange={e => setPrefix(e.target.value)} autoComplete="tel-country-code" disabled={busy}/></label>
+      <label className="ws-field"><span>{t('form.phone')}</span><input type="tel" value={phone} required maxLength={32} onChange={e => { setPhone(e.target.value); setError(''); }} autoComplete="tel-national" disabled={busy}/></label>
+    </div>}
+    {request && <>
+      <label className="ws-field"><span>{t('smsReset.code')}</span><input inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required value={code} onChange={e => setCode(e.target.value.replace(/[^0-9]/g, ''))} autoFocus disabled={busy}/></label>
+      <label className="ws-field"><span>{t('acc.newPassword')}</span><input type="password" autoComplete="new-password" minLength={4} required value={password} onChange={e => setPassword(e.target.value)} disabled={busy}/></label>
+      <label className="ws-field"><span>{t('acc.confirmPassword')}</span><input type="password" autoComplete="new-password" minLength={4} required value={confirm} onChange={e => setConfirm(e.target.value)} disabled={busy}/></label>
+    </>}
+    {error && <p className="ws-form__err" role="alert">{error}</p>}
+    <button type="submit" className="ws-cta ws-cta--block" disabled={busy || (!request && cooldown > 0)}>{busy ? t('smsReset.working') : t(request ? 'smsReset.save' : 'smsReset.send')}</button>
+    {cooldown > 0 && <p>{t('smsReset.retry', { seconds: cooldown })}</p>}
+    {request && <button type="button" className="ws-linkbtn" disabled={busy || cooldown > 0} onClick={send}>{t('smsReset.resend')}</button>}
+    {request && <button type="button" className="ws-linkbtn" disabled={busy} onClick={() => { setRequest(null); setCode(''); setPassword(''); setConfirm(''); setError(''); }}>{t('smsReset.otherPhone')}</button>}
+    <button type="button" className="ws-linkbtn" disabled={busy} onClick={onBack}>{t('ui.backLogin')}</button>
+  </form>;
+}
+
+function LoginModal({ open, onClose, onLogin, onRegister, onGoToAccount, shopId, initialTab = 'login', invitationRegistration = false }) {
   const { t } = wsUseT();
   const [tab, setTab] = useState('login');
+  useEffect(() => { if (open) { setTab(initialTab); setForgot(false); setErr(''); } }, [open, initialTab]);
   const [form, setForm] = useState({ identifier: '', email: '', phone: '', phonePrefix: '+32', password: '', firstName: '', lastName: '', postalCode: '', locality: '', authMethod: 'email' });
   const [err, setErr] = useState('');
-  const [loading, setLoading] = useState(false);
-  /* Mot de passe oublié, PAR SMS SEULEMENT : code envoyé au numéro de la
-     fiche (SMSAPI), puis nouveau mot de passe posé dans l'ERP et connexion.
-     On n'affiche que ce que le serveur a réellement fait : le numéro masqué
-     vient de sa réponse, le décompte suit la validité annoncée. */
-  const [forgot, setForgot] = useState(false);
-  const [forgotIdent, setForgotIdent] = useState('');
-  const [otpPhase, setOtpPhase] = useState('');      // '' | 'code'
-  const [otpMask, setOtpMask]   = useState('');
-  const [otpCode, setOtpCode]   = useState('');
-  const [otpLeft, setOtpLeft]   = useState(0);
-  const [newPw, setNewPw]       = useState('');
+  const [canResendActivation, setCanResendActivation] = useState(false);
+  const [activation, setActivation] = useState(null);
+  const [activationNotice, setActivationNotice] = useState('');
+  const registrationLogin = React.useRef(null);
   useEffect(() => {
-    if (otpPhase !== 'code' || otpLeft <= 0) return;
-    const id = setTimeout(() => setOtpLeft((n) => n - 1), 1000);
-    return () => clearTimeout(id);
-  }, [otpPhase, otpLeft]);
+    if (!open) {
+      registrationLogin.current = null;
+      setActivation(null);
+      setForm(f => ({ ...f, password: '' }));
+    }
+  }, [open]);
+
+  const [loading, setLoading] = useState(false);
+  /* Password reset proves ownership through the e-mail address. This also
+     activates the client record which was created by a guest checkout. */
+  const [forgot, setForgot] = useState(false);
+  const [forgotChannel, setForgotChannel] = useState('email');
+  const [forgotIdent, setForgotIdent] = useState('');
+  const [forgotSent, setForgotSent] = useState(false);
   const [cpOpts, setCpOpts] = useState([]);      // localités du CP saisi (validation « localité choisie »)
   /* Reconnaissance par la boutique : l'inscription a trouvé une fiche au même
      numéro. On ne referme PAS la fenêtre tant que le client n'a pas répondu
      rattacher son historique d'achats est sa décision, pas la nôtre. */
   const [connu, setConnu] = useState(null);      // { prenom, concordances[] } | null
   const [lienEtat, setLienEtat] = useState('');  // '' | 'envoi' | 'pending' | 'refus'
-  /* Code SMS. '' = pas encore demandé · 'code' = envoyé, on attend la saisie.
-     Le numéro masqué vient du serveur : il ne rend jamais le numéro entier,
-     seulement de quoi savoir sur quel téléphone regarder. */
-
   if (!open) return null;
   function set(k, v) { setForm((f) => ({ ...f, [k]: v })); setErr(''); }
   async function submit(e) {
@@ -2595,34 +2751,48 @@ function LoginModal({ open, onClose, onLogin, onRegister, shopId }) {
     setLoading(true); setErr('');
     try {
       if (tab === 'login') {
-        if (!form.identifier || !form.password) { setErr('Email/téléphone et mot de passe requis.'); return; }
+        if (!form.identifier || !form.password) { setErr(wsText("error.loginRequired")); return; }
         const r = window.WSAuth
           ? await window.WSAuth.login({ identifier: form.identifier, password: form.password, phonePrefix: form.phonePrefix, authMethod: form.authMethod })
           : SRV_REQUIRED('de connexion');
         if (!r.ok) {
           // Compte existant sans mot de passe -> panneau "définir votre mot de passe"
           // (on pré-remplit avec ce qui vient d'être tapé au login).
-          setErr(r.error || 'Identifiants incorrects.'); return;
+          if (r.error === 'CLIENT_ACTIVATION_REQUIRED') { setActivation({ email: form.identifier.includes('@') ? form.identifier : '', existing: true }); setErr(''); return; }
+          setErr(r.error || wsText("error.credentials")); return;
         }
         onLogin(r.user); onClose();
       } else {
-        if (!form.firstName || !form.lastName) { setErr('Prénom et nom requis.'); return; }
+        if (!form.firstName || !form.lastName) { setErr(wsText("error.nameRequired")); return; }
         // L'inscription se fait par email (le téléphone est optionnel), le
         // serveur n'a jamais accepté l'inscription par téléphone seul, le
         // formulaire ne doit pas la promettre.
-        if (!form.email) { setErr('Email requis.'); return; }
-        if (!form.phone) { setErr('Téléphone requis.'); return; }
-        if ((form.password || '').length < 8) { setErr('Mot de passe requis (8 caractères minimum).'); return; }
+        if (!form.email) { setErr(wsText("error.emailRequired")); return; }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) { setErr(wsText('error.email')); return; }
+        if (!form.phone) { setErr(wsText("error.phoneRequired")); return; }
+        if ((form.password || '').length < 4) { setErr(wsText("error.passwordLength")); return; }
         // Code postal OBLIGATOIRE (collecte réseau) + localité confirmée quand
         // le code couvre plusieurs localités.
-        if (!CP_RE.test(String(form.postalCode).trim())) { setErr('Code postal requis (4 chiffres).'); return; }
-        if (cpOpts.length > 1 && !form.locality) { setErr('Choisissez votre localité.'); return; }
+        if (!CP_RE.test(String(form.postalCode).trim())) { setErr(wsText("error.postal")); return; }
+        if (cpOpts.length > 1 && !form.locality) { setErr(wsText("error.locality")); return; }
         const r = window.WSAuth
           ? await window.WSAuth.register({ ...form, shopId })
           : SRV_REQUIRED("d'inscription");
         if (!r.ok) {
-          if (r.exists) { setForgotIdent(form.email || form.phone || ''); setErr(r.error || 'Ce compte existe déjà : connectez-vous, ou utilisez « Mot de passe oublié » (code par SMS).'); return; }
-          setErr(r.error || "Erreur lors de l'inscription."); return;
+          setCanResendActivation(Boolean(r.exists));
+          // Keep the failed registration visible; never turn a duplicate into success.
+          setErr(r.error || wsText("error.register")); return;
+        }
+        if (invitationRegistration) {
+          const result = r.user ? r : await window.WSAuth.login({ identifier: form.email.trim(), password: form.password });
+          if (!result.ok) { setErr(result.error || wsText('error.credentials')); setTab('login'); setForm(f => ({ ...f, identifier: form.email.trim() })); return; }
+          onGoToAccount(result.user); onClose(); return;
+        }
+        if (r.activationRequired) {
+          registrationLogin.current = { identifier: form.email.trim(), password: form.password };
+          setActivation({ email: form.email.trim(), sentEmail: form.email.trim(), sent: r.emailSent });
+          setActivationNotice(''); setErr(''); setForm(f => ({ ...f, password: '' }));
+          return;
         }
         /* Reconnu par la boutique : le compte est créé et valide, on le
            signale à l'application : mais l'écran reste ouvert pour proposer
@@ -2634,7 +2804,7 @@ function LoginModal({ open, onClose, onLogin, onRegister, shopId }) {
         onRegister(r.user); onClose();
       }
     } catch (_) {
-      setErr('Erreur réseau. Veuillez réessayer.');
+      setErr(wsText("error.network"));
     } finally {
       setLoading(false);
     }
@@ -2644,36 +2814,66 @@ function LoginModal({ open, onClose, onLogin, onRegister, shopId }) {
   async function demanderLien() {
     setLienEtat('envoi');
     const r = await window.WSAuth.linkAsk();
-    if (!r.ok) { setErr(r.error || 'Demande impossible.'); setLienEtat(''); return; }
+    if (!r.ok) { setErr(r.error || wsText("error.request")); setLienEtat(''); return; }
     setLienEtat('pending');
   }
 
-  function fermerOubli() { setForgot(false); setOtpPhase(''); setOtpCode(''); setNewPw(''); setOtpMask(''); setOtpLeft(0); setTab('login'); setErr(''); }
-  async function demanderCode() {
+  function fermerOubli() { setForgot(false); setForgotSent(false); setTab('login'); setErr(''); }
+  async function demanderLienReset() {
     setErr('');
-    const ident = (forgotIdent || '').trim();
-    if (!ident) { setErr('Indiquez votre e-mail ou votre téléphone.'); return null; }
+    const email = (forgotIdent || '').trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setErr(wsText("error.email")); return; }
     setLoading(true);
     try {
-      const r = await window.WSAuth.otpRequest({ identifier: ident, phonePrefix: form.phonePrefix });
-      if (r.ok) { setOtpMask(r.phoneMasked); setOtpLeft(r.expiresIn || 180); setOtpPhase('code'); setOtpCode(''); return r; }
-      setErr(r.error || "Envoi impossible."); return r;
-    } catch (_) { setErr('Erreur réseau. Veuillez réessayer.'); return null; }
-    finally { setLoading(false); }
-  }
-  async function validerCode() {
-    setErr('');
-    if (!/^\d{4,8}$/.test(otpCode.trim())) { setErr('Saisissez le code reçu par SMS.'); return; }
-    if (!newPw || newPw.length < 8) { setErr('Mot de passe : 8 caractères minimum.'); return; }
-    setLoading(true);
-    try {
-      const r = await window.WSAuth.otpSetPassword({ identifier: (forgotIdent || '').trim(), phonePrefix: form.phonePrefix, code: otpCode.trim(), password: newPw });
-      if (!r.ok) { if (r.code === 'perime') setOtpLeft(0); setErr(r.error || 'Code incorrect.'); return; }
-      onLogin(r.user); onClose();
-    } catch (_) { setErr('Erreur réseau. Veuillez réessayer.'); }
+      const r = window.WSAuth ? await window.WSAuth.resetRequest({ email }) : SRV_REQUIRED('de réinitialisation');
+      if (r.ok) { setForgotSent(true); return; }
+      setErr(r.error || wsText("error.send"));
+    } catch (_) { setErr(wsText("error.network")); }
     finally { setLoading(false); }
   }
 
+  async function goToRegisteredAccount() {
+    if (loading || !registrationLogin.current) return;
+    setLoading(true); setErr('');
+    try {
+      const result = await window.WSAuth.login(registrationLogin.current);
+      if (!result.ok) { setErr(result.error || wsText('error.credentials')); return; }
+      registrationLogin.current = null;
+      onGoToAccount(result.user);
+      onClose();
+    } catch { setErr(wsText('error.network')); }
+    finally { setLoading(false); }
+  }
+
+  async function resendActivation(event) {
+    event.preventDefault(); setErr(''); setActivationNotice('');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(activation.email.trim())) { setErr(t('error.email')); return; }
+    setLoading(true);
+    try {
+      const result = await window.WSAuth.resendActivation(activation.email.trim());
+      if (!result.ok) { setErr(result.error); return; }
+      setActivationNotice(t('activation.resent'));
+    } finally { setLoading(false); }
+  }
+  if (activation) return (
+    <ModalShell onClose={onClose} narrow>
+      <h2 className="ws-modal__title">{t(activation.existing ? 'activation.title' : 'activation.created')}</h2>
+      <p className="ws-modal__lede" role="status">{t(activation.existing ? 'activation.required' : activation.sent ? 'activation.sent' : 'activation.mailFailed', { email: activation.sentEmail || activation.email })}</p>
+      {!activation.existing ? <div className="ws-form">
+        <p>{t('activation.accountWarning')}</p>
+        {err && <p className="ws-form__err" role="alert">{wsMessage(err)}</p>}
+        <button type="button" className="ws-cta ws-cta--block" disabled={loading} onClick={goToRegisteredAccount}>
+          {t(loading ? 'ui.loading' : 'activation.goToAccount')}
+        </button>
+      </div> : <form className="ws-form" onSubmit={resendActivation} noValidate>
+        <label className="ws-field"><span>{t('form.email')}</span><input type="email" autoComplete="email" value={activation.email} onChange={e => setActivation(a => ({ ...a, email: e.target.value }))}/></label>
+        {err && <p className="ws-form__err" role="alert">{wsMessage(err)}</p>}
+        {activationNotice && <p role="status">{wsMessage(activationNotice)}</p>}
+        <button className="ws-cta ws-cta--block" disabled={loading}>{t(loading ? 'ui.sending' : 'activation.resend')}</button>
+        <button type="button" className="ws-linkbtn" onClick={() => { setActivation(null); setErr(''); setTab('login'); }}>{t('ui.backLogin')}</button>
+      </form>}
+    </ModalShell>
+  );
   return (
     <ModalShell onClose={onClose} narrow>
       <p className="ws-modal__eyebrow">{t('auth.myAccount')}</p>
@@ -2685,92 +2885,68 @@ function LoginModal({ open, onClose, onLogin, onRegister, shopId }) {
            son titulaire : sinon le formulaire d'inscription deviendrait un
            moyen de consulter le fichier client en essayant des numéros. */
         <>
-          <h2 className="ws-modal__title">Bon retour, {connu.prenom} 👋</h2>
+          <h2 className="ws-modal__title">{wsText("ui.welcomeBack")} {connu.prenom} 👋</h2>
           {lienEtat === 'pending' ? (
             <>
-              <p className="ws-modal__lede">
-                Votre demande est transmise à votre boutique, qui vérifie qu'il s'agit bien de vous.
-              </p>
+              <p className="ws-modal__lede"> {wsText("ui.linkPending")} </p>
               <div className="ws-form">
-                <p style={{ margin: 0, fontSize: 13.5, opacity: .8 }}>
-                  Votre compte fonctionne déjà : vous pouvez commander dès maintenant.
-                  Le rattachement n'ajoute que votre historique et votre fidélité.
-                </p>
-                <button type="button" className="ws-cta ws-cta--block" onClick={onClose}>Continuer</button>
+                <p style={{ margin: 0, fontSize: 13.5, opacity: .8 }}> {wsText("ui.linkUsable")} </p>
+                <button type="button" className="ws-cta ws-cta--block" onClick={onClose}>{wsText("ui.continue")}</button>
               </div>
             </>
           ) : (
             <>
-              <p className="ws-modal__lede">
-                Votre boutique a déjà une fiche à ce numéro. Souhaitez-vous la relier à votre compte&nbsp;?
-                Vous retrouveriez votre historique d'achats et votre fidélité.
-              </p>
+              <p className="ws-modal__lede"> {wsText("ui.linkOffer")} </p>
               <div className="ws-form">
                 {Array.isArray(connu.concordances) && connu.concordances.length > 0 && (
-                  <p style={{ margin: 0, fontSize: 13, opacity: .8 }}>
-                    Ce qui correspond&nbsp;: {connu.concordances.join(', ').toLowerCase()}.
+                  <p style={{ margin: 0, fontSize: 13, opacity: .8 }}> {wsText("ui.matches")} {connu.concordances.join(', ').toLowerCase()}.
                   </p>
                 )}
                 {/* Dit sans détour ce que ça implique : c'est une donnée
                     personnelle, et c'est un humain qui validera. */}
-                <p style={{ margin: 0, fontSize: 12.5, opacity: .7 }}>
-                  Votre boutique validera la demande avant tout rattachement.
-                </p>
-                {err && <p className="ws-form__err">{err}</p>}
+                <p style={{ margin: 0, fontSize: 12.5, opacity: .7 }}> {wsText("ui.linkReview")} </p>
+                {err && <p className="ws-form__err">{wsMessage(err)}</p>}
                 <button type="button" className="ws-cta ws-cta--block" disabled={lienEtat === 'envoi'}
                         onClick={demanderLien}>
-                  {lienEtat === 'envoi' ? 'Envoi…' : "C'est bien moi, relier mon compte"}
+                  {lienEtat === 'envoi' ? wsText('ui.sending') : wsText("ui.linkConfirm")}
                 </button>
-                <button type="button" className="ws-linkbtn" onClick={onClose}>
-                  Non merci, garder un compte séparé
-                </button>
+                <button type="button" className="ws-linkbtn" onClick={onClose}> {wsText("ui.linkDecline")} </button>
               </div>
             </>
           )}
         </>
       ) : forgot ? (
         <>
-          <h2 className="ws-modal__title">Mot de passe oublié</h2>
-          <p className="ws-modal__lede">{otpPhase === 'code'
-            ? <>Code envoyé au <strong>{otpMask}</strong>, le numéro enregistré sur votre fiche. Saisissez-le avec votre nouveau mot de passe.</>
-            : 'Indiquez votre e-mail ou votre téléphone : un code vous est envoyé par SMS au numéro de votre fiche.'}</p>
-          <div className="ws-form">
-            {otpPhase !== 'code' && (
-              <label className="ws-field"><span>Email ou téléphone</span>
-                <input type="text" value={forgotIdent} onChange={(e) => { setForgotIdent(e.target.value); setErr(''); }} autoComplete="username" autoFocus/></label>
-            )}
-            {otpPhase === 'code' && (
-              <div className="ws-otp">
-                <label className="ws-field"><span>Code reçu par SMS</span>
-                  <input type="text" value={otpCode} inputMode="numeric" autoComplete="one-time-code" maxLength={8} placeholder="123456" autoFocus
-                    onChange={(e) => { setOtpCode(e.target.value.replace(/\D/g, '')); setErr(''); }}/></label>
-                <label className="ws-field"><span>Nouveau mot de passe</span>
-                  <input type="password" value={newPw} onChange={(e) => { setNewPw(e.target.value); setErr(''); }} autoComplete="new-password" placeholder="8 caractères minimum"/></label>
-                <p className="ws-otp__timer">
-                  {otpLeft > 0
-                    ? `Valable encore ${Math.floor(otpLeft / 60)}:${String(otpLeft % 60).padStart(2, '0')}`
-                    : 'Ce code a expiré.'}
-                  {' '}
-                  <button type="button" className="ws-linkbtn ws-linkbtn--inline" disabled={loading || otpLeft > 150} onClick={demanderCode}>Recevoir un nouveau code</button>
-                </p>
-              </div>
-            )}
-            {err && <p className="ws-form__err">{err}</p>}
-            {otpPhase === 'code'
-              ? <button type="button" className="ws-cta ws-cta--block" disabled={loading} onClick={validerCode}>{loading ? 'Vérification…' : 'Valider & se connecter'}</button>
-              : <button type="button" className="ws-cta ws-cta--block" disabled={loading} onClick={demanderCode}>{loading ? 'Envoi…' : 'Recevoir le code par SMS'}</button>}
-            <button type="button" className="ws-linkbtn" onClick={fermerOubli}>Retour à la connexion</button>
+          <h2 className="ws-modal__title">{wsText("ui.forgotTitle")}</h2>
+          <div className="ws-tabs">
+            <button type="button" className={`ws-tab${forgotChannel === 'email' ? ' is-active' : ''}`} onClick={() => { setForgotChannel('email'); setErr(''); }}>{wsText('form.email')}</button>
+            <button type="button" className={`ws-tab${forgotChannel === 'sms' ? ' is-active' : ''}`} onClick={() => { setForgotChannel('sms'); setErr(''); }}>SMS</button>
           </div>
+          {forgotChannel === 'sms' ? <SmsPasswordReset onBack={fermerOubli}/> : <>
+          <p className="ws-modal__lede">{forgotSent
+            ? wsText("ui.resetSent")
+            : wsText("ui.resetHint")}</p>
+          <div className="ws-form">
+            {!forgotSent && (
+              <label className="ws-field"><span>{wsText("form.email")}</span>
+                <input type="email" value={forgotIdent} onChange={(e) => { setForgotIdent(e.target.value); setErr(''); }} autoComplete="email" autoFocus/></label>
+            )}
+            {err && <p className="ws-form__err">{wsMessage(err)}</p>}
+            {!forgotSent && <button type="button" className="ws-cta ws-cta--block" disabled={loading} onClick={demanderLienReset}>{loading ? wsText('ui.sending') : wsText("ui.sendLink")}</button>}
+            {forgotSent && <button type="button" className="ws-linkbtn" disabled={loading} onClick={() => setForgotSent(false)}>{wsText("ui.otherEmail")}</button>}
+            <button type="button" className="ws-linkbtn" onClick={fermerOubli}>{wsText("ui.backLogin")}</button>
+          </div>
+          </>}
         </>
       ) : (
       <>
       <h2 className="ws-modal__title">{tRich(t, tab === 'login' ? 'auth.welcomeBack' : 'auth.createTitle')}</h2>
-      <p className="ws-modal__lede">{tab === 'login' ? 'Connectez-vous pour retrouver vos commandes et votre bureau.' : 'Quelques secondes pour commander, suivre et faire livrer.'}</p>
+      <p className="ws-modal__lede">{tab === 'login' ? wsText("ui.loginHint") : wsText("ui.registerHint")}</p>
       <div className="ws-tabs">
         <button className={`ws-tab${tab === 'login' ? ' is-active' : ''}`} onClick={() => { setTab('login'); setErr(''); }}>{t('auth.login')}</button>
         <button className={`ws-tab${tab === 'register' ? ' is-active' : ''}`} onClick={() => { setTab('register'); setErr(''); }}>{t('auth.createAccount')}</button>
       </div>
-      <form className="ws-form" onSubmit={submit}>
+      <form className="ws-form" onSubmit={submit} noValidate>
         {tab === 'register' && (
           <>
             <div className="ws-form__row2">
@@ -2778,13 +2954,13 @@ function LoginModal({ open, onClose, onLogin, onRegister, shopId }) {
               <label className="ws-field"><span>{t('form.lastName')}</span><input value={form.lastName} onChange={(e) => set('lastName', e.target.value)} autoComplete="family-name"/></label>
             </div>
             <label className="ws-field"><span>{t('form.email')}</span><input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} autoComplete="email"/></label>
-            <label className="ws-field"><span>{t('auth.password')}</span><input type="password" value={form.password} onChange={(e) => set('password', e.target.value)} autoComplete="new-password" minLength={8} placeholder={t('auth.min8')}/></label>
+            <label className="ws-field"><span>{t('auth.password')}</span><input type="password" value={form.password} onChange={(e) => set('password', e.target.value)} autoComplete="new-password" minLength={4} placeholder={t('auth.min4')}/></label>
             <label className="ws-field"><span>{t('form.phone')}</span>
               <span className="ws-phone">
-                <select className="ws-phone__pfx" value={form.phonePrefix} onChange={(e) => set('phonePrefix', e.target.value)} aria-label={t('form.phonePrefix')}>
+                <select className="ws-phone__pfx" autoComplete="tel-country-code" value={form.phonePrefix} onChange={(e) => set('phonePrefix', e.target.value)} aria-label={t('form.phonePrefix')}>
                   {phonePrefixOptions()}
                 </select>
-                <input type="tel" value={form.phone} onChange={(e) => set('phone', e.target.value)} autoComplete="tel" inputMode="tel" placeholder="470 00 00 02"/>
+                <input type="tel" value={form.phone} onChange={(e) => { const value = e.target.value; setForm((f) => ({ ...f, ...splitPhoneInput(value, f.phonePrefix) })); setErr(''); }} autoComplete="tel-national" inputMode="tel" placeholder="470 00 00 02"/>
               </span>
             </label>
             <CpField variant="modal" cp={form.postalCode} locality={form.locality}
@@ -2798,10 +2974,10 @@ function LoginModal({ open, onClose, onLogin, onRegister, shopId }) {
               <button type="button" role="tab" aria-selected={form.authMethod === 'email'} className={`ws-toggle__opt${form.authMethod === 'email' ? ' is-active' : ''}`} onClick={() => set('authMethod', 'email')}>{t('form.email')}</button>
               <button type="button" role="tab" aria-selected={form.authMethod === 'phone'} className={`ws-toggle__opt${form.authMethod === 'phone' ? ' is-active' : ''}`} onClick={() => set('authMethod', 'phone')}>{t('form.phone')}</button>
             </div>
-            <label className="ws-field"><span>{form.authMethod === 'phone' ? 'Téléphone' : 'Email'}</span>
+            <label className="ws-field"><span>{form.authMethod === 'phone' ? wsText("form.phone") : wsText("form.email")}</span>
               {form.authMethod === 'phone' ? (
                 <span className="ws-phone">
-                  <select className="ws-phone__pfx" value={form.phonePrefix} onChange={(e) => set('phonePrefix', e.target.value)} aria-label={t('form.phonePrefix')}>
+                  <select className="ws-phone__pfx" autoComplete="tel-country-code" value={form.phonePrefix} onChange={(e) => set('phonePrefix', e.target.value)} aria-label={t('form.phonePrefix')}>
                     {phonePrefixOptions()}
                   </select>
                   <input type="tel" value={form.identifier} onChange={(e) => set('identifier', e.target.value)} autoComplete="username" inputMode="tel" placeholder="470 00 00 02"/>
@@ -2811,11 +2987,12 @@ function LoginModal({ open, onClose, onLogin, onRegister, shopId }) {
               )}
             </label>
             <label className="ws-field"><span>{t('auth.password')}</span><input type="password" value={form.password} onChange={(e) => set('password', e.target.value)} autoComplete="current-password"/></label>
-            <button type="button" className="ws-linkbtn" onClick={() => { setForgot(true); setOtpPhase(''); setForgotIdent(form.identifier || ''); setErr(''); }}>Mot de passe oublié ?</button>
+            <button type="button" className="ws-linkbtn" onClick={() => { setForgot(true); setForgotSent(false); setForgotIdent(form.identifier || ''); setErr(''); }}>{wsText("ui.forgotLink")}</button>
           </>
         )}
-        {err && <p className="ws-form__err">{err}</p>}
-        <button type="submit" className="ws-cta ws-cta--block" disabled={loading}>{loading ? 'Chargement…' : (tab === 'login' ? 'Se connecter' : 'Créer mon compte')}</button>
+        {err && <p className="ws-form__err" role="alert">{wsMessage(err)}</p>}
+        {canResendActivation && tab === 'register' && <button type="button" className="ws-linkbtn" onClick={() => { setActivation({ email: form.email, existing: true }); setErr(''); }}>{t('activation.resend')}</button>}
+        <button type="submit" className="ws-cta ws-cta--block" disabled={loading}>{loading ? wsText("common.loading2") : (tab === 'login' ? wsText("ui.login") : wsText("ui.register"))}</button>
       </form>
       </>
       )}
@@ -2830,9 +3007,10 @@ function LoginModal({ open, onClose, onLogin, onRegister, shopId }) {
 // et révélable sans redéploiement. L'onglet actif survit au rafraîchissement.
 // =========================================================================
 const ACCOUNT_TABS = [
-  { key: 'profil',   label: 'Profil' },
-  { key: 'achats',   label: 'Mes achats' },
-  { key: 'fidelite', label: 'Fidélité', configFlag: 'fidelityTabEnabled' },
+  { key: 'profil',   get label() { return wsText("nav.profile"); } },
+  { key: 'achats',   get label() { return wsText("ui.purchases"); } },
+  { key: 'offices', get label() { return wsText('acc.offices.title'); } },
+  { key: 'fidelite', get label() { return wsText("ui.loyalty"); }, configFlag: 'fidelityTabEnabled' },
 ];
 const ACCOUNT_TAB_LS = 'ws.accountTab';
 
@@ -2858,302 +3036,116 @@ function FideliteShell() {
 // l'ERP du franchisé a poussé (numéro, PDF). Le contrôle de demande n'apparaît
 // que si la colonne to_invoice existe en base (capacité serveur).
 // =========================================================================
-const PURCHASE_FILTERS = [
-  { key: 'all',       label: 'Tous' },
-  { key: 'none',      label: 'Sans facture' },
-  { key: 'requested', label: 'Facture demandée' },
-  { key: 'invoiced',  label: 'Facturé' },
+const ORDER_FILTERS = [
+  { key: 'all', status: null },
+  { key: 'new', status: 'new' },
+  { key: 'ready', status: 'ready' },
+  { key: 'completed', status: 'completed' },
+  { key: 'cancelled', status: 'cancelled' },
 ];
-function AccountPurchases({ user }) {
+
+function AccountPurchases({ refreshRevision = 0, onDetailsChange }) {
   const { t } = wsUseT();
-  const [filter, setFilter]   = useState('all');
-  const [page, setPage]       = useState(1);
-  const [meta, setMeta]       = useState({ total: 0, canRequestInvoice: false, canRequestInvoiceOrders: false, invoiceNotice: '' });
-  const [items, setItems]     = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [busyRef, setBusyRef] = useState('');
-  const [notice, setNotice]   = useState('');
-  const [err, setErr]         = useState('');
-  /* Demande de facture sur une COMMANDE WEBSHOP : le ticket se déplie au
-     clic. `inv` = brouillon du panneau ouvert (destinataire choisi, TVA
-     saisie, société vérifiée) — rien n'est écrit tant que « Demander la
-     facture » n'est pas pressé. */
-  const [openRef, setOpenRef] = useState('');
-  const [inv, setInv] = useState({ who: 'mine', vat: '', entity: null, vatErr: '', checking: false });
-  const PER = 10;
+  const [filter, setFilter] = useState('all');
+  const [revision, setRevision] = useState(0);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [cancellingRef, setCancellingRef] = useState('');
+  const [selectedOrder, setSelectedOrder] = useState(null);
+
   useEffect(() => {
     let alive = true;
     setLoading(true);
-    Promise.resolve(window.WSAuth && window.WSAuth.listPurchases
-      ? window.WSAuth.listPurchases({ filter, page, perPage: PER })
-      : { items: [], total: 0 })
-      .then((d) => {
-        if (!alive || !d) return;
-        setMeta({ total: d.total || 0, canRequestInvoice: !!d.canRequestInvoice,
-                  canRequestInvoiceOrders: !!d.canRequestInvoiceOrders, invoiceNotice: d.invoiceNotice || '' });
-        setItems((prev) => (page === 1 ? (d.items || []) : prev.concat(d.items || [])));
-      })
-      .catch(() => {})
-      .then(() => { if (alive) setLoading(false); });
+    setError('');
+    const request = window.WSOrders?.listMine
+      ? window.WSOrders.listMine()
+      : Promise.reject(new Error(wsText("error.orderUnavailable")));
+    request
+      .then((payload) => { if (alive) setOrders(payload); })
+      .catch(() => { if (alive) setError(t('acc.orders.error')); })
+      .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
-  }, [filter, page]);
-  function switchFilter(f) { setFilter(f); setPage(1); setNotice(''); setErr(''); }
-  async function toggleInvoice(it, want, beOverride) {
-    setBusyRef(it.ref); setErr('');
-    // Destinataire : société liée par défaut, sinon l'utilisateur lui-même
-    // (un particulier peut demander une facture à son nom). Jamais de saisie
-    // libre : le serveur re-vérifie l'appartenance.
-    const be = want ? (beOverride || it.billingEntityId || user.companyClientId || user.id) : null;
-    const r = await window.WSAuth.requestInvoice({ ref: it.ref, want, billingEntityId: be });
-    setBusyRef('');
-    if (r.ok) {
-      setItems((list) => list.map((x) => (x.ref === it.ref
-        ? { ...x, state: want ? 'requested' : 'open', toInvoice: want ? 1 : 0, billingEntityId: want ? be : null }
-        : x)));
-      // Dit AU MOMENT de la demande, la facture n'apparaît qu'au batch mensuel.
-      if (want && r.notice) setNotice(r.notice);
-    } else {
-      setErr(r.error || 'Échec de la demande.');
-    }
-  }
-  function openTicket(it) {
-    if (openRef === it.ref) { setOpenRef(''); return; }
-    setOpenRef(it.ref); setErr('');
-    setInv({ who: user.companyClientId ? 'mine' : 'me', vat: '', entity: null, vatErr: '', checking: false });
-  }
-  /* VIES par le seul numéro de TVA : ce que VIES rend fait foi, aucune
-     saisie de nom ou d'adresse. La société n'est PAS liée au compte. */
-  async function verifyOther() {
-    const vat = inv.vat.trim();
-    if (vat.length < 4) { setInv((v) => ({ ...v, vatErr: 'Indiquez le numéro de TVA, ex. BE0123456789.' })); return; }
-    setInv((v) => ({ ...v, checking: true, vatErr: '', entity: null }));
-    const r = await window.WSAuth.billingEntityLookup({ vat });
-    setInv((v) => ({ ...v, checking: false, entity: r.ok ? r.entity : null, vatErr: r.ok ? '' : (r.error || 'Numéro non reconnu.') }));
-  }
-  async function requestOrderInvoice(it) {
-    const be = inv.who === 'other' ? (inv.entity && inv.entity.id) : (inv.who === 'mine' ? user.companyClientId : user.id);
-    if (inv.who === 'other' && !be) { setInv((v) => ({ ...v, vatErr: 'Vérifiez d’abord le numéro de TVA.' })); return; }
-    setBusyRef(it.ref); setErr('');
-    const r = await window.WSAuth.requestInvoice({ ref: it.ref, want: true, billingEntityId: be });
-    setBusyRef('');
-    if (!r.ok) { setErr(r.error || 'Échec de la demande.'); return; }
-    setItems((list) => list.map((x) => (x.ref === it.ref
-      ? { ...x, state: 'requested', toInvoice: 1, billingEntityId: be,
-          billingEntityName: inv.who === 'other' ? (inv.entity && inv.entity.name) : (inv.who === 'mine' ? user.company : null),
-          billingEntityVat:  inv.who === 'other' ? (inv.entity && inv.entity.vat)  : (inv.who === 'mine' ? (user.invoice && user.invoice.vat) : null) }
-      : x)));
-    setOpenRef('');
-    if (r.notice) setNotice(r.notice);
-  }
-  async function cancelOrderInvoice(it) {
-    setBusyRef(it.ref); setErr('');
-    const r = await window.WSAuth.requestInvoice({ ref: it.ref, want: false, billingEntityId: null });
-    setBusyRef('');
-    if (!r.ok) { setErr(r.error || 'Annulation impossible.'); return; }
-    setItems((list) => list.map((x) => (x.ref === it.ref
-      ? { ...x, state: 'open', toInvoice: 0, billingEntityId: null, billingEntityName: null, billingEntityVat: null } : x)));
-  }
-  const fmtDate = (s) => {
+  }, [t, revision, refreshRevision]);
+
+  const statusKey = orderStatusName;
+  const statusText = (status) => t('acc.orders.status.' + statusKey(status));
+  const paymentText = payment => t('acc.orders.payment.' + paymentStatusName(payment?.status));
+  const formatDate = (value) => {
+    const date = new Date(String(value || '').replace(' ', 'T'));
+    return Number.isNaN(date.getTime()) ? String(value || '') : date.toLocaleString(wsLocale(), { dateStyle: 'medium', timeStyle: 'short' });
+  };
+  const formatTotal = (value) => Number(value || 0).toLocaleString(wsLocale(), { style: 'currency', currency: 'EUR' });
+  const activeFilter = ORDER_FILTERS.find((item) => item.key === filter) || ORDER_FILTERS[0];
+  const visibleOrders = activeFilter.status ? orders.filter((order) => statusKey(order.status) === activeFilter.status || (activeFilter.status === 'new' && statusKey(order.status) === 'inProduction')) : orders;
+  const cancelOrder = async (order) => {
+    if (!window.confirm(t('acc.orders.cancelConfirm'))) return;
+    setCancellingRef(order.orderRef); setError('');
     try {
-      const d = new Date(String(s).replace(' ', 'T'));
-      return d.toLocaleDateString('fr-BE') + ' · ' + d.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' });
-    } catch (_) { return String(s || ''); }
+      const result = await window.WSOrders.cancel(order.orderRef);
+      if (!result.ok) throw new Error(wsMessage(result.description || result.error || t('acc.orders.cancelError')));
+      setOrders((current) => current.map((item) => item.orderRef === order.orderRef ? { ...item, status: 'cancelled' } : item));
+    } catch (exception) {
+      setError(exception?.message || t('acc.orders.cancelError'));
+    } finally {
+      setCancellingRef('');
+    }
   };
-  const fmtEur = (n) => ((n === null || n === undefined) ? '—' : Number(n).toFixed(2).replace('.', ',') + ' €');
-  const peppolBadge = (st) => {
-    const s = String(st || '').toLowerCase();
-    if (s === 'transmise' || s === 'sent' || s === 'ok') return <span className="ws-acc__badge ws-acc__badge--ok">{t('acc.peppolSent')}</span>;
-    if (s === 'echec' || s === 'failed' || s === 'error') return <span className="ws-acc__badge ws-acc__badge--pending">{t('acc.peppolFailed')}</span>;
-    return <span className="ws-acc__badge ws-acc__badge--pending">{t('acc.pending')}</span>;
-  };
-  const badge = (st) => (st === 'invoiced'
-    ? <span className="ws-acc__badge">{t('acc.invoiced')}</span>
-    : st === 'requested'
-      ? <span className="ws-acc__badge ws-acc__badge--pending">{t('acc.invoiceRequested')}</span>
-      : null);
-  const hasMore = items.length < (meta.total || 0);
+
+  if (selectedOrder) return <PurchaseDetails order={selectedOrder} onBack={() => { setSelectedOrder(null); onDetailsChange?.(false); setRevision(value => value + 1); }} />;
   return (
     <div className="ws-acc__section">
       <div className="ws-acc__section-h">{t('acc.purchases')}</div>
-      {/* Filtre discret : remplace un onglet « Mes factures » : le client qui
-          veut ses factures pour son comptable filtre sur « Facturé ». */}
-      <div className="ws-toggle" role="tablist" aria-label={t('acc.filterPurchases')}>
-        {PURCHASE_FILTERS.map((f) => (
-          <button key={f.key} type="button" role="tab" aria-selected={filter === f.key}
-            className={'ws-toggle__opt' + (filter === f.key ? ' is-active' : '')}
-            onClick={() => switchFilter(f.key)}>{f.label}</button>
+      <div className="ws-toggle ws-purchase-filters" role="tablist" aria-label={t('acc.filterPurchases')}>
+        {ORDER_FILTERS.map((item) => (
+          <button key={item.key} type="button" role="tab" aria-selected={filter === item.key}
+            className={'ws-toggle__opt' + (filter === item.key ? ' is-active' : '')}
+            onClick={() => setFilter(item.key)}>
+            {item.status ? t('acc.orders.status.' + item.status) : t('acc.orders.all')}
+          </button>
         ))}
       </div>
-      {notice && <p className="ws-acc__hint">🧾 {notice}</p>}
-      {err && <p className="ws-acc__vat-msg ws-acc__vat-msg--err">⚠ {err}</p>}
-      {loading && items.length === 0 && <p className="ws-acc__hint">{t('common.loading2')}</p>}
-      {!loading && items.length === 0 && (
-        <div className="ws-acc__card ws-acc__card--empty">
-          <p className="ws-acc__note">Aucun achat sur les 12 derniers mois{filter !== 'all' ? ' pour ce filtre' : ''}.</p>
-        </div>
+      {loading && <p className="ws-acc__hint">{t('common.loading2')}</p>}
+      {error && <p className="ws-acc__vat-msg ws-acc__vat-msg--err" role="alert">{wsMessage(error)}</p>}
+      {!loading && !error && visibleOrders.length === 0 && (
+        <div className="ws-acc__card ws-acc__card--empty"><p className="ws-acc__note">{t('acc.orders.empty')}</p></div>
       )}
-      {items.map((it) => {
-        const isOrder  = it.source === 'order';
-        const canOpen  = isOrder && meta.canRequestInvoiceOrders && it.state !== 'invoiced' && it.state !== 'closed';
-        const isOpen   = canOpen && openRef === it.ref;
-        return (
-        <div key={it.source + '-' + it.ref} className={'ws-acc__card' + (canOpen ? ' ws-acc__card--open' : '')}
-             onClick={canOpen && it.state !== 'requested' ? () => openTicket(it) : undefined}>
+      {visibleOrders.map((order) => (
+        <div key={order.orderRef} className={'ws-acc__card' + (statusKey(order.status) === 'cancelled' ? ' ws-purchase--cancelled' : paymentStatusName(order.payment?.status) === 'paid' ? ' ws-purchase--paid' : '')}>
           <div className="ws-acc__card-head">
-            <span className="ws-acc__k">{it.ref}</span>
-            <span className="ws-acc__v" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              {badge(it.state)}
-              {canOpen && it.state !== 'requested' && (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  {isOpen ? <path d="M6 15l6-6 6 6"/> : <path d="M6 9l6 6 6-6"/>}
-                </svg>
-              )}
-            </span>
+            <span className="ws-acc__k">{order.orderRef}</span>
+            <span className="ws-acc__badge ws-acc__badge--pending">{statusText(order.status)}</span>
           </div>
-          <div className="ws-acc__card-row"><span className="ws-acc__k">{it.shop || '—'}</span><span className="ws-acc__v">{fmtDate(it.at)}</span></div>
           <div className="ws-acc__card-row">
-            <span className="ws-acc__k">{Number(it.items) || 0} article{Number(it.items) > 1 ? 's' : ''}</span>
-            <span className="ws-acc__v">{fmtEur(it.invoiceTotal != null ? it.invoiceTotal : it.total)}</span>
+            <span className="ws-acc__k">{order.mode === 'delivery' ? t('acc.orders.delivery') : t('acc.orders.pickup')}</span>
+            <span className="ws-acc__v">{formatDate(order.slot?.dateTime)}</span>
           </div>
-          {/* Ticket de caisse FISCAL rattaché à la commande (édité à la
-              validation). N'apparaît que s'il est renseigné : jamais inventé. */}
-          {it.fiscalTicketNo && (
-            <div className="ws-acc__card-row"><span className="ws-acc__k">{t('acc.fiscalTicket')}</span>
-              <span className="ws-acc__v">{it.fiscalTicketNo}{it.fiscalTicketUrl ? <> · <a href={it.fiscalTicketUrl} target="_blank" rel="noopener">PDF</a></> : null}</span></div>
-          )}
-          {it.state === 'invoiced' && (
-            <div className="ws-acc__card-row"><span className="ws-acc__k">{t('acc.invoice')}</span>
-              <span className="ws-acc__v">{it.invoiceNo}{it.hasInvoicePdf ? ' · PDF sur demande' : ''}</span></div>
-          )}
-          {/* Statut Peppol : transmission gérée par l'ERP ; le webshop affiche
-              ce qu'il pousse. « : » tant que rien n'est renseigné. */}
-          {it.state === 'invoiced' && it.peppolStatus && (
-            <div className="ws-acc__card-row"><span className="ws-acc__k">{t('acc.peppol')}</span>
-              <span className="ws-acc__v">{peppolBadge(it.peppolStatus)}{it.peppolAt ? ' · ' + fmtDate(it.peppolAt) : ''}</span></div>
-          )}
-          {/* COMMANDE WEBSHOP demandée : le destinataire, lié par son identifiant client */}
-          {isOrder && it.state === 'requested' && (
-            <div className="ws-acc__card-row">
-              <span className="ws-acc__k">Facturée à</span>
-              <span className="ws-acc__v" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
-                <span>{it.billingEntityName || (it.billingEntityId === user.id || !it.billingEntityId ? 'Mon nom' : (user.company || 'Ma société'))}</span>
-                {(it.billingEntityVat || it.billingEntityId) && (
-                  <span style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 400 }}>
-                    {it.billingEntityVat ? it.billingEntityVat + ' · ' : ''}client nº {it.billingEntityId}
-                  </span>
-                )}
-              </span>
+          <div className="ws-acc__card-row">
+            <span className="ws-acc__k">{t('acc.orders.items', { count: order.itemsCount || 0 })}</span>
+            <span className="ws-acc__v">{formatTotal(order.total)}</span>
+          </div>
+          <div className="ws-acc__card-row">
+            <span className="ws-acc__k">{t('acc.orders.payment')}</span>
+            <span className={statusKey(order.status) === 'cancelled' ? 'ws-acc__v' : 'ws-purchase-payment ws-purchase-payment--' + paymentStatusName(order.payment?.status)}>{statusKey(order.status) === 'cancelled' ? '-' : paymentText(order.payment)}</span>
+          </div>
+          {order.payment?.method === 'stripe' && ['pending', 'failed'].includes(paymentStatusName(order.payment?.status)) && !['cancelled', 'completed'].includes(statusKey(order.status)) && (
+            <div className="ws-purchase-payment-notice">
+              <p>{t('stripe.orderBlocked')}</p>
+              <StripeRetryButton orderRef={order.orderRef} verifyFirst onUpdated={() => setRevision(value => value + 1)}/>
             </div>
           )}
-          {isOrder && it.state === 'requested' && meta.canRequestInvoiceOrders && (
-            <button type="button" className="ws-acc__inv-cancel" disabled={busyRef === it.ref}
-              onClick={(e) => { e.stopPropagation(); cancelOrderInvoice(it); }}>Annuler la demande</button>
+          <div className="ws-purchase-actions">
+          <button type="button" className="ws-linkbtn" onClick={() => { setSelectedOrder(order); onDetailsChange?.(true); }}>{t('acc.orders.details')}</button>
+          {statusKey(order.status) === 'new' && String(order.payment?.status || '').toLowerCase() === 'pending' && (
+            <button type="button" className="ws-acc__inv-cancel" disabled={cancellingRef === order.orderRef}
+              onClick={() => cancelOrder(order)}>
+              {cancellingRef === order.orderRef ? t('common.loading2') : t('acc.orders.cancel')}
+            </button>
           )}
-
-          {/* COMMANDE WEBSHOP dépliée : le panneau de demande */}
-          {isOpen && it.state !== 'requested' && (
-            <div className="ws-acc__inv" onClick={(e) => e.stopPropagation()}>
-              <label className="ws-acc__inv-check">
-                <input type="checkbox" checked readOnly aria-label="Je veux une facture pour cet achat"/>
-                Je veux une facture pour cet achat
-              </label>
-              <div className="ws-acc__inv-h">Facturer à</div>
-
-              {user.companyClientId ? (
-                <button type="button" className={'ws-acc__inv-opt' + (inv.who === 'mine' ? ' is-on' : '')}
-                  onClick={() => setInv((v) => ({ ...v, who: 'mine' }))}>
-                  <span className="ws-acc__inv-radio" aria-hidden="true"/>
-                  <span className="ws-acc__inv-body">
-                    <span className="ws-acc__inv-name">{user.company || 'Ma société'}</span>
-                    <span className="ws-acc__inv-sub">
-                      {[user.invoice && user.invoice.vat, user.invoice && [user.invoice.address, [user.invoice.postalCode, user.invoice.city].filter(Boolean).join(' ')].filter(Boolean).join(', ')].filter(Boolean).join(' · ')}
-                    </span>
-                  </span>
-                  {user.invoice && user.invoice.viesVerified && <span className="ws-acc__inv-tag">Vérifiée</span>}
-                </button>
-              ) : (
-                <button type="button" className={'ws-acc__inv-opt' + (inv.who === 'me' ? ' is-on' : '')}
-                  onClick={() => setInv((v) => ({ ...v, who: 'me' }))}>
-                  <span className="ws-acc__inv-radio" aria-hidden="true"/>
-                  <span className="ws-acc__inv-body"><span className="ws-acc__inv-name">{t('acc.inMyName')}</span></span>
-                </button>
-              )}
-
-              <button type="button" className={'ws-acc__inv-opt' + (inv.who === 'other' ? ' is-on' : '')}
-                onClick={() => setInv((v) => ({ ...v, who: 'other' }))} style={{ flexDirection: 'column', gap: 0 }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>
-                  <span className="ws-acc__inv-radio" aria-hidden="true"/>
-                  <span className="ws-acc__inv-name" style={{ flex: 1 }}>Une autre société</span>
-                  {inv.who !== 'other' && <span className="ws-acc__inv-sub">par son numéro de TVA</span>}
-                </span>
-                {inv.who === 'other' && (
-                  <span style={{ display: 'block', width: '100%' }} onClick={(e) => e.stopPropagation()}>
-                    <span className="ws-acc__inv-vat">
-                      <input type="text" value={inv.vat} placeholder="BE0123456789" autoComplete="off" spellCheck={false}
-                        onChange={(e) => setInv((v) => ({ ...v, vat: e.target.value, entity: null, vatErr: '' }))}
-                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); verifyOther(); } }}
-                        aria-label="Numéro de TVA de la société à facturer"/>
-                      <button type="button" className="ws-acc__inv-verify" disabled={inv.checking} onClick={verifyOther}>
-                        {inv.checking ? 'Vérification…' : 'Vérifier'}
-                      </button>
-                    </span>
-                    {inv.vatErr && <span className="ws-acc__vat-msg ws-acc__vat-msg--err" style={{ display: 'block', marginTop: 6 }}>⚠ {inv.vatErr}</span>}
-                    {inv.entity && (
-                      <span className="ws-acc__inv-res">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2C6449" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>
-                        <span className="ws-acc__inv-body">
-                          <span className="ws-acc__inv-name">{inv.entity.name}</span>
-                          <span className="ws-acc__inv-sub">{[inv.entity.address, [inv.entity.postalCode, inv.entity.city].filter(Boolean).join(' ')].filter(Boolean).join(', ')}</span>
-                          <span className="ws-acc__inv-ok">Numéro valide · vérifié sur VIES à l’instant</span>
-                        </span>
-                      </span>
-                    )}
-                  </span>
-                )}
-              </button>
-
-              <button type="button" className="ws-cta ws-cta--block" disabled={busyRef === it.ref || (inv.who === 'other' && !inv.entity)}
-                onClick={() => requestOrderInvoice(it)}>
-                {busyRef === it.ref ? 'Envoi…' : (inv.who === 'other' && inv.entity ? 'Demander la facture à ' + inv.entity.name : 'Demander la facture')}
-              </button>
-              <div className="ws-acc__inv-note">
-                {inv.who === 'other'
-                  ? 'Cette société ne remplace pas la vôtre : elle n’est utilisée que pour cet achat. Un numéro invalide ou inconnu de VIES ne peut pas être facturé.'
-                  : 'La facture est émise par la boutique en début de mois prochain. Vous pouvez annuler la demande jusque-là.'}
-              </div>
-            </div>
-          )}
-
-          {meta.canRequestInvoice && it.source === 'ticket' && it.state !== 'invoiced' && (
-            <label className="ws-acc__toggle" aria-label={t('acc.wantInvoice')}>
-              <input type="checkbox" checked={it.state === 'requested'}
-                disabled={it.state === 'closed' || busyRef === it.ref}
-                onChange={(e) => toggleInvoice(it, e.target.checked)} />
-              <span className="ws-acc__toggle-track" aria-hidden="true"><span className="ws-acc__toggle-thumb"/></span>
-              <span className="ws-acc__toggle-label">
-                {it.state === 'closed' ? 'Délai de demande dépassé' : 'Voulez-vous une facture ?'}
-              </span>
-            </label>
-          )}
-          {meta.canRequestInvoice && it.source === 'ticket' && it.state === 'requested' && user.companyClientId && (
-            <div className="ws-acc__select-row">
-              <select className="ws-acc__input" aria-label={t('acc.billingCompany')}
-                value={String(it.billingEntityId || user.companyClientId)}
-                disabled={busyRef === it.ref}
-                onChange={(e) => toggleInvoice(it, true, Number(e.target.value))}>
-                <option value={String(user.companyClientId)}>{user.company || 'Ma société'}</option>
-                <option value={String(user.id)}>{t('acc.inMyName')}</option>
-              </select>
-            </div>
-          )}
+          </div>
         </div>
-        );
-      })}
-      {hasMore && (
-        <button type="button" className="ws-cta ws-cta--block" disabled={loading} onClick={() => setPage((p) => p + 1)}>
-          {t('common.seeMore')}
-        </button>
-      )}
+      ))}
+
     </div>
   );
 }
@@ -3180,16 +3172,16 @@ function PostcodeCatchupModal({ user, onUpdateUser }) {
   async function submit(e) {
     if (e) e.preventDefault();
     setErr('');
-    if (!CP_RE.test(String(cp).trim())) { setErr('Code postal requis (4 chiffres).'); return; }
-    if (cpOpts.length > 1 && !locality) { setErr('Choisissez votre localité.'); return; }
+    if (!CP_RE.test(String(cp).trim())) { setErr(wsText("error.postal")); return; }
+    if (cpOpts.length > 1 && !locality) { setErr(wsText("error.locality")); return; }
     if (!window.WSAuth || typeof window.WSAuth.updateMe !== 'function') { setSnoozed(true); return; }
     setBusy(true);
     try {
       const r = await window.WSAuth.updateMe({ postalCode: String(cp).trim(), locality });
       if (r && r.ok && r.user) { onUpdateUser(r.user); }              // needsPostcode:false → la modal disparaît
-      else setErr((r && r.error) || 'Enregistrement impossible. Réessayez.');
+      else setErr((r && r.error) || wsText("error.save"));
     } catch (_) {
-      setErr('Erreur réseau. Veuillez réessayer.');
+      setErr(wsText("error.network"));
     } finally {
       setBusy(false);
     }
@@ -3199,11 +3191,11 @@ function PostcodeCatchupModal({ user, onUpdateUser }) {
       <p className="ws-modal__eyebrow">{t('acc.yourProfile')}</p>
       <h2 className="ws-modal__title">{tRich(t, 'cp.title')}</h2>
       <p className="ws-modal__lede">{t('cp.lede')}</p>
-      <form className="ws-form" onSubmit={submit}>
+      <form className="ws-form" onSubmit={submit} noValidate>
         <CpField variant="modal" cp={cp} locality={locality}
           onCp={(v) => { setCp(v); setErr(''); }} onLocality={setLocality} onOpts={setCpOpts}/>
-        {err && <p className="ws-form__err">{err}</p>}
-        <button type="submit" className="ws-cta ws-cta--block" disabled={busy}>{busy ? 'Enregistrement…' : 'Valider'}</button>
+        {err && <p className="ws-form__err">{wsMessage(err)}</p>}
+        <button type="submit" className="ws-cta ws-cta--block" disabled={busy}>{busy ? wsText('ui.saving') : wsText("ui.validate")}</button>
         <button type="button" className="ws-linkbtn" onClick={() => setSnoozed(true)}>{t('common.later')}</button>
       </form>
     </ModalShell>
@@ -3218,7 +3210,7 @@ if (typeof document !== 'undefined' && !document.getElementById('ws-bureau-style
   document.head.appendChild(_st);
 }
 
-function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdateUser, shops, currentShopId, onChangePreferredShop, office, tour }) {
+function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdateUser, shops, currentShopId, onChangePreferredShop, office, tour, onManageOffices }) {
   const { t } = wsUseT();
   const [form, setForm] = useState({
     firstName: user?.firstName || '',
@@ -3240,12 +3232,25 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
       city: user?.invoice?.city || '',
     },
   });
+  const [activationSending, setActivationSending] = useState(false);
+  const [activationResult, setActivationResult] = useState(null);
+  useEffect(() => { setActivationResult(null); }, [open, user?.id]);
+  async function resendAccountActivation() {
+    if (activationSending) return;
+    setActivationSending(true); setActivationResult(null);
+    try {
+      const result = await window.WSAuth.resendActivation(user.email);
+      setActivationResult(result.ok ? { ok: true } : { error: result.error || 'CLIENT_ACTIVATION_MAIL_FAILED' });
+    } catch {
+      setActivationResult({ error: 'CLIENT_ACTIVATION_MAIL_FAILED' });
+    } finally { setActivationSending(false); }
+  }
   const [savedFlash, setSavedFlash] = useState(false);
   const [profileErr, setProfileErr] = React.useState('');
   // Statut VIES : si la société est déjà liée en base (verified_at côté client),
   // on affiche le badge « vérifié » d'office : comme la carte VIES de la PWA.
   const [vies, setVies] = useState(() => (user?.invoice?.viesVerified
-    ? { status: 'ok', message: 'TVA vérifiée (VIES)' }
+    ? { status: 'ok', message: wsText("ui.vatVerified") }
     : { status: 'idle', message: '' })); // idle | loading | ok | invalid | unavailable
   const [fidOpen, setFidOpen] = useState(false);
   // Comptes entreprise (livraison bureau) rattachés à l'e-mail du client
@@ -3278,6 +3283,8 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
   // l'a pas dit (l'ancien défaut fidelityTabEnabled:true affichait l'onglet
   // même pour une boutique qui l'a désactivé).
   const [cfg, setCfg] = useState({});
+  const [purchaseRevision, setPurchaseRevision] = useState(0);
+  const [purchaseDetailsOpen, setPurchaseDetailsOpen] = useState(false);
   const [tab, setTab] = useState(() => {
     try { return localStorage.getItem(ACCOUNT_TAB_LS) || 'profil'; } catch (_) { return 'profil'; }
   });
@@ -3288,6 +3295,8 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
   const [addNo, setAddNo]   = useState({ name: '', address: '', postalCode: '', city: '' });
   const [companyBusy, setCompanyBusy] = useState(false);
   const [companyErr, setCompanyErr]   = useState('');
+  const [companyUnlinked, setCompanyUnlinked] = useState(false);
+  useEffect(() => { setCompanyUnlinked(false); setCompanyErr(''); }, [open, user?.id]);
   // Sécurité : changement de mot de passe.
   const [pw0, setPw0] = useState('');   // mot de passe actuel, exigé par l'ERP
   const [pw1, setPw1] = useState('');
@@ -3307,11 +3316,12 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
   const visibleTabs = ACCOUNT_TABS.filter((t) => !t.configFlag || cfg[t.configFlag] !== false);
   const activeTab = visibleTabs.some((t) => t.key === tab) ? tab : 'profil';
   function selectTab(k) {
-    setTab(k);
+    setTab(k); setPurchaseDetailsOpen(false);
     try { localStorage.setItem(ACCOUNT_TAB_LS, k); } catch (_) {}
   }
 
   async function addByVies() {
+    setCompanyUnlinked(false);
     setCompanyBusy(true); setCompanyErr('');
     const r = await window.WSAuth.billingVerify({ vat: addVat.vat, country: addVat.country });
     setCompanyBusy(false);
@@ -3319,10 +3329,11 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
       if (typeof onUpdateUser === 'function') onUpdateUser({ ...user, ...r.user });
       setCompanyStep('idle'); setAddVat({ country: 'BE', vat: '' });
     } else {
-      setCompanyErr((r.error && (r.error.message || r.error)) || 'Vérification indisponible, réessayez plus tard.');
+      setCompanyErr((r.error && (r.error.message || r.error)) || wsText("error.verifyUnavailable"));
     }
   }
   async function addNoVat() {
+    setCompanyUnlinked(false);
     setCompanyBusy(true); setCompanyErr('');
     const r = await window.WSAuth.addCompanyNoVat(addNo);
     setCompanyBusy(false);
@@ -3330,23 +3341,29 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
       if (typeof onUpdateUser === 'function') onUpdateUser({ ...user, ...r.user });
       setCompanyStep('idle'); setAddNo({ name: '', address: '', postalCode: '', city: '' });
     } else {
-      setCompanyErr(r.error || "Échec de l'ajout.");
+      setCompanyErr(r.error || wsText("error.add"));
     }
   }
   async function removeCompany() {
-    // Archivage : on délie seulement, la fiche société reste en base (les
-    // factures émises la référencent et doivent rester lisibles).
-    setCompanyBusy(true);
-    const r = await window.WSAuth.unlinkCompany();
-    setCompanyBusy(false);
-    if (r.ok && r.user && typeof onUpdateUser === 'function') onUpdateUser({ ...user, ...r.user });
+    if (companyBusy) return;
+    setCompanyBusy(true); setCompanyErr(''); setCompanyUnlinked(false);
+    try {
+      const r = await window.WSAuth.unlinkCompany();
+      if (r.ok && r.user) {
+        onUpdateUser?.({ ...user, ...r.user });
+        setCompanyStep('idle'); setCompanyUnlinked(true);
+        setAddVat({ country: 'BE', vat: '' });
+        setAddNo({ name: '', address: '', postalCode: '', city: '' });
+      } else setCompanyErr(r.error || wsText('error.billingUnlink'));
+    } catch (_) { setCompanyErr(wsText('error.billingUnlink')); }
+    finally { setCompanyBusy(false); }
   }
   async function savePassword() {
     setPwBusy(true); setPwMsg(null);
     const r = await window.WSAuth.changePassword({ currentPassword: pw0, password: pw1 });
     setPwBusy(false);
-    if (r.ok) { setPwMsg({ ok: true, text: 'Mot de passe mis à jour.' }); setPw0(''); setPw1(''); setPw2(''); }
-    else setPwMsg({ ok: false, text: r.error || 'Échec.' });
+    if (r.ok) { setPwMsg({ ok: true, text: wsText("ui.passwordUpdated") }); setPw0(''); setPw1(''); setPw2(''); }
+    else setPwMsg({ ok: false, text: r.error || wsText("error.generic") });
   }
 
   // re-sync the form whenever a different user is loaded into the modal
@@ -3372,7 +3389,7 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
       },
     });
     setVies(user.invoice?.viesVerified
-      ? { status: 'ok', message: 'TVA vérifiée (VIES)' }
+      ? { status: 'ok', message: wsText("ui.vatVerified") }
       : { status: 'idle', message: '' });
   }, [user]);
 
@@ -3415,10 +3432,10 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
       try {
         const r = await window.WSAuth.updateMe(patch);
         if (r && r.ok && r.user && typeof onUpdateUser === 'function') onUpdateUser({ ...user, ...r.user });
-        return r || { ok: false, error: 'Réponse serveur vide.' };
-      } catch (e) { return { ok: false, error: 'Serveur injoignable, non enregistré.' }; }
+        return r || { ok: false, error: wsText("error.emptyResponse") };
+      } catch (e) { return { ok: false, error: wsText("error.unsaved") }; }
     }
-    return { ok: false, error: 'Service de compte indisponible, non enregistré.' };
+    return { ok: false, error: wsText("error.accountUnavailable") };
   }
 
   // Toggle app fidélité. L'état réel vit en base (fidelity_active, écrit par le
@@ -3441,7 +3458,7 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
   // votre boutique préférée » et ne pouvait pas se rattacher.
   const officeShopId = form.preferredShopId || currentShopId;
   async function loadApprovedOffices() {
-    if (!window.WSOffices) { setOfficeErr('Service bureaux indisponible, please debug.'); return; }
+    if (!window.WSOffices) { setOfficeErr(wsText("error.offices")); return; }
     const shopId = officeShopId; // boutique préférée, sinon celle consultée
     setOfficeBusy(true);
     try {
@@ -3459,7 +3476,7 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
       // L'échec est VISIBLE : sans lui, la liste restait vide sans explication
       // et l'utilisateur croyait qu'aucun bureau n'existait.
       setApprovedOffices([]);
-      setOfficeErr(e && e.message ? e.message : 'Bureaux indisponibles, please debug.');
+      setOfficeErr(e && e.message ? e.message : wsText("error.offices"));
     } finally { setOfficeBusy(false); }
   }
   // ── Bureau « site de livraison » (parité PWA) : lier / changer / délier ──
@@ -3472,7 +3489,7 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
     setSiteErr(''); setSitePicked(''); setSiteList([]); setSiteBusy(false); setSiteStep('pick');
   }
   async function saveSite() {
-    if (!sitePicked) { setSiteErr('Sélectionnez un bureau.'); return; }
+    if (!sitePicked) { setSiteErr(wsText("error.pickOffice")); return; }
     setSiteBusy(true); setSiteErr('');
     const r = await window.WSAuth.setOfficeSite(sitePicked);
     setSiteBusy(false);
@@ -3480,7 +3497,7 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
       if (typeof onUpdateUser === 'function') onUpdateUser({ ...user, ...r.user });
       setSiteStep('idle');
     } else {
-      setSiteErr(r.error || 'Échec de la liaison.');
+      setSiteErr(r.error || wsText("error.link"));
     }
   }
   /* Déliement : opération UNIQUE. Les deux boutons « Délier ce bureau » de cet
@@ -3496,7 +3513,7 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
     const r = await window.WSAuth.setOfficeSite(null);
     setSiteBusy(false);
     if (!r || !r.ok) {
-      setOfficeErr((r && r.error) || 'Déliement impossible : le bureau est toujours rattaché.');
+      setOfficeErr((r && r.error) || wsText("error.unlink"));
       return false;
     }
     if (r.user && typeof onUpdateUser === 'function') onUpdateUser({ ...user, ...r.user });
@@ -3517,9 +3534,9 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
     setOfficeStep('idle');
   }
   async function confirmPick() {
-    if (!pickedOfficeId) { setOfficeErr('Sélectionnez un bureau.'); return; }
+    if (!pickedOfficeId) { setOfficeErr(wsText("error.pickOffice")); return; }
     const r = await persistPartial({ officeId: pickedOfficeId });
-    if (r && r.ok === false) { setOfficeErr(r.error || 'Rattachement refusé par le serveur.'); return; }
+    if (r && r.ok === false) { setOfficeErr(r.error || wsText("error.linkRejected")); return; }
     setOfficeErr(''); setOfficeStep('idle');
   }
   function setNewOfficeField(k, v) { setNewOffice((f) => ({ ...f, [k]: v })); setOfficeErr(''); }
@@ -3528,9 +3545,9 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
   async function submitContactRequest() {
     const nameOk = String(newOffice.name || '').trim();
     const contactOk = ['phone', 'email', 'address'].some((k) => String(newOffice[k] || '').trim());
-    if (!nameOk) { setOfficeErr('Indiquez le nom du bureau ou de la société.'); return; }
-    if (!contactOk) { setOfficeErr('Indiquez au moins un moyen de contact (téléphone, e-mail ou adresse).'); return; }
-    if (!window.WSOffices) { setOfficeErr('Service indisponible.'); return; }
+    if (!nameOk) { setOfficeErr(wsText("error.officeName")); return; }
+    if (!contactOk) { setOfficeErr(wsText("error.contact")); return; }
+    if (!window.WSOffices) { setOfficeErr(wsText("error.service")); return; }
     setOfficeBusy(true); setOfficeErr('');
     try {
       // La demande va à la boutique où le client se trouve : sa boutique
@@ -3541,11 +3558,11 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
         officeName: newOffice.name, phone: newOffice.phone, email: newOffice.email, address: newOffice.address,
         shopId: officeShopId, requestedBy: user.email,
       });
-      if (r && r.ok === false) { setOfficeErr(r.error || 'Échec de l\'envoi.'); return; }
+      if (r && r.ok === false) { setOfficeErr(r.error || wsText("error.send")); return; }
       setNewOffice({ name: '', vat: '', address: '', postalCode: '', city: '', contact: '', email: '', phone: '', preferredShopId: '' });
       setOfficeStep('sent');
     } catch (e) {
-      setOfficeErr('Échec de l\'envoi. Réessayez.');
+      setOfficeErr(wsText("error.send"));
     } finally {
       setOfficeBusy(false);
     }
@@ -3568,12 +3585,12 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
       const rv = await window.WSAuth.billingVerify({ vat: form.invoice.vat, country: form.invoice.country });
       if (rv.ok && rv.user) {
         if (typeof onUpdateUser === 'function') onUpdateUser({ ...user, ...rv.user }); // resync du formulaire via l'effet [user]
-        setVies({ status: 'ok', message: 'TVA validée par VIES' });
+        setVies({ status: 'ok', message: wsText("ui.vatValid") });
         return;
       }
-      if (rv.error) { setVies({ status: rv.error.code || 'invalid', message: rv.error.message || 'Échec de validation' }); return; }
+      if (rv.error) { setVies({ status: rv.error.code || 'invalid', message: rv.error.message || wsText("error.vat") }); return; }
     }
-    if (!window.WSVies) { setVies({ status: 'unavailable', message: 'Service VIES indisponible.' }); return; }
+    if (!window.WSVies) { setVies({ status: 'unavailable', message: wsText("error.vies") }); return; }
     const r = await window.WSVies.check({ vat: form.invoice.vat, country: form.invoice.country });
     if (r.valid && r.data) {
       setForm((f) => ({
@@ -3588,9 +3605,9 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
           city: r.data.city || f.invoice.city,
         },
       }));
-      setVies({ status: 'ok', message: 'TVA validée par VIES' });
+      setVies({ status: 'ok', message: wsText("ui.vatValid") });
     } else {
-      setVies({ status: r.error?.code || 'invalid', message: r.error?.message || 'Échec de validation' });
+      setVies({ status: r.error?.code || 'invalid', message: r.error?.message || wsText("error.vat") });
     }
   }
   async function saveProfile(e) {
@@ -3616,13 +3633,13 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
           if (r.user && typeof onUpdateUser === 'function') onUpdateUser({ ...user, ...r.user });
           setProfileErr(''); setSavedFlash(true); setTimeout(() => setSavedFlash(false), 1800);
         } else {
-          setProfileErr((r && r.error) || 'Enregistrement refusé par le serveur.');
+          setProfileErr((r && r.error) || wsText("error.saveRejected"));
         }
       } catch (e) {
-        setProfileErr('Serveur injoignable : modifications NON enregistrées.');
+        setProfileErr(wsText("error.unsaved"));
       }
     } else {
-      setProfileErr('Service de compte indisponible, modifications NON enregistrées.');
+      setProfileErr(wsText("error.accountUnavailable"));
     }
   }
   return (
@@ -3630,9 +3647,19 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
       <p className="ws-modal__eyebrow">{t('auth.myAccount')}</p>
       <h2 className="ws-modal__title">{tRich(t, 'acc.hello', { name: form.firstName || user.firstName })}</h2>
       <p className="ws-modal__lede">{user.email}</p>
+      {user.activationRequired === true && <section className="ws-acc__section">
+        <p>{t('activation.accountWarning')}</p>
+        <button type="button" className="ws-cta" disabled={activationSending} onClick={resendAccountActivation}>
+          {t(activationSending ? 'ui.sending' : 'activation.resend')}
+        </button>
+        {activationResult && <p role={activationResult.ok ? 'status' : 'alert'}>
+          {activationResult.ok ? t('activation.resent') : wsMessage(activationResult.error)}
+        </p>}
+      </section>}
+
 
       {/* Onglets : positions dérivées d'ACCOUNT_TABS, actif persisté. */}
-      <div className="ws-toggle" role="tablist" aria-label={t('acc.sectionsAria')}>
+      <div className="ws-toggle ws-account-tabs" role="tablist" aria-label={t('acc.sectionsAria')}>
         {visibleTabs.map((t) => (
           <button key={t.key} type="button" role="tab" aria-selected={activeTab === t.key}
             className={'ws-toggle__opt' + (activeTab === t.key ? ' is-active' : '')}
@@ -3640,10 +3667,13 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
         ))}
       </div>
 
-      {activeTab === 'achats' && <AccountPurchases user={user} />}
+      {activeTab === 'achats' && <AccountPurchases refreshRevision={purchaseRevision} onDetailsChange={setPurchaseDetailsOpen} />}
       {activeTab === 'fidelite' && <FideliteShell />}
+      {activeTab === 'offices' && <ProfileOffices currentShopName={shops?.find(item => String(item.id) === String(currentShopId))?.name} onManage={onManageOffices}/>}
+
 
       {activeTab === 'profil' && <>
+      <button type="button" className="ws-cta ws-cta--block ws-account-purchases-link" onClick={() => selectTab('achats')}>{t('acc.purchases')}</button>
       {form.fidelityApp?.active && (
         <aside className="ws-fidinfo" role="note" aria-label={t('fid.infoAria')}>
           <div className="ws-fidinfo__icon" aria-hidden="true">
@@ -3663,9 +3693,7 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
               <li>{tRich(t, 'fid.bullet2')}</li>
               <li>{tRich(t, 'fid.bullet3')}</li>
             </ul>
-            <p className="ws-fidinfo__foot">
-              Pour limiter les e-mails, nous privilégions désormais les notifications de l'application.
-            </p>
+            <p className="ws-fidinfo__foot"> {wsText("ui.notificationsHint")} </p>
           </div>
         </aside>
       )}
@@ -3704,7 +3732,7 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
         <div className="ws-acc__form-foot">
           <button type="submit" className="ws-cta">{t('common.save2')}</button>
           {savedFlash && <span className="ws-acc__saved">✓ {t('common.saved')}</span>}
-          {profileErr && <span className="ws-acc__saved" style={{ color: 'var(--color-primary, #8d1d2c)' }}>{profileErr}</span>}
+          {profileErr && <span className="ws-acc__saved" style={{ color: 'var(--color-primary, #8d1d2c)' }}>{wsMessage(profileErr)}</span>}
         </div>
       </form>
 
@@ -3715,10 +3743,12 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
           ignore ces clés). Retrait = archivage, la fiche reste en base. */}
       <div className="ws-acc__section">
         <div className="ws-acc__section-h">{t('acc.companies')}</div>
+        {companyStep === 'idle' && companyErr && <p className="ws-acc__vat-msg ws-acc__vat-msg--err" role="alert">{wsMessage(companyErr)}</p>}
+        {companyUnlinked && <p className="ws-acc__saved" role="status">{t('co2.unlinked')}</p>}
         {(user.companyClientId || user.company) && (
           <div className="ws-acc__card ws-acc__card--ok">
             <div className="ws-acc__card-row"><span className="ws-acc__k">{t('co2.legalName')}</span><span className="ws-acc__v">{user.invoice?.name || user.company}</span></div>
-            <div className="ws-acc__card-row"><span className="ws-acc__k">{t('co2.vat')}</span><span className="ws-acc__v">{user.invoice?.vat || 'Non assujettie'}</span></div>
+            <div className="ws-acc__card-row"><span className="ws-acc__k">{t('co2.vat')}</span><span className="ws-acc__v">{user.invoice?.vat || wsText("ui.noVat")}</span></div>
             {(user.invoice?.address || user.invoice?.city) && (
               <div className="ws-acc__card-row"><span className="ws-acc__k">{t('co2.address')}</span>
                 <span className="ws-acc__v">{[user.invoice?.address, [user.invoice?.postalCode, user.invoice?.city].filter(Boolean).join(' ')].filter(Boolean).join(', ')}</span></div>
@@ -3756,12 +3786,12 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
               </label>
             </div>
             <p className="ws-acc__hint">{t('co2.viesImport')}</p>
-            {companyErr && <p className="ws-acc__vat-msg ws-acc__vat-msg--err">⚠ {companyErr}</p>}
+            {companyErr && <p className="ws-acc__vat-msg ws-acc__vat-msg--err">⚠ {wsMessage(companyErr)}</p>}
             <div className="ws-acc__row-foot">
               <button type="button" className="ws-fid__cancel" onClick={() => { setCompanyStep('idle'); setCompanyErr(''); }}>{t('common.cancel2')}</button>
               <button type="button" className="ws-fid__cancel" onClick={() => { setCompanyStep('novat'); setCompanyErr(''); }}>{t('co2.noVat')}</button>
               <button type="button" className="ws-cta" disabled={companyBusy || !addVat.vat} onClick={addByVies}>
-                {companyBusy ? 'Vérification…' : 'Vérifier et importer'}
+                {companyBusy ? wsText("ui.verifying") : wsText("ui.verifyImport")}
               </button>
             </div>
           </div>
@@ -3792,7 +3822,7 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
               </label>
             </div>
             <p className="ws-acc__hint">{t('co2.noVatHint')}</p>
-            {companyErr && <p className="ws-acc__vat-msg ws-acc__vat-msg--err">⚠ {companyErr}</p>}
+            {companyErr && <p className="ws-acc__vat-msg ws-acc__vat-msg--err">⚠ {wsMessage(companyErr)}</p>}
             <div className="ws-acc__row-foot">
               <button type="button" className="ws-fid__cancel" onClick={() => { setCompanyStep('idle'); setCompanyErr(''); }}>{t('common.cancel2')}</button>
               <button type="button" className="ws-cta" disabled={companyBusy || !addNo.name} onClick={addNoVat}>{t('common.add')}</button>
@@ -3806,7 +3836,7 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
         <div className="ws-acc__section-h">{t('acc.security')}</div>
         <div className="ws-acc__form">
           <label className="ws-acc__field">
-            <span className="ws-acc__field-label">Mot de passe actuel</span>
+            <span className="ws-acc__field-label">{wsText("ui.currentPassword")}</span>
             <input type="password" className="ws-acc__input" value={pw0}
               onChange={(e) => setPw0(e.target.value)} autoComplete="current-password" />
           </label>
@@ -3823,13 +3853,11 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
         </div>
         {pwMsg && (
           <p className={'ws-acc__vat-msg ' + (pwMsg.ok ? 'ws-acc__vat-msg--ok' : 'ws-acc__vat-msg--err')}>
-            {pwMsg.ok ? '✓ ' : '⚠ '}{pwMsg.text}
+            {pwMsg.ok ? '✓ ' : '⚠ '}{wsMessage(pwMsg.text)}
           </p>
         )}
         <div className="ws-acc__form-foot">
-          <button type="button" className="ws-cta" disabled={pwBusy || !pw0 || pw1.length < 8 || pw1 !== pw2} onClick={savePassword}>
-            Changer le mot de passe
-          </button>
+          <button type="button" className="ws-cta" disabled={pwBusy || !pw0 || pw1.length < 4 || pw1 !== pw2} onClick={savePassword}> {wsText("ui.changePassword")} </button>
         </div>
       </div>
 
@@ -3840,9 +3868,7 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
         <div className="ws-acc__row">
           <div className="ws-acc__row-body">
             <div className="ws-acc__row-title">{t('acc.prefShop')}</div>
-            <div className="ws-acc__row-sub">
-              Détermine votre boutique par défaut à la connexion. Conditionne aussi votre éligibilité à la livraison au bureau et les créneaux disponibles.
-            </div>
+            <div className="ws-acc__row-sub"> {wsText("ui.preferredShopHint")} </div>
             <div className="ws-acc__select-row">
               <select
                 className="ws-acc__input"
@@ -3865,11 +3891,9 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
         <div className="ws-acc__row">
           <div className="ws-acc__row-body">
             <div className="ws-acc__row-title">{t('acc.loyaltyApp')}</div>
-            <div className="ws-acc__row-sub">
-              Liez votre compte web à l'application mobile L'Atelier pour synchroniser vos points et vos avantages.
-            </div>
+            <div className="ws-acc__row-sub"> {wsText("ui.mobileLinkHint")} </div>
             {form.fidelityApp?.active ? (
-              <span className="ws-acc__row-status">Liée · {form.fidelityApp.linkedAt ? new Date(form.fidelityApp.linkedAt).toLocaleDateString('fr-BE') : 'récemment'}</span>
+              <span className="ws-acc__row-status">{wsText("ui.linked")} {form.fidelityApp.linkedAt ? new Date(form.fidelityApp.linkedAt).toLocaleDateString(wsLocale()) : wsText("ui.recently")}</span>
             ) : (
               <span className="ws-acc__row-status ws-acc__row-status--off">{t('acc.notLinked')}</span>
             )}
@@ -3892,181 +3916,9 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
       />
 
       <div className="ws-acc__section">
-        <div className="ws-acc__section-h">{t('acc.myOffice')}</div>
-
-        {officeStep === 'idle' && status === 'active' && (
-          <div className="ws-acc__card ws-acc__card--ok">
-            <div className="ws-acc__card-row"><span className="ws-acc__k">{t('off.office')}</span><span className="ws-acc__v">{office.name}</span></div>
-            {office.address && <div className="ws-acc__card-row"><span className="ws-acc__k">{t('co2.address')}</span><span className="ws-acc__v">{office.address}</span></div>}
-            {tour && tour.shopId && (shops || []).find((s) => s.id === tour.shopId) && (
-              <div className="ws-acc__card-row"><span className="ws-acc__k">{t('off.shop')}</span><span className="ws-acc__v">{(shops || []).find((s) => s.id === tour.shopId).name}</span></div>
-            )}
-            <div className="ws-acc__card-row"><span className="ws-acc__k">{t('off.tour')}</span><span className="ws-acc__v">{tour.name} · {tour.window}</span></div>
-            <div className="ws-acc__btnrow">
-              <span className="ws-acc__badge ws-acc__badge--ok">{t('off.deliveryActive')}</span>
-              <button type="button" className="ws-acc__unplug" onClick={startUnplug}>{t('off.unlink')}</button>
-            </div>
-          </div>
-        )}
-
-        {officeStep === 'idle' && status === 'pending' && (
-          <div className="ws-acc__card ws-acc__card--pending">
-            <div className="ws-acc__card-row"><span className="ws-acc__k">{t('off.office')}</span><span className="ws-acc__v">{office.name}</span></div>
-            <div className="ws-acc__card-row"><span className="ws-acc__k">{t('off.contact')}</span><span className="ws-acc__v">{office.contact}</span></div>
-            <div className="ws-acc__badge ws-acc__badge--pending">{t('off.pendingValidation')}</div>
-            <p className="ws-acc__note">{t('off.pendingNote')}</p>
-            <button type="button" className="ws-acc__unplug" onClick={startUnplug}>{t('off.unlink')}</button>
-          </div>
-        )}
-
-        {/* Bureau lié côté PWA = un SITE de livraison (ws_office_delivery_sites),
-            parfois sans entreprise ws_offices associée : on l'affiche quand même,
-            avec les mêmes données que la carte bureau de la PWA. */}
-        {officeStep === 'idle' && siteStep === 'idle' && status === 'unlinked' && user.officeSite && (
-          <div className="ws-acc__card ws-acc__card--ok">
-            <div className="ws-acc__card-row"><span className="ws-acc__k">{t('off.office')}</span><span className="ws-acc__v">{user.officeSite.name}</span></div>
-            {user.officeSite.address && <div className="ws-acc__card-row"><span className="ws-acc__k">{t('co2.address')}</span><span className="ws-acc__v">{user.officeSite.address}</span></div>}
-            <div className={'ws-acc__badge' + (Number(user.officeSite.active) ? '' : ' ws-acc__badge--pending')}>
-              {Number(user.officeSite.active) ? 'Validé' : 'En attente de validation'}
-            </div>
-            <p className="ws-acc__note">{t('off.defaultAtCheckout')}</p>
-            <div className="ws-acc__row-foot">
-              <button type="button" className="ws-fid__cancel" onClick={openSitePicker} disabled={siteBusy}>{t('off.change')}</button>
-              <button type="button" className="ws-acc__unplug" onClick={unlinkSite} disabled={siteBusy}>{t('off.unlink')}</button>
-            </div>
-          </div>
-        )}
-
-        {officeStep === 'idle' && siteStep === 'idle' && status === 'unlinked' && !user.officeSite && (
-          <div className="ws-acc__card ws-acc__card--empty">
-            <p className="ws-acc__note">{t('off.noneLinked')}</p>
-            <button className="ws-cta ws-cta--block" onClick={openSitePicker}>{t('off.link')}</button>
-            {/* Le rattachement à une ENTREPRISE (ws_offices) n'était atteignable
-                qu'après avoir délié un bureau existant : un client sans bureau ne
-                pouvait ni se rattacher, ni demander l'ajout du sien. */}
-            <button type="button" className="ws-acc__addlink" onClick={chooseLinkAnother}>{t('off.joinCompany')}</button>
-            <button type="button" className="ws-acc__unplug" onClick={() => window.open('/landing/livraison-bureau.html', '_blank', 'noopener')}>Ma zone est-elle desservie&nbsp;?</button>
-          </div>
-        )}
-
-        {/* Sélecteur de bureau (sites de livraison du shop : même liste que la PWA) */}
-        {siteStep === 'pick' && (
-          <div className="ws-acc__card">
-            <div className="ws-acc__row-title" style={{ marginBottom: 6 }}>
-              Bureaux de {((shops || []).find((s) => s.id === ((user.officeSite && user.officeSite.shopId) || form.preferredShopId || currentShopId)) || {}).name || 'votre boutique'}
-            </div>
-            {/* Plus de chargement de liste à l'ouverture : le serveur ne répond
-                qu'à une recherche. L'affichage ne dépend donc plus d'un
-                inventaire préchargé : il dépend de ce que le client tape. */}
-            <OfficeSearchPicker
-              chercher={(q) => (window.WSAuth && window.WSAuth.listOfficeSites)
-                ? window.WSAuth.listOfficeSites({
-                    shopId: (user.officeSite && user.officeSite.shopId) || form.preferredShopId || currentShopId,
-                    q }) : []}
-              value={sitePicked}
-              onPick={(id) => { setSitePicked(id); setSiteErr(''); }}
-              label="Choisir un bureau de livraison"/>
-            {siteErr && <p className="ws-acc__vat-msg ws-acc__vat-msg--err">⚠ {siteErr}</p>}
-            <div className="ws-acc__row-foot">
-              <button type="button" className="ws-fid__cancel" onClick={() => setSiteStep('idle')}>{t('common.cancel2')}</button>
-              <button type="button" className="ws-cta" onClick={saveSite} disabled={siteBusy || !sitePicked}>{t('off.linkThis')}</button>
-            </div>
-          </div>
-        )}
-
-        {officeStep === 'confirm' && (
-          <div className="ws-acc__card ws-acc__card--warn">
-            <p className="ws-acc__note"><strong>{t('off.unlinkQ')}</strong> La livraison au bureau sera désactivée jusqu'à ce que vous liiez un nouveau bureau. Votre compte reste actif.</p>
-            <div className="ws-acc__row-foot">
-              <button type="button" className="ws-fid__cancel" onClick={() => setOfficeStep('idle')}>{t('common.cancel2')}</button>
-              <button type="button" className="ws-cta" onClick={confirmUnplug}>{t('common.confirm')}</button>
-            </div>
-          </div>
-        )}
-
-        {officeStep === 'ask' && (
-          <div className="ws-acc__card">
-            <p className="ws-acc__note"><strong>{t('off.unlinked')}</strong> {t('off.linkAnotherQ')}</p>
-            <div className="ws-acc__row-foot">
-              <button type="button" className="ws-fid__cancel" onClick={chooseDone}>{t('common.no')}</button>
-              <button type="button" className="ws-cta" onClick={chooseLinkAnother}>{t('common.yes')}</button>
-            </div>
-          </div>
-        )}
-
-        {officeStep === 'pick' && !officeShopId && (
-          <div className="ws-acc__card">
-            <div className="ws-acc__row-title" style={{ marginBottom: 6 }}>{t('off.pick')}</div>
-            <p className="ws-acc__hint">{tRich(t, 'off.pickShopFirst')}</p>
-            <div className="ws-acc__row-foot">
-              <button type="button" className="ws-fid__cancel" onClick={() => setOfficeStep('idle')}>{t('common.close2')}</button>
-            </div>
-          </div>
-        )}
-
-        {officeStep === 'pick' && officeShopId && (
-          <div className="ws-acc__card">
-            <div className="ws-acc__row-title" style={{ marginBottom: 6 }}>
-              Bureaux de {((shops || []).find((s) => s.id === officeShopId) || {}).name || 'votre boutique'}
-            </div>
-            {officeBusy && <p className="ws-acc__hint">{t('common.loading2')}</p>}
-            {!officeBusy && approvedOffices.length === 0 && (
-              <p className="ws-acc__hint">{t('off.noneValidated')}</p>
-            )}
-            {!officeBusy && approvedOffices.length > 0 && (
-              <OfficeSearchPicker items={approvedOffices} value={pickedOfficeId}
-                onPick={(id) => { setPickedOfficeId(id); setOfficeErr(''); }}
-                label="Bureaux validés"/>
-            )}
-            {officeErr && <p className="ws-form__err">{officeErr}</p>}
-            <button type="button" className="ws-acc__addlink" onClick={() => { setOfficeErr(''); setOfficeStep('add'); }}>{t('off.notInList')}</button>
-            <div className="ws-acc__row-foot">
-              <button type="button" className="ws-fid__cancel" onClick={() => setOfficeStep('idle')}>{t('common.cancel2')}</button>
-              <button type="button" className="ws-cta" onClick={confirmPick} disabled={!pickedOfficeId}>{t('common.confirm')}</button>
-            </div>
-          </div>
-        )}
-
-        {officeStep === 'add' && (
-          <div className="ws-acc__card">
-            <div className="ws-acc__row-title" style={{ marginBottom: 6 }}>{t('off.notInListQ')}</div>
-            <p className="ws-acc__hint">{tRich(t, 'off.reqHint')}</p>
-            <div className="ws-acc__grid">
-              <label className="ws-acc__field ws-acc__field--full">
-                <span className="ws-acc__field-label">{t('off.reqName')}</span>
-                <input className="ws-acc__input" value={newOffice.name} onChange={(e) => setNewOfficeField('name', e.target.value)} placeholder={t('off.phName')}/>
-              </label>
-              <label className="ws-acc__field">
-                <span className="ws-acc__field-label">{t('form.phone')}</span>
-                <input className="ws-acc__input" value={newOffice.phone} onChange={(e) => setNewOfficeField('phone', e.target.value)} placeholder="+32 …"/>
-              </label>
-              <label className="ws-acc__field">
-                <span className="ws-acc__field-label">{t('form.emailLong')}</span>
-                <input type="email" className="ws-acc__input" value={newOffice.email} onChange={(e) => setNewOfficeField('email', e.target.value)} placeholder={t('off.phEmail')}/>
-              </label>
-              <label className="ws-acc__field ws-acc__field--full">
-                <span className="ws-acc__field-label">{t('co2.address')}</span>
-                <input className="ws-acc__input" value={newOffice.address} onChange={(e) => setNewOfficeField('address', e.target.value)} placeholder={t('off.reqAddress')}/>
-              </label>
-            </div>
-            <p className="ws-acc__hint">{t('off.reqContactHint')}</p>
-            {officeErr && <p className="ws-form__err">{officeErr}</p>}
-            <div className="ws-acc__row-foot">
-              <button type="button" className="ws-fid__cancel" onClick={() => { setOfficeErr(''); setOfficeStep('pick'); }}>{t('common.back2')}</button>
-              <button type="button" className="ws-cta" onClick={submitContactRequest} disabled={officeBusy}>{officeBusy ? 'Envoi…' : 'Envoyer à votre Atelier'}</button>
-            </div>
-          </div>
-        )}
-
-        {officeStep === 'sent' && (
-          <div className="ws-acc__card">
-            <div className="ws-acc__row-title" style={{ marginBottom: 6 }}>{t('off.reqSent')}</div>
-            <p className="ws-acc__hint">{t('off.reqThanks')}</p>
-            <div className="ws-acc__row-foot">
-              <button type="button" className="ws-cta" onClick={() => setOfficeStep('idle')}>{t('common.close2')}</button>
-            </div>
-          </div>
-        )}
+        <div className="ws-acc__section-h">{t('officeAccess.title')}</div>
+        <p className="ws-acc__note">{t('officeAccess.intro')}</p>
+        <button type="button" className="ws-cta" onClick={onManageOffices}>{t('officeAccess.manage')}</button>
       </div>
 
       {linkedCompanies.length > 0 && (
@@ -4075,8 +3927,8 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
           {linkedCompanies.map((c) => (
             <div key={c.id} className="ws-acc__card ws-acc__card--ok">
               <div className="ws-acc__card-row"><span className="ws-acc__k">{t('acc.company')}</span><span className="ws-acc__v">{c.name}</span></div>
-              {c.vat ? <div className="ws-acc__card-row"><span className="ws-acc__k">TVA</span><span className="ws-acc__v">{c.vat}</span></div> : null}
-              <div className="ws-acc__card-row"><span className="ws-acc__k">{t('acc.billing')}</span><span className="ws-acc__v">{c.deferredBilling ? 'Sur compte (différée)' : 'Paiement direct'}</span></div>
+              {c.vat ? <div className="ws-acc__card-row"><span className="ws-acc__k">{wsText("ui.vat")}</span><span className="ws-acc__v">{c.vat}</span></div> : null}
+              <div className="ws-acc__card-row"><span className="ws-acc__k">{t('acc.billing')}</span><span className="ws-acc__v">{c.deferredBilling ? wsText("ui.deferred") : wsText("ui.directPayment")}</span></div>
             </div>
           ))}
         </div>
@@ -4091,7 +3943,8 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
       </>}
 
       <div className="ws-acc__foot">
-        <button className="ws-acc__logout" onClick={() => { onLogout(); onClose(); }}>{t('acc.signout')}</button>
+        {activeTab === 'achats' && !purchaseDetailsOpen && <button type="button" className="ws-cta ws-payment-refresh ws-purchases-refresh" onClick={() => setPurchaseRevision(value => value + 1)}>{t('stock.refresh')}</button>}
+        {activeTab === 'profil' && <button className="ws-acc__logout" onClick={() => { onLogout(); onClose(); }}>{t('acc.signout')}</button>}
       </div>
     </ModalShell>
   );
@@ -4122,8 +3975,7 @@ function FidelityQR({ payload }) {
   }
   // Encodeur indisponible : lien direct plutôt qu'un faux QR illisible.
   return (
-    <p className="ws-fid__hint">
-      QR indisponible : ouvrez directement{' '}
+    <p className="ws-fid__hint"> {wsText("ui.qrUnavailable")}{' '}
       <a href={payload} target="_blank" rel="noopener noreferrer">{payload}</a>
     </p>
   );
@@ -4195,7 +4047,7 @@ function usePaymentMethods(shopId, mode, deliveryFeeResult, profile, companyId) 
     window.WSPayments.list({ shopId, profile: profile || 'guest', companyId, mode })
       .then((m) => {
         if (!alive) return;
-        setMethods(Array.isArray(m) ? m.map((x) => ({ id: x.method, label: x.label || x.method, family: x.family || x.method, sub: '' })) : []);
+        setMethods(Array.isArray(m) ? m.map((x) => ({ id: x.method, method: x.method, label: x.label || x.method, family: x.family || x.method, sub: '' })) : []);
       })
       .catch(() => { if (alive) setMethods([]); });
     return () => { alive = false; };
@@ -4203,12 +4055,19 @@ function usePaymentMethods(shopId, mode, deliveryFeeResult, profile, companyId) 
   return methods;
 }
 
-function CheckoutWizard({ open, onClose, shop, mode, basket, user, onLogin, onPlaced,
+function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, onLogin, onPlaced,
                           voucherInput, setVoucherInput, voucherApplied, setVoucherApplied,
-                          office, tour, date,
-                          deliveryFeeResult, deliveryFeeErr, officeSites, selectedSiteId, setSelectedSiteId }) {
+                          office, tour, date, onDate,
+                          deliveryFeeResult, deliveryFeeErr, officeSites, selectedSiteId, setSelectedSiteId, onQuoteChanged }) {
   const { t } = wsUseT();
   const [step, setStep] = useState(1);
+  const shoppingContext = basketShoppingContext(basket);
+  const officeContext = shoppingContext.mode !== 'standard';
+  const billing = quoteState.quote?.billing;
+  const companyBilling = officeContext && billing?.mode === 'company';
+  const payerName = billing?.company?.company_name || billing?.company?.name || billing?.company?.company || '';
+
+  useEffect(() => { if (!user) setStep(1); }, [user]);
   const [forceAuth, setForceAuth] = useState(false);
   const [paying, setPaying] = useState(false);
   const [payErr, setPayErr] = useState(null);
@@ -4234,7 +4093,7 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, user, onLogin, onPl
   // Aucun moyen par défaut inventé : « bancontact » n'existe pas côté serveur
   // (les méthodes réelles sont stripe / shop / deferred). La sélection est
   // posée par l'effet dès que /payment-methods a répondu.
-  const defaultPayment = (deliveryFeeResult && deliveryFeeResult.payment_type === 'deferred') ? 'deferred' : '';
+  const defaultPayment = '';
   const [payment, setPayment] = useState(defaultPayment);
 
   // B2B « commander pour une entreprise » + remarque + PO (facturation pro).
@@ -4276,7 +4135,7 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, user, onLogin, onPl
       setStep(1); setSlot(null); setInvoice(false); setVat(''); setForceAuth(false); setPaying(false); setPayErr(null);
       setPayKey(newPayKey());
       setOrderNote(''); setPoNumber(''); setCompanyId(''); setOnAccount(false);
-      setPayment((deliveryFeeResult && deliveryFeeResult.payment_type === 'deferred') ? 'deferred' : '');
+      setPayment('');
     }
   }, [open]);
 
@@ -4285,35 +4144,29 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, user, onLogin, onPl
   // rendus, ce que React refuse (écran blanc à l'ouverture du tunnel).
   // Le profil est recalculé en ligne : companyId/user suffisent, et les valeurs
   // dérivées plus bas ne sont pas encore disponibles à ce point du composant.
-  const paymentMethods = usePaymentMethods(
+  const ordinaryPaymentMethods = usePaymentMethods(
     shop && shop.id, mode, deliveryFeeResult,
     companyId ? 'company' : (user ? 'registered' : 'guest'),
-    companyId || null);
-
-  // Code cadeau « achat cumulé » appliqué (ajoute une ligne 0 € côté serveur).
-  // DOIT rester AVANT le `return null` ci-dessous, et DANS ce composant : place
-  // plus bas, ce hook n'était appelé que le tunnel ouvert, React comptait un
-  // hook de plus a l'ouverture (erreur #310) et le paiement devenait
-  // inaccessible.
-  const [giftCode, setGiftCode] = useState(null);
-  /* L'offre croisée : le panier la déduisait, le tunnel l'ignorait, le total
-     REMONTAIT donc au passage au paiement. Même règle, même source (la règle
-     serveur), aux deux endroits. Hook AVANT le `return null`, comme celui
-     ci-dessus : un hook conditionnel casse le tunnel (React #310). */
-  const [xRule, setXRule] = useState(null);
+    companyId || null,
+  ).filter((method) => method.method !== 'shop' && method.family !== 'shop');
+  const paymentMethods = companyBilling
+    ? [{ id: 'company_invoice', method: 'company_invoice', label: t('payment.method.company_invoice'), family: 'deferred', sub: t('officeAccess.companyNote') }]
+    : ordinaryPaymentMethods;
   React.useEffect(() => {
-    if (window.WSPricing && typeof window.WSPricing.getCrossPortionRule === 'function') {
-      window.WSPricing.getCrossPortionRule().then((r) => { if (r) setXRule(r); }).catch(() => {});
-    }
-  }, []);
+    if (companyBilling) setPayment('company_invoice');
+    else if (payment === 'company_invoice') setPayment('');
+  }, [companyBilling, payment]);
+
 
   if (!open) return null;
 
-  const voucherDiscount = voucherApplied && voucherApplied.ok ? voucherApplied.discount : 0;
   const deliveryFee = (mode === 'delivery' && deliveryFeeResult) ? (deliveryFeeResult.fee_amount || 0) : 0;
-  const crossSavings = computeCrossPortionOffer(basket, xRule)?.savings || 0;
-  // Même addition que le panier, et que le serveur (wsTotaux).
-  const T = wsTotaux({ basket, shop, crossSavings, voucherDiscount, deliveryFee });
+  const T = wsQuoteTotals(quoteState.quote, deliveryFee);
+  if (!T) return <aside className="ws-checkout" role="dialog" aria-label={t('co.subtitle')}>
+    <div className="ws-checkout__body"><p role={quoteState.status === 'error' ? 'alert' : 'status'}>{quoteState.status === 'error' ? wsMessage(quoteState.error) : t('ui.updatingPrices')}</p></div>
+    <footer className="ws-checkout__foot"><button type="button" className="ws-btn-ghost" onClick={onClose}>{t('common.close2')}</button></footer>
+  </aside>;
+  const voucherDiscount = T.bon;
   const subtotal = T.sousTotal;
   const total = T.total;
 
@@ -4324,17 +4177,7 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, user, onLogin, onPl
   // Profil de paiement : société (companyId) > enregistré (user) > visiteur (guest).
   const checkoutProfile = companyId ? 'company' : (user ? 'registered' : 'guest');
   // Step 1 validity
-  function step1Valid() {
-    if (isOffice) return true;             // all read-only, valid
-    if (user)    return true;              // collect logged-in: prefilled
-    // E-mail FORMELLEMENT valide (il sert à la confirmation de commande) et
-    // téléphone contenant au moins des chiffres : l'ancien test «vérité»
-    // laissait passer une adresse malformée ou un téléphone sans chiffre,
-    // refusés ou inexploitables ensuite.
-    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(contact.email || '').trim());
-    const phoneOk = /\d{5,}/.test(String(contact.phone || '').replace(/\D/g, ''));
-    return Boolean(contact.firstName && contact.lastName && emailOk && phoneOk);
-  }
+  function step1Valid() { return Boolean(user) && (mode !== 'delivery' || Boolean(office && selectedSiteId && !deliveryFeeErr)); }
   function step2Valid() { return Boolean(slot); }
   // Étape 3 : un moyen de paiement doit être proposé ET choisi. Sans ce test, le
   // bouton « Payer » restait actif alors que l'écran affichait « moyens
@@ -4342,11 +4185,22 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, user, onLogin, onPl
   function step3Valid() { return paymentMethods.length > 0 && Boolean(payment); }
 
   async function handlePay() {
+    if (!user) { onLogin(); return; }
+    if (quoteState.status !== 'ready') { setPayErr(wsText("error.quote")); return; }
     // Livraison bureau sans frais résolus : on REFUSE au lieu de facturer 0 €
     // et de forcer un paiement immédiat à un bureau en facturation différée.
     if (mode === 'delivery' && deliveryFeeErr) { setPayErr(deliveryFeeErr); return; }
     setPaying(true); setPayErr(null);
     try {
+      const freshQuote = await window.WSQuote.quote({ shopId: shop.id, mode, basket, shoppingContext, deliveryDate: date,
+        voucherCode: voucherApplied?.ok ? voucherApplied.voucher?.code : null });
+      if (voucherApplied?.ok && (freshQuote.voucher?.valid !== true || freshQuote.voucher?.matches_cart !== true)) {
+        onQuoteChanged?.(freshQuote); setPayErr(t('error.codeInvalid')); return;
+      }
+      if (JSON.stringify(wsCheckoutQuoteComparable(freshQuote))
+          !== JSON.stringify(wsCheckoutQuoteComparable(quoteState.quote))) {
+        onQuoteChanged?.(freshQuote); setPayErr(t('officeAccess.priceChanged')); return;
+      }
       // Jour choisi au format YYYY-MM-DD LOCAL (isoOf évite le décalage UTC de
       // toISOString à minuit) : sans lui, ws_orders.delivery_date restait NULL
       // et une commande J+1 apparaissait sous « aujourd'hui » côté back-office.
@@ -4355,20 +4209,23 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, user, onLogin, onPl
       const deliveryDate = date instanceof Date ? isoFn(date) : (date || null);
       const payload = {
         shopId: shop && shop.id,
+        locale: (window.WSI18n && window.WSI18n.getLang) ? window.WSI18n.getLang() : 'en',
         requestKey: payKey,
+        shopping_context: shoppingContext,
+        selected_automatic_promotion_id: wsSelectedAutomaticPromotionId(basket),
+        expected_total: freshQuote.totals.gross_after_discount,
         mode,
         deliveryDate,
         slot: typeof slot === 'object' && slot
           ? { slotId: slot.id, label: slot.label, date: deliveryDate }
           : { slotId: slot, label: slot, date: deliveryDate },
-        basket: basket.map((l) => ({ productId: l.productId, qty: l.qty, portion: l.portion || null, note: l.note || null, options: l.options || [], bundleId: l.bundleId || null, bundleOfferId: l.bundleOfferId || null, bundleSlots: l.bundleSlots || {} })),
+        basket: basket.map((l) => ({ shopping_context: normaliseShoppingContext(l.shopping_context), productId: l.productId, qty: l.qty, portion: l.portion || null, id_product_portion: l.id_product_portion ?? null, ...(l.weight_grams != null ? { weight_grams: l.weight_grams } : {}), note: l.note || null, options: l.options || [], bundleId: l.bundleId || null, bundleOfferId: l.bundleOfferId || null, bundleSlots: l.bundleSlots || {}, ...(l.promotion_group && Number(l.promotion_id) > 0 ? { promotion_group: l.promotion_group, promotion_id: Number(l.promotion_id) } : {}), ...(l.personalization_selection ? {personalization_selection:l.personalization_selection} : {}), ...(l.menu_selection ? {menu_selection:l.menu_selection} : {}) })),
         voucher: voucherApplied && voucherApplied.ok ? voucherApplied.voucher.code : null,
-        giftCode: giftCode || null,
         note: orderNote || null,
-        companyId: companyId || null,
-        onAccount: !!onAccount,
+        companyId: officeContext ? null : (companyId || null),
+        onAccount: officeContext ? companyBilling : !!onAccount,
         customer: user ? { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, phone: user.phone || null, officeId: user.officeId || null } : { ...contact },
-        payment: { method: payment },
+        payment: { method: companyBilling ? 'company_invoice' : payment },
         delivery: mode === 'delivery' && office ? {
           office_client_id:            office.id,
           office_delivery_site_id:     selectedSiteId || null,
@@ -4390,13 +4247,8 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, user, onLogin, onPl
       // commande était absent : le client voyait une confirmation pour une
       // commande qui n'existait nulle part. Sans module → erreur, jamais de
       // confirmation inventée.
-      if (!window.WSOrders) throw new Error('Service de commande indisponible, commande non enregistrée.');
+      if (!window.WSOrders) throw new Error(wsText("error.orderUnavailable"));
       const result = await window.WSOrders.place(payload);
-      // Compatibilité : si un jour POST /orders rend lui-même l'URL de paiement.
-      if (result && result.checkoutUrl) {
-        window.location.href = result.checkoutUrl;
-        return;
-      }
       /* PAIEMENT EN LIGNE (famille « stripe », servie par /payment-methods).
          La commande vient d'être ENREGISTRÉE ; l'encaissement se fait sur la
          page Stripe hébergée, créée par POST /payments/checkout, et seul le
@@ -4406,30 +4258,26 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, user, onLogin, onPl
          route qui la fabrique. Hors ligne : différé/sur compte (la facture
          suit) et paiement en boutique (encaissé au comptoir). */
       const payFam = (paymentMethods.find((x) => x.id === payment) || {}).family || payment;
-      const differe = Boolean(result && (result.paymentType === 'deferred' || result.onAccount));
-      if (payFam === 'stripe' && !differe && window.WSOrders.pay) {
+      const differe = Boolean(result && (result.paymentType === 'deferred' || result.paymentType === 'company_invoice' || result.onAccount));
+      if ((payment === 'stripe' || payFam === 'stripe') && !differe && window.WSOrders.pay) {
         let sess;
         try {
-          sess = await window.WSOrders.pay(result.orderId);
-        } catch (pe) {
-          /* La commande EXISTE déjà : le dire, et dire que réessayer est sûr :
-             la clé d'idempotence fait reprendre LA MÊME commande, jamais une
-             seconde. Un « Erreur 503 » nu ferait recommander le panier. */
-          throw new Error(t('co.payStartFail',
-            { ref: result.orderRef || String(result.orderId), reason: pe.message || '' }));
+          sess = await window.WSOrders.pay(result.orderRef);
+        } catch (_) {
+          // The order already exists. Consume its basket and expose a durable
+          // recovery view instead of letting the customer submit it again.
+          onPlaced({ ...result, paymentPending: true });
+          const returnUrl = new URL(window.location.href);
+          returnUrl.searchParams.set('stripe', 'return'); returnUrl.searchParams.set('orderRef', result.orderRef);
+          window.history.replaceState(window.history.state, '', returnUrl.pathname + returnUrl.search);
+          window.dispatchEvent(new CustomEvent('ws:stripe-recovery', { detail: { orderRef: result.orderRef } }));
+          return;
         }
-        /* Mémorisé pour l'accueil du retour (?paid=1 / ?canceled=1) : la
-           redirection recharge la page, l'état React ne survit pas. */
-        try {
-          sessionStorage.setItem('ws.pendingPay', JSON.stringify({
-            orderId: result.orderId,
-            orderRef: result.orderRef || '',
-            slot: (typeof slot === 'object' && slot) ? slot.label : slot,
-            paymentLabel: (paymentMethods.find((x) => x.id === payment) || {}).label || payment,
-            total: (typeof result.total === 'number') ? result.total : total,
-          }));
-        } catch (_) { /* stockage indisponible : le retour sera juste muet */ }
-        window.location.href = sess.checkoutUrl;
+        if (sess.status === 'paid') { onPlaced({ ...result, slot, payment, total: result.total }); return; }
+        onPlaced({ ...result, paymentPending: true });
+        if (sess.uiMode === 'embedded' || sess.status === 'pending') {
+          window.dispatchEvent(new CustomEvent('ws:stripe-recovery', { detail: { orderRef: result.orderRef, session: sess } }));
+        } else window.location.href = sess.checkoutUrl;
         return;
       }
       // Le LIBELLÉ vient de la liste serveur : la confirmation annonçait
@@ -4443,13 +4291,17 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, user, onLogin, onPl
       const totalFacture = (result && typeof result.total === 'number') ? result.total : total;
       onPlaced({ ...result, slot, payment, paymentLabel: payLabel, total: totalFacture });
     } catch (ex) {
-      setPayErr(ex.message || 'Erreur lors du paiement. Veuillez réessayer.');
+      if (ex.code === 'WEBSHOP_QUOTE_CHANGED' && ex.quote) {
+        onQuoteChanged?.(ex.quote); setPayErr(t('officeAccess.priceChanged'));
+      } else setPayErr(ex.message || wsText("error.payment"));
     } finally {
       setPaying(false);
     }
   }
 
   function next() {
+    if (paying || quoteState.status !== 'ready' || !quoteState.quote?.totals) return;
+    if (!user) { onLogin(); return; }
     if (step === 1) {
       if (!step1Valid()) return;
       setStep(2);
@@ -4457,7 +4309,7 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, user, onLogin, onPl
       if (!step2Valid()) return;
       setStep(3);
     } else {
-      if (!step3Valid()) { setPayErr('Choisissez un moyen de paiement.'); return; }
+      if (!step3Valid()) { setPayErr(wsText("error.pickPayment")); return; }
       handlePay();
     }
   }
@@ -4485,35 +4337,38 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, user, onLogin, onPl
       </ol>
 
       <div className="ws-checkout__body">
+        {mode === 'delivery' && deliveryFeeErr && <p className="ws-co-error" role="alert">{wsMessage(deliveryFeeErr)}</p>}
+
         {step === 1 && (
           <CheckoutStep1
             mode={mode} shop={shop} user={user} office={office} tour={tour}
             contact={contact} setContact={setContact}
-            forceAuth={forceAuth} onLoginNow={() => onLogin()}
+            forceAuth={!user || forceAuth} onLoginNow={() => onLogin()}
             officeSites={officeSites} selectedSiteId={selectedSiteId} setSelectedSiteId={setSelectedSiteId}
             deliveryFeeResult={deliveryFeeResult}
           />
         )}
         {step === 2 && (
-          <CheckoutStep2 mode={mode} shop={shop} office={office} tour={tour} slot={slot} setSlot={setSlot} date={date}/>
+          <CheckoutStep2 minLeadDays={Math.max(0, ...basket.map(line => Number(line.lead_time) || 0))} basket={basket} mode={mode} shop={shop} office={office} tour={tour} slot={slot} setSlot={setSlot} date={date} onDate={onDate} selectedSiteId={selectedSiteId}/>
         )}
         {step === 3 && (
           <>
           <CheckoutStep3
             mode={mode} basket={basket} subtotal={subtotal} totaux={T} total={total}
-            deliveryFee={deliveryFee} deliveryFeeResult={deliveryFeeResult} deliveryFeeErr={deliveryFeeErr}
+            quoteState={quoteState} shoppingContext={shoppingContext} companyBilling={companyBilling} deliveryDate={date}
+            deliveryFee={deliveryFee} deliveryFeeResult={deliveryFeeResult} deliveryFeeErr={wsMessage(deliveryFeeErr)}
             payment={payment} setPayment={setPayment} paymentMethods={paymentMethods}
             profile={checkoutProfile} companyId={companyId || null}
             isOffice={isOffice} isB2B={isB2B} invoice={invoice} setInvoice={setInvoice} vat={vat} setVat={setVat}
+            shop={shop}
             shopId={shop && shop.id}
             voucherInput={voucherInput} setVoucherInput={setVoucherInput}
             voucherApplied={voucherApplied} setVoucherApplied={setVoucherApplied}
             voucherDiscount={voucherDiscount}
-            giftCode={giftCode} onGift={setGiftCode}
             giftEmail={user ? (user.email || null) : ((contact && contact.email) || null)}
             customerId={user ? user.id : null}
           />
-          {invoice && (
+          {invoice && !officeContext && (
           <div className="ws-b2b">
             <div className="ws-b2b__head">
               <span className="ws-b2b__icon" aria-hidden="true">
@@ -4583,7 +4438,7 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, user, onLogin, onPl
                 <div className="ws-b2b__bill" role="note">
                   <span className="ws-b2b__bill-k">{t('co.company.billedTo')}</span>
                   {bName && <span className="ws-b2b__bill-name">{bName}</span>}
-                  {bVat && <span className="ws-b2b__bill-addr">N° TVA · {bVat}</span>}
+                  {bVat && <span className="ws-b2b__bill-addr">{wsText("ui.vatNumber")} {bVat}</span>}
                   {bAddr && <span className="ws-b2b__bill-addr">{bAddr}</span>}
                 </div>
               );
@@ -4606,19 +4461,19 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, user, onLogin, onPl
       </div>
 
       <footer className="ws-checkout__foot">
-        {payErr && <div className="ws-checkout__pay-err" role="alert">{payErr}</div>}
+        {payErr && <div className="ws-checkout__pay-err" role="alert">{wsMessage(payErr)}</div>}
         <div className="ws-checkout__foot-total">
           <span className="ws-checkout__foot-k">{t('sum.total')}</span>
-          <span className="ws-checkout__foot-v">€{total.toFixed(2)}</span>
+          <span className="ws-checkout__foot-v">€{wsNumber(total)}</span>
         </div>
         <div className="ws-checkout__foot-actions">
           {step > 1 && <button className="ws-btn-ghost" {...wsTap(() => setStep((s) => s - 1), { shield: true })} disabled={paying}>{t('co.prev')}</button>}
           <button
             className="ws-cta ws-cta--block"
-            disabled={paying || (step === 1 && !step1Valid()) || (step === 2 && !step2Valid()) || (step === 3 && !step3Valid())}
+            disabled={paying || quoteState.status !== 'ready' || (!!user && ((step === 1 && !step1Valid()) || (step === 2 && !step2Valid()) || (step === 3 && !step3Valid())))}
             {...wsTap(next, { shield: true })}
           >
-            {paying ? t('co.processing') : step === 3 ? t('co.payAmount', { amount: '€' + total.toFixed(2) }) : t('co.continue')}
+            {!user ? t('co.auth.signin') : paying ? t('co.processing') : step === 3 ? (companyBilling ? t('officeAccess.confirmOrder') : t('co.payAmount', { amount: '€' + wsNumber(total) })) : t('co.continue')}
             {!paying && step < 3 && <Pict d={<path d="M5 12h14M13 5l7 7-7 7"/>} s={13}/>}
           </button>
         </div>
@@ -4670,20 +4525,20 @@ function CheckoutStep1({ mode, shop, user, office, tour, contact, setContact, fo
                                      || ((user.firstName || '') + ' ' + (user.lastName || '')).trim() || '—'}/>
           <ReadRow k={t('form.emailLong')} v={user.email}/>
           <ReadRow k={t('form.phone')} v={(activeSite ? activeSite.contact_phone : office.phone) || user.phone || '—'}/>
-          <ReadRow k="Adresse"    v={activeSite
+          <ReadRow k={wsText("co2.address")}    v={activeSite
                                      ? (activeSite.address + (complement(activeSite.floor_room) ? ' · ' + complement(activeSite.floor_room) : ''))
                                      : (office.address || '—')}/>
-          <ReadRow k="Tournée"    v={tour ? tour.name + ' · ' + tour.window : '—'}/>
+          {activeSite?.routes?.length > 0 && <ReadRow k={wsText('ui.route')} v={activeSite.routes.map(route => route.name).join(', ')}/>}
           {feeResult && (
-            <ReadRow k="Livraison"
+            <ReadRow k={wsText("checkout.delivery")}
               v={feeResult.free_delivery
-                ? 'Gratuite'
+                ? wsText("ui.free")
                 : feeResult.fee_amount > 0
-                  ? `€${feeResult.fee_amount.toFixed(2)}${feeResult.free_delivery_minimum > 0 ? ` (offerte dès €${feeResult.free_delivery_minimum.toFixed(2)})` : ''}`
-                  : 'Gratuite'}/>
+                  ? `€${wsNumber(feeResult.fee_amount)}${feeResult.free_delivery_minimum > 0 ? ' (' + wsText('ui.freeDeliveryThreshold', { amount: wsCurrency(feeResult.free_delivery_minimum) }) + ')' : ''}`
+                  : wsText("ui.free")}/>
           )}
           {feeResult && feeResult.payment_type === 'deferred' && (
-            <ReadRow k="Paiement" v="Différé · facturation mensuelle"/>
+            <ReadRow k={wsText("sum.payment")} v={wsText("ui.monthlyInvoice")}/>
           )}
         </div>
         <p className="ws-co-step__locknote"><Pict d={<><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></>} s={12}/> {t('co.contact.editFromAccount')}</p>
@@ -4741,7 +4596,7 @@ function CheckoutStep1({ mode, shop, user, office, tour, contact, setContact, fo
         <label className="ws-field"><span>{t('form.email')}</span><input type="email" value={contact.email} onChange={(e) => setContact((c) => ({ ...c, email: e.target.value }))} autoComplete="email"/></label>
         <label className="ws-field"><span>{t('form.phone')}</span><input value={contact.phone} onChange={(e) => setContact((c) => ({ ...c, phone: e.target.value }))} autoComplete="tel"/></label>
       </div>
-      <p className="ws-co-guest__login">{t('co.guest.already')} <button type="button" className="ws-linkbtn" onClick={onLoginNow}>{t('co.auth.signin')}</button> pour pré-remplir vos infos.</p>
+      <p className="ws-co-guest__login">{t('co.guest.already')} <button type="button" className="ws-linkbtn" onClick={onLoginNow}>{t('co.auth.signin')}</button> {wsText("ui.prefill")}</p>
     </div>
   );
 }
@@ -4765,7 +4620,7 @@ function SlotCTA({ cta, onClick }) {
   return (
     <button type="button" className="ws-slotcta" data-slot-theme={cta.theme} onClick={onClick}>
       <span className="ws-slotcta__ic"><SlotIcon name={cta.icon} size={16}/></span>
-      <span>{cta.label}</span>
+      <span>{window.WSI18n.translateKnown(cta.label)}</span>
     </button>
   );
 }
@@ -4786,7 +4641,7 @@ function SlotSegmented({ slots, selected, onSelect }) {
               className="ws-slotseg__btn" data-slot-theme={theme} data-active={on}
               onClick={() => onSelect(s.slot_type, s)}>
               <SlotIcon name={(s.cta && s.cta.icon) || (s.slot_type === 'soir' ? 'evening' : 'lunch')}/>
-              <span>{(s.cta && s.cta.label) || (s.slot_type === 'soir' ? 'Soirée' : 'Midi')}</span>
+              <span>{(s.cta && window.WSI18n.translateKnown(s.cta.label)) || (s.slot_type === 'soir' ? wsText("ui.evening") : wsText("ui.noon"))}</span>
             </button>
           );
         })}
@@ -4805,7 +4660,7 @@ function SlotChangeModal({ items, targetLabel, onConfirm, onCancel }) {
     <div className="ws-drawer is-open" onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}>
       <div className="ws-drawer__panel ws-slotchange" role="dialog" aria-label={t('co.slot.change')}>
         <h3 className="ws-co-step__title">{t('co.slot.changeQ')}</h3>
-        <p className="ws-co-step__lede">Un panier ne peut contenir qu'un seul créneau. Passer sur <strong>{targetLabel}</strong> retirera {items.length} article{items.length > 1 ? 's' : ''} indisponible{items.length > 1 ? 's' : ''} sur ce créneau :</p>
+        <p className="ws-co-step__lede">{wsText('ui.switchSlotHint', { slot: targetLabel, count: items.length })}</p>
         <ul className="ws-slotchange__list">
           {items.map((l) => <li key={l.line}><span>{l.name}</span><span>×{l.qty}</span></li>)}
         </ul>
@@ -4818,12 +4673,15 @@ function SlotChangeModal({ items, targetLabel, onConfirm, onCancel }) {
   );
 }
 
-function CheckoutStep2({ mode, shop, office, tour, slot, setSlot, date }) {
+function CheckoutStep2({ mode, shop, office, tour, slot, setSlot, date, onDate, selectedSiteId, minLeadDays, basket }) {
   const { t, lang } = wsUseT();
   const [slots, setSlots] = React.useState([]);
   const [dateLabel, setDateLabel] = React.useState('');
+  const [loading, setLoading] = React.useState(true);
+  const [failed, setFailed] = React.useState(false);
   React.useEffect(() => {
     let alive = true;
+    setSlot(null); setSlots([]); setLoading(true); setFailed(false);
     (async () => {
       // Use the parent-selected date, not hardcoded today
       const d = date instanceof Date ? date : new Date();
@@ -4834,16 +4692,29 @@ function CheckoutStep2({ mode, shop, office, tour, slot, setSlot, date }) {
         || ((x) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`);
       const isoDate = isoFn(d);
       const api = window.WSAvailability || window.WSCalendar;
-      if (!api) { setSlots([]); return; }
-      const list = await api.listSlots({ shopId: shop?.id, mode, date: isoDate });
-      if (alive) setSlots(list || []);
-    })();
+      if (!api) throw new Error('Availability API missing');
+      const list = mode === 'delivery'
+        ? await window.WSOffices.deliverySlots({shop: shop?.id, officeId: office?.id, siteId: selectedSiteId, date: isoDate})
+        : await api.listSlots({ shopId: shop?.id, mode, date: isoDate, basket });
+      if (alive) {
+        if (mode === 'delivery') {
+          const available = (list || []).find(s => s.available !== false && s.current_orders < s.capacity && s.delivery_window_label);
+          const window = available ? {...available, label: available.delivery_window_label} : null;
+          setSlots(window ? [window] : []);
+          setSlot(window ? {id: window.id, label: window.label} : null);
+        } else setSlots(list || []);
+      }
+    })().catch(() => { if (alive) setFailed(true); }).finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
     // `lang` : la date longue (« Zondag 16 augustus ») est rendue par Intl
     // dans la langue courante : sans cette dépendance, elle resterait dans la
     // langue du premier affichage.
-  }, [mode, shop?.id, date, lang]);
+  }, [mode, shop?.id, office?.id, selectedSiteId, date, lang, basket]);
 
+  const noAvailableSlots = !loading && !failed && !slots.some(s => s.available !== false && s.current_orders < s.capacity);
+  const selectedDateIso = window.WSAvailability.isoOf(date);
+  const todayIso = window.WSAvailability.isoOf(new Date());
+  const hideExpiredSlots = selectedDateIso < todayIso || (selectedDateIso === todayIso && noAvailableSlots);
   const selectedId = typeof slot === 'object' && slot ? slot.id : slot;
 
   return (
@@ -4851,14 +4722,19 @@ function CheckoutStep2({ mode, shop, office, tour, slot, setSlot, date }) {
       <h3 className="ws-co-step__title">{t(mode === 'delivery' ? 'co.slot.titleDelivery' : 'co.slot.titleCollect')}</h3>
       <p className="ws-co-step__lede">
         {mode === 'delivery'
-          ? <>{t('off.tour')} <strong>{tour?.name || '—'}</strong> · Livraison à <strong>{office?.name}</strong>, {office?.address || ''}.</>
+          ? <>{wsText('ui.deliveryTo')} <strong>{office?.name}</strong></>
           : <>{t('co.pickup.at')} <strong>{shop.name}</strong>, {shop.address}.</>
         }
       </p>
       <div className="ws-co-day">
         <Pict d={ICONS.cal} s={13}/> <span>{dateLabel}</span>
       </div>
-      <div className="ws-slots">
+      <label className="ws-field"><span>{t('co.slot.changeDate')}</span><input type="date" value={window.WSAvailability.isoOf(date)} onChange={event=>{if(event.target.value){setSlot(null);onDate?.(new Date(event.target.value+'T12:00:00'));}}}/></label>
+      {loading && <p role="status">{t('common.loading2')}</p>}
+      {!loading && (failed || noAvailableSlots) && <p role={failed?'alert':'status'}>{t(failed?'co.slot.loadError':'co.slot.noneAvailable')}</p>}
+      {noAvailableSlots && mode === 'collect' && <p className="ws-co-step__lede" role="status">{t('co.slot.cartRestriction')}</p>}
+      {noAvailableSlots && <PickupDates mode={mode} officeId={office?.id} siteId={selectedSiteId} shopId={shop?.id} minLeadDays={minLeadDays} basket={basket} date={date} onSelect={value=>{setSlot(null);onDate?.(value);}}/>}
+      {!hideExpiredSlots && <div className="ws-slots">
         {slots.map((s) => {
           const id    = typeof s === 'object' ? s.id    : s;
           const label = typeof s === 'object' ? s.label : s;
@@ -4870,50 +4746,29 @@ function CheckoutStep2({ mode, shop, office, tour, slot, setSlot, date }) {
             <button key={id}
               className={`ws-slot${selectedId === id ? ' is-active' : ''}${full ? ' is-full' : ''}`}
               disabled={full}
-              title={full ? 'Créneau complet' : undefined}
+              title={full ? wsText("ui.slotFull") : undefined}
               onClick={() => !full && setSlot({ id, label })}>
               <span className="ws-slot__lbl">{label}</span>
-              {full && <span className="ws-slot__cap ws-slot__cap--full">{t('slot.full')}</span>}
+              {full && <span className="ws-slot__cap ws-slot__cap--full">{t(s.reason==='cutoff_passed'?'co.slot.tooLate':'slot.full')}</span>}
             </button>
           );
         })}
-      </div>
+      </div>}
       {mode === 'delivery' && <p className="ws-co-step__hint">{t('co.delivery.included')}</p>}
     </div>
   );
 }
 
-function CheckoutStep3({ basket, subtotal, totaux, total, payment, setPayment, isOffice, isB2B, invoice, setInvoice, vat, setVat,
+function CheckoutStep3({ basket, subtotal, totaux, total, payment, setPayment, isOffice, isB2B, invoice, setInvoice, vat, setVat, shop,
                          shopId, mode, voucherInput, setVoucherInput, voucherApplied, setVoucherApplied, voucherDiscount,
-                         giftCode, onGift, giftEmail,
-                         deliveryFee, deliveryFeeResult, deliveryFeeErr, profile, companyId, customerId,
-                         paymentMethods }) {
+                         deliveryFee, deliveryFeeResult, deliveryFeeErr, profile, companyId, customerId, quoteState,
+                         paymentMethods, shoppingContext, companyBilling, deliveryDate }) {
   const { t } = wsUseT();
-  const [voucherErr, setVoucherErr] = useState(null);
-  // Cadeau « achat cumulé » : code saisi + produit cadeau validé (ligne 0 €).
-  const [giftInput, setGiftInput] = useState('');
-  const [giftReward, setGiftReward] = useState(null);
-  const [giftErr, setGiftErr] = useState(null);
-  const [giftLoading, setGiftLoading] = useState(false);
-  const GIFT_REASONS = {
-    unknown_code: 'Code cadeau inconnu', already_redeemed: 'Ce cadeau a déjà été utilisé',
-    not_unlocked: "Ce cadeau n'est pas encore débloqué", not_owner: 'Ce code ne vous appartient pas',
-    before_delivery_date: 'Cadeau disponible plus tard', wrong_shop: 'Cadeau non valable dans cette boutique',
-    identity_required: 'Connectez-vous ou saisissez votre e-mail', network: 'Erreur réseau',
-  };
-  async function applyGift() {
-    const code = (giftInput || '').trim();
-    if (!code || !window.WSPromo) return;
-    setGiftErr(null); setGiftLoading(true);
-    try {
-      const r = await window.WSPromo.redeem({ code, shopId, guestEmail: giftEmail });
-      if (r && r.valid) { setGiftReward(r.reward || {}); onGift && onGift(code); setGiftErr(null); }
-      else { setGiftReward(null); onGift && onGift(null); setGiftErr(GIFT_REASONS[r && r.reason] || 'Code cadeau invalide'); }
-    } catch (_) { setGiftErr('Erreur réseau lors de la validation du cadeau.'); }
-    finally { setGiftLoading(false); }
-  }
-  function removeGift() { setGiftReward(null); setGiftInput(''); setGiftErr(null); onGift && onGift(null); }
-  const [voucherLoading, setVoucherLoading] = useState(false);
+  const allowVoucher = shoppingContext?.mode !== 'office_offer';
+  const isOfficeContext = shoppingContext?.mode !== 'standard';
+  const voucherLoading = quoteState?.status === 'loading';
+  const voucherErr = quoteState?.status === 'error' ? quoteState.error : null;
+  const displayRows = wsBasketDisplayRows(basket, quoteState?.quote || null);
   // Infobulle « facture nominative » : ouverte au TAP, fermée au tap extérieur.
   const [infoOpen, setInfoOpen] = useState(false);
   const infoRef = React.useRef(null);
@@ -4926,89 +4781,42 @@ function CheckoutStep3({ basket, subtotal, totaux, total, payment, setPayment, i
   // paymentMethods vient du wizard (prop) : plus de second appel à /payment-methods.
   // Si le moyen sélectionné n'est plus proposé (profil/boutique), prendre le premier dispo.
   useEffect(() => {
-    if (paymentMethods.length && !paymentMethods.some((p) => p.id === payment)) setPayment(paymentMethods[0].id);
+    if (paymentMethods.length && !paymentMethods.some((p) => p.id === payment)) setPayment((paymentMethods.find((method) => method.id === 'stripe') || paymentMethods[0]).id);
   }, [paymentMethods]);
 
-  // Re-validate whenever subtotal changes (e.g. minOrder boundary)
-  useEffect(() => {
-    if (voucherApplied && voucherApplied.ok) {
-      const code = voucherApplied.voucher.code;
-      // Seul le serveur revalide un bon (compteurs, ciblage, périmètre, dates).
-      if (!window.WSVouchers) { setVoucherApplied(null); setVoucherErr('Service codes promo indisponible.'); return; }
-      window.WSVouchers.redeem({ code, shopId, subtotal, basket, customerId }).then((r) => {
-        if (!r.ok) { setVoucherApplied(null); setVoucherErr(r.message); }
-        else setVoucherApplied(r);
-      }).catch(() => { setVoucherApplied(null); setVoucherErr('Service codes promo indisponible.'); });
-    }
-  }, [subtotal, shopId]);
-
-  // Bons DISPONIBLES (marketing) : chargés pour ce client + boutique, appliqués
-  // en un clic (le client ne retape pas le code).
-  const [availVouchers, setAvailVouchers] = useState([]);
-  useEffect(() => {
-    let alive = true;
-    if (window.WSVouchers && typeof window.WSVouchers.available === 'function') {
-      window.WSVouchers.available({ shopId, customerId, subtotal })
-        .then((list) => { if (alive) setAvailVouchers(Array.isArray(list) ? list : []); })
-        .catch(() => {});
-    }
-    return () => { alive = false; };
-  }, [shopId, customerId, subtotal]);
-
-  async function applyVoucher(forcedCode) {
-    setVoucherErr(null);
-    // Un « code forcé » ne peut être qu'une chaîne (ou un nombre). Tout autre
-    // type est un appel mal câblé, typiquement un événement de clic passé par
-    // React : et doit retomber sur la saisie, pas être converti en
-    // « [object Object] » puis envoyé au serveur comme un vrai code.
-    const forced = (typeof forcedCode === 'string' || typeof forcedCode === 'number') ? String(forcedCode) : null;
-    const code = (forced != null ? forced : (voucherInput || '')).trim();
-    if (!code) return;
-    setVoucherLoading(true);
-    try {
-      if (!window.WSVouchers) throw new Error('Service codes promo indisponible.');
-      const r = await window.WSVouchers.redeem({ code, shopId, subtotal, basket, customerId });
-      if (r.ok) { setVoucherApplied(r); setVoucherErr(null); setVoucherInput(code); }
-      else {
-        setVoucherErr(r.message || 'Code invalide');
-        // Un échec sur un AUTRE code ne doit PAS retirer celui qui fonctionne :
-        // essayer un bon refusé (périmètre produit, seuil non atteint…) faisait
-        // perdre la remise déjà acquise, sans le dire. On ne retire que si le
-        // code refusé est justement celui qui était appliqué.
-        const active = voucherApplied && voucherApplied.ok && voucherApplied.voucher
-                       ? String(voucherApplied.voucher.code) : null;
-        if (active !== null && active === code) setVoucherApplied(null);
-      }
-    } catch (_) {
-      setVoucherErr('Erreur réseau lors de la validation du code.');
-    } finally {
-      setVoucherLoading(false);
-    }
+  function applyVoucher() {
+    if (!allowVoucher || voucherLoading) return;
+    const code = voucherInput.trim().toUpperCase();
+    if (code) setVoucherApplied({ ok: true, voucher: { code } });
   }
   function removeVoucher() {
     setVoucherApplied(null);
     setVoucherInput('');
-    setVoucherErr(null);
   }
 
   return (
     <div className="ws-co-step">
+      {shop && <section className="ws-co-ordering-shop" aria-label={shop.name}>
+        <strong>{shop.name}</strong>
+        <span>{shop.address}</span>
+      </section>}
       <h3 className="ws-co-step__title">{t('sum.payment')}</h3>
       <p className="ws-co-step__lede">{t('co.pay.subtitle')}</p>
 
-      <div className="ws-co-voucher">
+      {!allowVoucher && <p className="ws-office-context">{t('officeAccess.noVoucher')}</p>}
+      {allowVoucher && <div className="ws-co-voucher">
         <div className="ws-co-voucher__head">
           <span className="ws-co-voucher__lbl">{t('co.promo.title')}</span>
-          {voucherApplied && voucherApplied.ok && (
+          {voucherApplied && voucherApplied.ok && quoteState.status === 'ready' && quoteState.quote?.voucher?.matches_cart && (
             <span className="ws-co-voucher__badge">
-              <Pict d={<path d="M5 12l4 4 10-10"/>} s={11}/> {voucherApplied.message}
+              <Pict d={<path d="M5 12l4 4 10-10"/>} s={11}/> {t('co.applied')}
             </span>
           )}
         </div>
         {voucherApplied && voucherApplied.ok ? (
           <div className="ws-co-voucher__row ws-co-voucher__row--ok">
             <code className="ws-co-voucher__code">{voucherApplied.voucher.code}</code>
-            <span className="ws-co-voucher__amt">−€{voucherDiscount.toFixed(2)}</span>
+            <span className="ws-co-voucher__amt">{quoteState.status === 'ready' ? `−€${wsNumber(voucherDiscount)}` : '…'}</span>
             <button type="button" className="ws-co-voucher__remove" onClick={removeVoucher}>{t('common.remove')}</button>
           </div>
         ) : (
@@ -5018,7 +4826,7 @@ function CheckoutStep3({ basket, subtotal, totaux, total, payment, setPayment, i
               className="ws-co-voucher__input"
               placeholder={t('co.promo.ph')}
               value={voucherInput}
-              onChange={(e) => { setVoucherInput(e.target.value.toUpperCase()); setVoucherErr(null); }}
+              onChange={(e) => setVoucherInput(e.target.value.toUpperCase())}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyVoucher(); } }}
               autoComplete="off"
               spellCheck={false}
@@ -5031,133 +4839,70 @@ function CheckoutStep3({ basket, subtotal, totaux, total, payment, setPayment, i
             <button type="button" className="ws-co-voucher__apply" onClick={() => applyVoucher()} disabled={!voucherInput.trim() || voucherLoading}>{voucherLoading ? '…' : t('co.apply')}</button>
           </div>
         )}
-        {voucherErr && <div className="ws-co-voucher__err">{voucherErr}</div>}
+        {voucherErr && <div className="ws-co-voucher__err">{wsMessage(voucherErr)}</div>}
 
-        {/* Bons DISPONIBLES : marketing : le client applique en un clic sans retaper. */}
-        {/* La liste reste VISIBLE une fois un code appliqué. Auparavant elle
-            disparaissait entièrement : impossible de voir les autres bons ni
-            d'en choisir un autre sans passer par « Retirer », ce qui donnait
-            l'impression que le choix était définitif. Un seul code par commande
-            (le serveur n'en accepte qu'un) : c'est désormais écrit, et cliquer
-            un autre bon le remplace directement. */}
-        {availVouchers.length > 0 && (
-          <div className="ws-co-avail">
-            <div className="ws-co-avail__head">
-              <PortionGlyph size={13}/>
-              <span>{t(availVouchers.length > 1 ? 'co.voucher.availableMany' : 'co.voucher.availableOne')}</span>
-              {availVouchers.length > 1 && (
-                <span className="ws-co-avail__rule"> · {t('co.voucher.onePerOrder')}</span>
-              )}
-            </div>
-            <ul className="ws-co-avail__list">
-              {availVouchers.map((v) => {
-                const isOn = !!(voucherApplied && voucherApplied.ok && voucherApplied.voucher
-                                && String(voucherApplied.voucher.code) === String(v.code));
-                return (
-                  <li key={v.code} className={'ws-co-avail__item' + (v.personal ? ' is-personal' : '')}>
-                    <div className="ws-co-avail__info">
-                      <span className="ws-co-avail__label">{v.label}{v.personal && <span className="ws-co-avail__perso"> · {t('co.voucher.personal')}</span>}</span>
-                      <span className="ws-co-avail__code">{v.code}{v.hint ? ' · ' + v.hint : ''}</span>
-                    </div>
-                    <button type="button" className="ws-co-avail__apply"
-                      disabled={isOn || !v.reachable || voucherLoading}
-                      title={isOn ? 'Déjà appliqué' : (v.reachable ? 'Remplace le code en cours' : ('Applicable ' + v.hint))}
-                      onClick={() => applyVoucher(v.code)}>
-                      {isOn ? t('co.applied') : (v.reachable ? t('co.apply') : v.hint)}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        )}
-      </div>
+      </div>}
 
-      <div className="ws-co-gift">
-        <div className="ws-co-gift__head">
-          <GiftIcon size={15} className="ws-co-gift__ic"/>
-          <span className="ws-co-gift__lbl">{t('co.gift.title')}</span>
-        </div>
-        {giftReward ? (
-          <div className="ws-co-gift__ok">
-            <Pict d={<path d="M5 12l4 4 10-10"/>} s={12}/>
-            <span className="ws-co-gift__okname">{giftReward.name || 'Cadeau'} ajouté à votre commande</span>
-            <button type="button" className="ws-co-gift__remove" onClick={removeGift}>{t('common.remove')}</button>
-          </div>
-        ) : (
-          <div className="ws-co-gift__row">
-            <input type="text" className="ws-co-gift__input" placeholder={t('co.gift.ph')}
-              value={giftInput}
-              onChange={(e) => { setGiftInput(e.target.value.toUpperCase()); setGiftErr(null); }}
-              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyGift(); } }}
-              autoComplete="off" spellCheck={false}/>
-            <button type="button" className="ws-co-gift__apply" onClick={applyGift} disabled={!giftInput.trim() || giftLoading}>{giftLoading ? '…' : t('co.apply')}</button>
-          </div>
-        )}
-        {giftErr && <div className="ws-co-gift__err">{giftErr}</div>}
-      </div>
 
       <div className="ws-co-summary">
         <div className="ws-co-summary__h">{t('co.summary.title')}</div>
         <ul className="ws-co-summary__list">
-          {basket.map((l) => (
-            <li key={l.line}>
-              <span className="ws-co-summary__qty">×{l.qty}</span>
-              <span className="ws-co-summary__name">{l.name}</span>
-              <span className="ws-co-summary__amt">€{(l.price * l.qty).toFixed(2)}</span>
+          {displayRows.map((row) => (
+            <li key={row.key}>
+              <span className="ws-co-summary__qty">×{row.isPromotion ? 1 : row.quantity}</span>
+              <span className="ws-co-summary__name">{row.isPromotion && row.promotion ? row.promotion.display_name : row.line.name}</span>
+              <span className="ws-co-summary__amt">€{wsNumber(row.price)}</span>
             </li>
           ))}
         </ul>
-        <div className="ws-co-summary__row"><span>{t('sum.subtotal')}</span><span>€{subtotal.toFixed(2)}</span></div>
+        <div className="ws-co-summary__row"><span>{t('sum.subtotal')}</span><span>€{wsNumber(subtotal)}</span></div>
         {totaux && totaux.croise > 0 && (
           <div className="ws-co-summary__row ws-co-summary__row--promo">
-            <span>{t('sum.crossOffer')}</span><span>−€{totaux.croise.toFixed(2)}</span></div>)}
+            <span>{t('sum.crossOffer')}</span><span>−€{wsNumber(totaux.croise)}</span></div>)}
         {totaux && totaux.remise > 0 && (
           <div className="ws-co-summary__row ws-co-summary__row--promo">
-            <span>Remise boutique{totaux.remisePct ? ` · ${totaux.remisePct} %` : ''}</span>
-            <span>−€{totaux.remise.toFixed(2)}</span></div>)}
+            <span>{t('co.promo.title')}</span>
+            <span>−€{wsNumber(totaux.remise)}</span></div>)}
+        {totaux && totaux.weekday > 0 && (
+          <div className="ws-co-summary__row ws-co-summary__row--promo">
+            <span>{t('sum.weekdayDiscount')} {totaux.weekdayPercent > 0 && `(${wsNumber(totaux.weekdayPercent)}%)`}</span>
+            <span>−€{wsNumber(totaux.weekday)}</span></div>)}
+        {totaux && totaux.weekday === 0 && !totaux.weekdayThresholdMet && totaux.weekdayMinimum > 0 && (
+          <div className="ws-co-summary__row ws-co-summary__row--promo">
+            <span>{t('sum.weekdayDiscountMinimum', { amount: `€${wsNumber(totaux.weekdayMinimum)}`, remaining: `€${wsNumber(totaux.weekdayRemaining)}` })}</span>
+          </div>)}
         {voucherDiscount > 0 && voucherApplied && (
           <div className="ws-co-summary__row ws-co-summary__row--promo">
             <span>{t('sum.code')} <strong>{voucherApplied.voucher.code}</strong></span>
-            <span>−€{voucherDiscount.toFixed(2)}</span>
-          </div>
-        )}
-        {giftReward && (
-          <div className="ws-co-summary__row ws-co-summary__row--gift">
-            <span>{giftReward.name || 'Cadeau'} <span className="ws-co-summary__badge">CADEAU</span></span>
-            <span>€0,00</span>
+            <span>−€{wsNumber(voucherDiscount)}</span>
           </div>
         )}
         {deliveryFeeResult && mode === 'delivery' && (
           <div className={`ws-co-summary__row${deliveryFee === 0 ? ' ws-co-summary__row--free' : ''}`}>
-            <span>Frais de livraison
-              {deliveryFee === 0 && deliveryFeeResult.free_delivery_minimum > 0 && (
-                <span className="ws-co-summary__row-note"> · offerts dès €{deliveryFeeResult.free_delivery_minimum.toFixed(2)}</span>
+            <span>{wsText("ui.deliveryFee")} {deliveryFee === 0 && deliveryFeeResult.free_delivery_minimum > 0 && (
+                <span className="ws-co-summary__row-note"> {wsText("ui.freeFrom")}{wsNumber(deliveryFeeResult.free_delivery_minimum)}</span>
               )}
             </span>
-            <span>{deliveryFee === 0 ? 'Offerts' : `€${deliveryFee.toFixed(2)}`}</span>
+            <span>{deliveryFee === 0 ? wsText("cart.deliveryFree") : `€${wsNumber(deliveryFee)}`}</span>
           </div>
         )}
         {mode === 'delivery' && deliveryFeeErr && (
-          <p className="ws-co-error" role="alert">{deliveryFeeErr}</p>
+          <p className="ws-co-error" role="alert">{wsMessage(deliveryFeeErr)}</p>
         )}
-        <div className="ws-co-summary__row ws-co-summary__row--total"><span>{t('sum.total')}</span><span>€{total.toFixed(2)}</span></div>
+        <div className="ws-co-summary__row ws-co-summary__row--total"><span>{t('sum.total')}</span><span>€{wsNumber(total)}</span></div>
       </div>
 
       <div className="ws-pay">
         {paymentMethods.length === 0 ? (
           // Aucun moyen de paiement renvoyé par le serveur : on le DIT au lieu
           // d'afficher des options inventées (règle go-live « vraies données »).
-          <p className="ws-co-error" role="alert">
-            Moyens de paiement indisponibles pour cette boutique. La commande ne peut pas être
-            finalisée : réessayez dans un instant ou contactez la boutique.
-          </p>
+          <p className="ws-co-error" role="alert"> {wsText("error.noPayments")} </p>
         ) : paymentMethods.map((p) => (
           <label key={p.id} className={`ws-pay__opt${payment === p.id ? ' is-active' : ''}`}>
             <input type="radio" name="payment" value={p.id} checked={payment === p.id} onChange={() => setPayment(p.id)}/>
             <span className="ws-pay__radio"/>
             <span className="ws-pay__copy">
-              <span className="ws-pay__name">{p.label}</span>
+              <span className="ws-pay__name">{t('payment.method.' + p.method)}</span>
               <span className="ws-pay__sub">{p.sub}</span>
             </span>
             <span className="ws-pay__logo" data-prov={p.id}/>
@@ -5165,7 +4910,7 @@ function CheckoutStep3({ basket, subtotal, totaux, total, payment, setPayment, i
         ))}
       </div>
 
-      {profile !== 'guest' && (
+      {profile !== 'guest' && !isOfficeContext && (
         <div className="ws-co-invoice" ref={infoRef}>
           <div className="ws-co-invoice__row">
             <label className="ws-co-invoice__check">
@@ -5179,9 +4924,7 @@ function CheckoutStep3({ basket, subtotal, totaux, total, payment, setPayment, i
             )}
           </div>
           {!isB2B && infoOpen && (
-            <div className="ws-co-invoice__tip" role="note">
-              Ticket au format A4, présenté comme une facture, établi à votre nom (facture nominative).
-            </div>
+            <div className="ws-co-invoice__tip" role="note"> {wsText("ui.invoiceHint")} </div>
           )}
         </div>
       )}
@@ -5250,6 +4993,28 @@ function ShopSwitcher({ open, currentId, onPick, onClose, shops }) {
   );
 }
 
+// The catalogue shop and the order shop can differ while a previous cart is
+// still open. This confirmation always receives the latter, i.e. exactly the
+// shop whose id is sent by CheckoutWizard to POST /webshop/orders.
+function OrderingShopConfirmation({ open, shop, onConfirm, onChange }) {
+  if (!open || !shop) return null;
+  return (
+    <div className="ws-shop-confirm" role="alertdialog" aria-modal="true" aria-labelledby="ws-shop-confirm-title" aria-describedby="ws-shop-confirm-address">
+      <section className="ws-shop-confirm__panel">
+        <h2 id="ws-shop-confirm-title">{wsShopConfirmText('shopConfirm.title')}</h2>
+        <div className="ws-shop-confirm__shop">
+          <strong>{shop.name}</strong>
+          <span id="ws-shop-confirm-address">{shop.address}</span>
+        </div>
+        <div className="ws-shop-confirm__actions">
+          <button type="button" className="ws-cta" onClick={onConfirm}>{wsShopConfirmText('shopConfirm.continue', { shop: shop.name })}</button>
+          <button type="button" className="ws-btn-ghost" onClick={onChange}>{wsShopConfirmText('shopConfirm.change')}</button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 // =========================================================================
 // SHOP FRAME : full storefront
 // =========================================================================
@@ -5298,13 +5063,120 @@ function ShopFrame({ variant }) {
   // directement au niveau sous-catégories.
   const [cat, setCat] = useState(_deep.cat || 'all');
   const [subCat, setSubCat] = useState(_deep.sub != null ? _deep.sub : null);
+  const [date, setDate] = useState(() => { const t = new Date(); t.setHours(0,0,0,0); return t; });
   const [basket, setBasket] = useState([]);
+  const [browseContext, setBrowseContext] = useState(() => normaliseShoppingContext(null));
+  const [officeMemberships, setOfficeMemberships] = useState([]);
+  const manualMenuChoice = React.useRef(false);
+  const fulfilmentMode = React.useRef(mode);
+  fulfilmentMode.current = mode;
+  const latestBasket = React.useRef(basket);
+  latestBasket.current = basket;
+  const [membershipsError, setMembershipsError] = useState(false);
+  const [officeMembershipsReady, setOfficeMembershipsReady] = useState(false);
+  const [officeAccessOpen, setOfficeAccessOpen] = useState(false);
+  const [pendingContextLine, setPendingContextLine] = useState(null);
+  const [pendingMenu, setPendingMenu] = useState(null);
+  const [catalogueContextData, setCatalogueContextData] = useState(null);
+  const cartContext = basketShoppingContext(basket);
+  const cartShopId = basket[0]?.shop_id || shopId;
+  const contextLabel = shoppingContextLabel(cartContext, t, basket[0]?.context_label);
+
+  // The cart is priced by the API after every material change. Nothing from
+  // this state is used to decide a product price in the browser.
+  const [quoteResult, setQuoteState] = useState({ status: 'idle', quote: null, error: '' });
+  const [detailPromotionPreview, setDetailPromotionPreview] = useState({ key: null, productId: null, suggestions: [], upcomingSuggestions: [] });
+  const [detailOptionsState, setDetailOptionsState] = useState({ productId: null, menuReady: true, promotionsReady: true });
+  const detailPromotionRequest = React.useRef(0);
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
   // Voucher state : may be pre-filled by deep link
   const [voucherInput, setVoucherInput] = useState(_deep.voucher || '');
   const [voucherApplied, setVoucherApplied] = useState(null);
+  const [user, setUser] = useState(null);
+  const [quoteRevision, setQuoteRevision] = useState(0);
+  const cartHasPromotionSelection = wsHasPromotionSelection(basket);
+  const quoteKey = JSON.stringify([cartShopId, mode, basket, date, user?.id, quoteRevision, voucherApplied?.ok ? voucherApplied.voucher?.code : '']);
+  // Invalidate synchronously: effects run after rendering, so a previous ready
+  // quote must not enable checkout for a basket which has just changed.
+  const quoteState = quoteResult.status === 'ready' && quoteResult.key !== quoteKey
+    ? { ...quoteResult, status: 'loading' } : quoteResult;
+  const markDetailOptionReady = React.useCallback((productId, option) => {
+    setDetailOptionsState((current) => Number(current.productId) === Number(productId)
+      ? { ...current, [option]: true }
+      : current);
+  }, []);
+  const previewPromotionsForDetail = React.useCallback(({ productId, quantity, id_product_portion }) => {
+    const requestId = ++detailPromotionRequest.current;
+    const context = normaliseShoppingContext(browseContext);
+    const key = JSON.stringify([shopId, basket, date, context, productId, quantity, id_product_portion]);
+    const standardCart = basket.length === 0 || (cartContext.mode === 'standard' && Number(cartShopId) === Number(shopId));
+    if (!shopId || context.mode !== 'standard' || voucherApplied?.ok || !standardCart || !window.WSQuote || typeof window.WSQuote.quote !== 'function') {
+      setDetailPromotionPreview({ key, productId: Number(productId), suggestions: [], upcomingSuggestions: [] });
+      markDetailOptionReady(productId, 'promotionsReady');
+      return;
+    }
+    const previewLine = {
+      line: `promotion-preview-${productId}-${id_product_portion ?? 0}`,
+      productId: Number(productId),
+      qty: Number(quantity),
+      id_product_portion: id_product_portion ?? null,
+      shopping_context: context,
+    };
+    setDetailPromotionPreview({ key, productId: Number(productId), suggestions: [], upcomingSuggestions: [] });
+    window.WSQuote.quote({ shopId, mode, basket: [...basket, previewLine], shoppingContext: context, deliveryDate: date })
+      .then((quote) => {
+        if (requestId !== detailPromotionRequest.current) return;
+        const targetPortion = id_product_portion == null ? null : Number(id_product_portion);
+        const forProduct = (suggestions) => (Array.isArray(suggestions) ? suggestions : []).filter((suggestion) => (suggestion.items || []).some((item) =>
+          Number(item.id_product) === Number(productId)
+          && (item.id_product_portion == null ? null : Number(item.id_product_portion)) === targetPortion
+        ));
+        setDetailPromotionPreview({
+          key,
+          productId: Number(productId),
+          suggestions: forProduct(quote?.promotion_suggestions || quote?.bundle_suggestions),
+          upcomingSuggestions: forProduct(quote?.upcoming_promotion_suggestions),
+        });
+        markDetailOptionReady(productId, 'promotionsReady');
+      })
+      .catch(() => {
+        if (requestId === detailPromotionRequest.current) {
+          setDetailPromotionPreview({ key, productId: Number(productId), suggestions: [], upcomingSuggestions: [] });
+          markDetailOptionReady(productId, 'promotionsReady');
+        }
+      });
+  }, [shopId, basket, date, browseContext, cartContext.mode, cartShopId, voucherApplied?.ok, markDetailOptionReady]);
+  React.useEffect(() => {
+    if (!basket.length) { setQuoteState({ status: 'idle', quote: null, error: '' }); setVoucherApplied(null); setVoucherInput(''); return; }
+    if (!shopId || !window.WSQuote || typeof window.WSQuote.quote !== 'function') {
+      setQuoteState({ status: 'error', quote: null, error: wsText("error.quote") });
+      return;
+    }
+    const controller = new AbortController();
+    setQuoteState((current) => ({ status: 'loading', quote: current.quote, error: '' }));
+    const voucherCode = voucherApplied?.ok ? voucherApplied.voucher?.code : null;
+    window.WSQuote.quote({ shopId: cartShopId, mode, basket, voucherCode, shoppingContext: cartContext, deliveryDate: date, signal: controller.signal })
+      .then((quote) => {
+        if (controller.signal.aborted) return;
+        const valid = !voucherCode || (quote.voucher?.valid === true && quote.voucher?.matches_cart === true);
+        setQuoteState({ status: valid ? 'ready' : 'error', quote,
+          error: valid ? '' : wsText('error.codeInvalid'), key: quoteKey });
+      })
+      .catch((error) => {
+        if (controller.signal.aborted) return;
+        setQuoteState((current) => ({ status: 'error', quote: current.quote, error: error?.message || wsText("error.quote"), key: quoteKey }));
+      });
+    return () => controller.abort();
+  }, [cartShopId, basket, date, user?.id, quoteRevision, voucherApplied?.ok ? voucherApplied.voucher?.code : '']);
+  React.useEffect(() => {
+    if (quoteResult.status !== 'ready' || !quoteResult.quote?.next_recalculation_at) return;
+    const delay = Date.parse(quoteResult.quote.next_recalculation_at) - Date.parse(quoteResult.quote.server_time);
+    if (!Number.isFinite(delay)) return;
+    const timer = setTimeout(() => setQuoteRevision(value => value + 1), Math.max(1000, Math.min(delay, 2147483647)));
+    return () => clearTimeout(timer);
+  }, [quoteResult]);
   const [switcherOpen, setSwitcherOpen] = useState(false);
-  const [date, setDate] = useState(() => { const t = new Date(); t.setHours(0,0,0,0); return t; });
+
   // Delivery cutoff: no same-day delivery after 10:00. Re-evaluated every minute.
   const [nowHour, setNowHour] = React.useState(() => new Date().getHours() * 60 + new Date().getMinutes());
   React.useEffect(() => {
@@ -5328,7 +5200,121 @@ function ShopFrame({ variant }) {
   // The slot is an ATTRIBUTE of the order, resolved server-side from the
   // route that serves the office. Front only renders /slots + /next-slot.
   // Déclaré AVANT le slot-effect ci-dessous (qui lit `user` dans ses deps), sinon TDZ.
-  const [user, setUser] = useState(null);
+  const [sessionRestored, setSessionRestored] = useState(false);
+  const officeHintHandled = React.useRef(false);
+  const [inviteToken, setInviteToken] = useState(() => new URLSearchParams(location.search).get('office_invite'));
+  const [invitation, setInvitation] = useState(null);
+  const [inviteError, setInviteError] = useState(false);
+  const [inviteBusy, setInviteBusy] = useState(false);
+  const [inviteTarget, setInviteTarget] = useState(null);
+  const [inviteAuthPending, setInviteAuthPending] = useState(false);
+  const inviteAttempt = React.useRef(null);
+  const inviteAccountAfterJoin = React.useRef(false);
+  const [authInitialTab, setAuthInitialTab] = useState('login');
+  useEffect(() => {
+    if (!inviteToken) return;
+    let alive = true;
+    window.WSOffices.invitation('resolve', inviteToken).then(data => {
+      if (!alive) return;
+      setInvitation(data);
+      setShopId(data.shop_id);
+    }).catch(() => { if (alive) setInviteError(true); });
+    return () => { alive = false; };
+  }, [inviteToken]);
+  function closeInvitation() {
+    setInviteToken(null); setInvitation(null); setInviteError(false); setInviteAuthPending(false);
+    const url = new URL(location.href); url.searchParams.delete('office_invite'); history.replaceState(null, '', url);
+  }
+  function authenticateInvitation(tab) {
+    setAuthInitialTab(tab); setInviteAuthPending(true); setAuthOpen(true);
+    inviteAccountAfterJoin.current = tab === 'register';
+  }
+  async function acceptInvitation() {
+    if (!user?.id) { authenticateInvitation('login'); return; }
+    setInviteBusy(true); setInviteError(false);
+    try {
+      const result = await window.WSOffices.invitation('accept', inviteToken);
+      setBasket([]); setVoucherApplied(null); setVoucherInput(''); setMode('collect');
+      setQuoteState({status:'idle',quote:null,error:''});
+      setShopId(result.shop_id); setInviteTarget(result);
+      closeInvitation();
+      if (inviteAccountAfterJoin.current) setAccountOpen(true);
+      setNotice({titre:t('officeAccess.title'),texte:t('officeAccess.joined',{name:result.office.name})});
+    } catch (_) { setInviteError(true); }
+    finally { setInviteBusy(false); }
+  }
+  useEffect(() => {
+    if (!inviteAuthPending || !user?.id || !invitation || !inviteToken) return;
+    const attempt = `${inviteToken}:${user.id}`;
+    if (inviteAttempt.current === attempt) return;
+    inviteAttempt.current = attempt;
+    acceptInvitation();
+  }, [inviteAuthPending, user?.id, invitation, inviteToken]);
+  useEffect(() => {
+    if (!inviteTarget || Number(shopId)!==Number(inviteTarget.shop_id) || !user?.id) return;
+    let alive=true;
+    window.WSOffices.listMemberships(shopId).then(list=>{
+      if(!alive)return;
+      setOfficeMemberships(list);setMembershipsError(false);setOfficeMembershipsReady(true);
+      setBrowseContext(normaliseShoppingContext(null));
+      manualMenuChoice.current = true;
+      setCat('all');setSubCat(null);setInviteTarget(null);
+    }).catch(()=>{if(alive)setMembershipsError(true);});
+    return ()=>{alive=false;};
+  }, [inviteTarget,shopId,user?.id]);
+  const officeHint = React.useMemo(() => { const query = new URLSearchParams(window.location.search); return query.get('open') === 'offices' ? (query.get('office_tax') || '') : null; }, []);
+  async function refreshOfficeMemberships() {
+    if (!user?.id || !shopId) { setOfficeMemberships([]); setOfficeMembershipsReady(false); return; }
+    try {
+      const list = await window.WSOffices.listMemberships(shopId);
+      setOfficeMemberships(list); setMembershipsError(false); setOfficeMembershipsReady(true);
+      if (!manualMenuChoice.current && !latestBasket.current.length) setBrowseContext(fulfilmentMode.current === 'delivery' ? defaultShoppingContext(list) : normaliseShoppingContext(null));
+    } catch (_) { setMembershipsError(true); throw new Error('Office memberships unavailable.'); }
+  }
+  React.useEffect(() => {
+    let alive = true;
+    manualMenuChoice.current = false;
+    setOfficeMemberships([]); setOfficeMembershipsReady(false); setBrowseContext(basket.length ? basketShoppingContext(basket) : normaliseShoppingContext(null)); setMembershipsError(false);
+    if (!user?.id || !shopId) return;
+    window.WSOffices.listMemberships(shopId).then(list => { if (alive) { setOfficeMemberships(list); setOfficeMembershipsReady(true); if (!manualMenuChoice.current && !latestBasket.current.length) setBrowseContext(fulfilmentMode.current === 'delivery' ? defaultShoppingContext(list) : normaliseShoppingContext(null)); } })
+      .catch(() => { if (alive) setMembershipsError(true); });
+    return () => { alive = false; };
+  }, [user?.id, shopId]);
+  function browseOfficeMenu(context) {
+    manualMenuChoice.current = true;
+    context = normaliseShoppingContext(context);
+    if ((mode === 'collect') !== (context.mode === 'standard')) return;
+    if (basket.length && !sameShoppingContext(browseContext, context)) { setPendingMenu(context); return; }
+    setBrowseContext(normaliseShoppingContext(context)); setCat('all'); setSubCat(null); setDetailProduct(null);
+  }
+  function confirmMenuChange() {
+    setBasket([]); setVoucherApplied(null); setVoucherInput('');
+    setQuoteState({status:'idle',quote:null,error:''});
+    if (pendingMenu.mode === 'standard') setMode('collect');
+    setBrowseContext(normaliseShoppingContext(pendingMenu)); setPendingMenu(null);
+    setCat('all'); setSubCat(null); setDetailProduct(null);
+  }
+
+  // Refresh verification state when returning from the activation email/tab.
+  useEffect(() => {
+    if (user?.activationRequired !== true) return;
+    let alive = true;
+    const refreshActivation = async () => {
+      if (document.hidden) return;
+      try {
+        const updated = await window.WSAuth.me();
+        if (alive && updated?.id === user.id) setUser(updated);
+      } catch { /* Keep the current session during a temporary network failure. */ }
+    };
+    window.addEventListener('focus', refreshActivation);
+    document.addEventListener('visibilitychange', refreshActivation);
+    return () => {
+      alive = false;
+      window.removeEventListener('focus', refreshActivation);
+      document.removeEventListener('visibilitychange', refreshActivation);
+    };
+  }, [user?.id, user?.activationRequired]);
+
   // SSO handoff PWA -> webshop : si l'URL porte ?handoff=<jeton>, on l'échange
   // contre une session webshop, puis on retire le jeton de l'URL (usage unique,
   // ne doit pas rester visible/partageable).
@@ -5375,7 +5361,7 @@ function ShopFrame({ variant }) {
         // sont ensuite auto-sélectionnés par les effets [user.officeId]/[userOffice],
         // et le catalogue est re-fetché avec mode=delivery (liste éligible, filtre
         // serveur). Un client sans office reste en Collecte.
-        if (r.user.officeId) setMode('delivery');
+        // Delivery is selected explicitly after resolving memberships.
       }
       try {
         const p = new URLSearchParams(window.location.search);
@@ -5389,7 +5375,7 @@ function ShopFrame({ variant }) {
   // Restauration de la session au chargement. Le jeton était bien écrit dans
   // localStorage à la connexion et WSAuth.me() existait pour le revalider, mais
   // RIEN ne l'appelait : après le moindre rechargement, le client redevenait
-  // invité : aucun maintien de stock, et un checkout traité en visiteur alors
+  // invité, et un checkout traité en visiteur alors
   // qu'il a un compte.
   React.useEffect(() => {
     let alive = true;
@@ -5399,34 +5385,14 @@ function ShopFrame({ variant }) {
     if (hasHandoff || !window.WSAuth || typeof window.WSAuth.me !== 'function') return;
     Promise.resolve(window.WSAuth.me())
       .then((u) => { if (alive && u && u.id) setUser(u); })
-      .catch((e) => bug('session', 'session non restaurée', e));
+      .catch((e) => bug('session', 'session non restaurée', e))
+      .finally(() => { if (alive) setSessionRestored(true); });
     return () => { alive = false; };
   }, []);
   const [officeSlots, setOfficeSlots] = React.useState([]);
   const [slotCta, setSlotCta] = React.useState(null);
   const [selectedSlot, setSelectedSlot] = React.useState(null);
   const [pendingSlot, setPendingSlot] = React.useState(null);
-  React.useEffect(() => {
-    let alive = true;
-    const api = window.WSSlots || window.WSAvailability;
-    if (mode !== 'delivery' || !api || !(api.listSlots || api.nextSlot)) { setOfficeSlots([]); setSlotCta(null); return; }
-    const officeId = (user && user.officeId) || null;
-    // Formatage LOCAL : toISOString() rend la veille pour une Date à minuit en
-    // UTC+2, et les créneaux demandés étaient ceux du mauvais jour.
-    const p2 = (n) => String(n).padStart(2, '0');
-    const iso = date instanceof Date ? `${date.getFullYear()}-${p2(date.getMonth() + 1)}-${p2(date.getDate())}` : '';
-    Promise.all([
-      api.listSlots ? api.listSlots({ officeId, date: iso }) : Promise.resolve([]),
-      api.nextSlot  ? api.nextSlot({ officeId, date: iso })  : Promise.resolve(null),
-    ]).then(([slots, next]) => {
-      if (!alive) return;
-      const list = (slots || []).filter((s) => s && s.orderable !== false);
-      setOfficeSlots(list);
-      setSlotCta(next && next.cta ? next.cta : (list[0] && list[0].cta) || null);
-      setSelectedSlot((cur) => cur || (next && next.slot_type) || (list[0] && list[0].slot_type) || null);
-    }).catch(() => { if (alive) { setOfficeSlots([]); setSlotCta(null); } });
-    return () => { alive = false; };
-  }, [mode, user, date]);
   // One cart = one route. Changing slot drops items unavailable on the target.
   function requestSlotChange(slotType) {
     if (slotType === selectedSlot) return;
@@ -5437,10 +5403,6 @@ function ShopFrame({ variant }) {
   }
   function confirmSlotChange() {
     if (!pendingSlot) return;
-    // Les lignes écartées par le changement de créneau tenaient du stock : sans
-    // libération, il restait gelé jusqu'à expiration alors que le produit
-    // n'était plus au panier de personne.
-    (pendingSlot.dropped || []).forEach((l) => stockRelease(l.productId, l.reservationId || null));
     setBasket((b) => b.filter((l) => !(Array.isArray(l.available_slots) && !l.available_slots.includes(pendingSlot.slot_type))));
     setSelectedSlot(pendingSlot.slot_type);
     setPendingSlot(null);
@@ -5491,9 +5453,19 @@ function ShopFrame({ variant }) {
     [basket]
   );
   const [authOpen, setAuthOpen] = useState(false);
+  React.useEffect(() => {
+    if (officeHint === null || officeHintHandled.current || !sessionRestored) return;
+    if (user?.id) { setAuthOpen(false); setAccountOpen(false); setOfficeAccessOpen(true); officeHintHandled.current = true; }
+    else setAuthOpen(true);
+  }, [officeHint, user?.id, sessionRestored]);
   const [accountOpen, setAccountOpen] = useState(false);
   const [allergensOpen, setAllergensOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  // Set only by an explicit successful login/register. A restored token must
+  // not repeat the confirmation after every browser refresh.
+  const [shopConfirmationPending, setShopConfirmationPending] = useState(false);
+  const [shopConfirmationOpen, setShopConfirmationOpen] = useState(false);
+  const [pendingShopChange, setPendingShopChange] = useState(null);
   const [orderToast, setOrderToast] = useState(null);
 
   // Shops directory : sourced from API stub (or remote endpoint when wired).
@@ -5535,114 +5507,59 @@ function ShopFrame({ variant }) {
     }
   }, [shops]);
 
-  // Catégories : serveur uniquement (window._CATALOG_SEED n'existe plus).
-  // L'échec est tracé : sans ça, la boutique s'affichait vide sans un mot.
+  // Products, categories and seasons are populated from a single shop response.
   const [categories, setCategories] = React.useState([]);
-  React.useEffect(() => {
-    let alive = true;
-    if (window.WSCatalog && typeof window.WSCatalog.listCategories === 'function') {
-      // Date LOCALE, comme pour les produits : la barre de nav doit refléter la
-      // même saison que la grille, sinon on garde des onglets qui ne mènent
-      // nulle part.
-      const dIso = date instanceof Date
-        ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-        : (date || '');
-      window.WSCatalog.listCategories({ shopId, date: dIso })
-        .then((c) => { if (alive && Array.isArray(c)) setCategories(c); })
-        .catch((e) => bug('catalogue', 'catégories indisponibles : la barre restera vide', e));
-    }
-    return () => { alive = false; };
-    // `lang` dans les dépendances : les libellés de catégories sont résolus par
-    // le SERVEUR selon la langue, donc changer de langue doit les redemander
-    // sinon la barre reste dans la langue du premier chargement.
-  }, [shopId, date, lang]);
-
-  // Assortiments (saisons) : serveur uniquement.
   const [assortments, setAssortments] = React.useState([]);
+
+  // Delivery uses the same M:N office membership as the catalogue/profile.
+  const [officeDeliveryOpen, setOfficeDeliveryOpen] = useState(false);
+  const [defaultDeliveryBusy, setDefaultDeliveryBusy] = useState(false);
+  const [pendingDefaultDelivery, setPendingDefaultDelivery] = useState(null);
+  const defaultDeliveryRequest = React.useRef(0);
   React.useEffect(() => {
-    let alive = true;
-    if (window.WSCatalog) {
-      window.WSCatalog.listAssortments({ shopId })
-        .then((a) => { if (alive) setAssortments(a || []); })
-        .catch((e) => bug('catalogue', 'assortiments indisponibles', e));
+    defaultDeliveryRequest.current++;
+    setDefaultDeliveryBusy(false); setPendingDefaultDelivery(null);
+  }, [shopId, user?.id]);
+  const [deliverySelection, setDeliverySelection] = useState(null);
+  const [selectedSiteId, setSelectedSiteId] = useState(null);
+  const deliveryContext = basket.length ? basketShoppingContext(basket) : browseContext;
+  const requiredDeliveryOffice = deliveryContext.mode === 'standard' ? null : deliveryContext.office_id;
+  const deliverySelectionValid = deliverySelection
+    && Number(deliverySelection.shopId) === Number(shopId)
+    && Number(deliverySelection.clientId) === Number(user?.id)
+    && (!requiredDeliveryOffice || Number(deliverySelection.office.id) === Number(requiredDeliveryOffice));
+  const userOffice = deliverySelectionValid ? deliverySelection.office : null;
+  const officeSites = deliverySelectionValid ? deliverySelection.sites.filter(s => s.routes.length > 0) : [];
+  const selectedSite = officeSites.find(s => Number(s.id) === Number(selectedSiteId)) || null;
+  const userTour = selectedSite?.routes[0] ? {...selectedSite.routes[0], window: ''} : null;
+  // This iteration explicitly has free office delivery; billing remains quote-owned.
+  const deliveryFeeResult = userOffice && selectedSite ? {fee_amount: 0, free_delivery: true,
+    payment_type: quoteState.quote?.billing?.mode === 'company' ? 'deferred' : 'immediate', site: selectedSite} : null;
+  const deliveryFeeErr = mode === 'delivery' && (!userOffice || !selectedSite) ? t('officeDelivery.chooseRequired') : '';
+  useEffect(() => {
+    if (!user?.id) { setDeliverySelection(null); setSelectedSiteId(null); setOfficeDeliveryOpen(false); }
+  }, [user?.id, shopId]);
+  async function confirmOfficeDelivery(result, siteId) {
+    const selectedOfficeId = Number(result?.office?.id);
+    let memberships = officeMemberships;
+    if (!memberships.some(office => Number(office.id) === selectedOfficeId)) {
+      try {
+        memberships = await window.WSOffices.listMemberships(shopId);
+        setOfficeMemberships(memberships);
+      } catch (_) { /* The delivery API already confirmed this office. */ }
     }
-    return () => { alive = false; };
-  }, [shopId]);
+    const membership = memberships.find(office => Number(office.id) === selectedOfficeId)
+      || { id: selectedOfficeId, status: 'active', offers: [] };
 
-  // Logged-in user's office + tour : loaded async whenever officeId changes.
-  const [userOffice, setUserOffice] = React.useState(null);
-  const [userTour, setUserTour] = React.useState(null);
-  React.useEffect(() => {
-    let alive = true;
-    async function load() {
-      if (!user || !user.officeId) { setUserOffice(null); setUserTour(null); return; }
-      // Serveur uniquement : sans WSOffices/WSTours, pas de bureau, l'écran
-      // « Mon bureau » affichera l'absence, jamais un bureau fabriqué.
-      const office = window.WSOffices
-        ? await window.WSOffices.get(user.officeId).catch((e) => { bug('bureau', 'fiche bureau indisponible', e); return null; })
-        : null;
-      if (!alive || !office) { setUserOffice(null); setUserTour(null); return; }
-      setUserOffice(office);
-      const tour = window.WSTours
-        ? await window.WSTours.get(office.tourId).catch(() => null)
-        : null;
-      if (alive) setUserTour(tour || null);
-    }
-    load();
-    return () => { alive = false; };
-  }, [user?.officeId]);
-
-  // Delivery sites for the logged-in office client, and the site selected in checkout.
-  const [officeSites, setOfficeSites] = React.useState([]);
-  const [selectedSiteId, setSelectedSiteId] = React.useState(null);
-  React.useEffect(() => {
-    let alive = true;
-    async function loadSites() {
-      if (!userOffice) { setOfficeSites([]); setSelectedSiteId(null); return; }
-      const sites = window.WSDeliveryFees
-        ? await window.WSDeliveryFees.listSites({ officeClientId: userOffice.id }).catch(() => [])
-        : [];
-      if (!alive) return;
-      setOfficeSites(sites);
-      // Pre-select the office's default site (or the first active site).
-      const def = userOffice.defaultSiteId || null;
-      const picked = (def && sites.find((s) => s.id === def)) ? def : (sites[0] ? sites[0].id : null);
-      setSelectedSiteId(picked);
-    }
-    loadSites();
-    return () => { alive = false; };
-  }, [userOffice?.id]);
-
-  // Active delivery site object (resolved from selection or first site).
-  const selectedSite = React.useMemo(
-    () => officeSites.find((s) => s.id === selectedSiteId) || null,
-    [officeSites, selectedSiteId]
-  );
-
-  // Delivery fee : recomputed whenever basket subtotal or selected site changes.
-  const subtotalForFee = basket.reduce((t, l) => t + l.price * l.qty, 0);
-  const [deliveryFeeResult, setDeliveryFeeResult] = React.useState(null);
-  // L'échec du calcul des frais était AVALÉ (.catch(() => {})). Conséquences :
-  // frais de livraison facturés 0 €, ligne « Frais de livraison » masquée, et
-  // payment_type retombant sur 'immediate', donc un bureau en facturation
-  // différée se voyait demander un paiement immédiat. On garde l'erreur et la
-  // commande est refusée en mode livraison tant qu'elle n'est pas résolue.
-  const [deliveryFeeErr, setDeliveryFeeErr] = React.useState('');
-  React.useEffect(() => {
-    let alive = true;
-    if (mode !== 'delivery' || !userOffice) { setDeliveryFeeResult(null); setDeliveryFeeErr(''); return; }
-    if (!window.WSDeliveryFees) { setDeliveryFeeResult(null); setDeliveryFeeErr('Frais de livraison indisponibles, please debug.'); return; }
-    window.WSDeliveryFees.quote({
-      siteId:          selectedSite ? selectedSite.id          : null,
-      officeClientId:  userOffice.id,
-      tourneeId:       selectedSite ? selectedSite.tournee_id  : (userOffice.tourId || null),
-      shopId:          shop ? shop.id : shopId,
-      subtotal:        subtotalForFee,
-    }).then((r) => { if (!alive) return; setDeliveryFeeResult(r); setDeliveryFeeErr(r ? '' : 'Frais de livraison indisponibles, please debug.'); })
-      .catch((e) => { if (!alive) return; setDeliveryFeeResult(null); bug('frais de livraison', 'calcul indisponible : aucun montant affiché', e);
-                      setDeliveryFeeErr('Frais de livraison indisponibles, commande impossible. ' + (e && e.message ? e.message : '')); });
-    return () => { alive = false; };
-  }, [mode, userOffice?.id, selectedSite?.id, subtotalForFee, shopId]);
+    setDeliverySelection({...result, shopId, clientId: user.id});
+    // Dostawa do biura zawsze odbywa się w kontekście tego biura. Katalog
+    // standardowy nie może zostać zachowany ani pokazany obok jego ofert.
+    manualMenuChoice.current = true;
+    setBrowseContext(defaultShoppingContext([membership]));
+    setCat('all'); setSubCat(null); setDetailProduct(null);
+    setSelectedSiteId(siteId); setMode('delivery'); setOfficeDeliveryOpen(false); setNotice(null);
+    if (basket.length) { setBasket([]); setVoucherApplied(null); setVoucherInput(''); }
+  }
 
   // After a manual shop switch we may prompt the user to make it their preferred shop.
   const [prefNudge, setPrefNudge] = useState(null); // { shopId, shopName } | null
@@ -5664,11 +5581,17 @@ function ShopFrame({ variant }) {
   });
 
   function handleCheckout() {
-    if (!basket.length) return;
+    if (!basket.length || quoteState.status !== 'ready' || !quoteState.quote?.totals) return;
+    setCartDrawerOpen(false);
     setCheckoutOpen(true);
   }
   function handlePlaced(payload) {
     setCheckoutOpen(false);
+    if (payload.paymentPending) {
+      setBasket([]); setVoucherApplied(null); setVoucherInput('');
+      setCatalogueRefresh(value => value + 1);
+      return;
+    }
     /* Conversion sans passage par Stripe (paiement en boutique, sur compte,
        différé) : la commande est enregistrée, c'est l'achat. Même événement,
        même vocabulaire que le retour Stripe, pour que Google Ads compte les
@@ -5677,8 +5600,8 @@ function ShopFrame({ variant }) {
                           currency: 'EUR', payment: payload.paymentLabel || 'autre' });
     setOrderToast({ ...payload, ts: Date.now() });
     setBasket([]);
-    stockReleaseAll(); // reservations converted to qty_sold by the order endpoint
-    setTimeout(() => setOrderToast(null), 4500);
+    setCatalogueRefresh(value => value + 1); // Accepted orders may change availability.
+
   }
 
   // Deep-link peut passer un id numérique (en string) OU un slug → match souple.
@@ -5686,16 +5609,38 @@ function ShopFrame({ variant }) {
   // shopId nul en servant la premiere boutique par ordre alphabetique, donc
   // meme sans repli dans la resolution ci-dessus, l'ecran en aurait affiche une.
   const shop = shops.find((s) => String(s.id) === String(shopId) || s.slug === shopId) || null;
+  // The cart is the source of truth for an order. Keep the login confirmation
+  // and checkout wording tied to the shop that will receive POST /webshop/orders.
+  const orderingShop = (shops || []).find((item) => Number(item.id) === Number(cartShopId)) || shop;
+  React.useEffect(() => {
+    if (!shopConfirmationPending || !orderingShop) return;
+    setShopConfirmationPending(false);
+    setShopConfirmationOpen(true);
+  }, [shopConfirmationPending, orderingShop?.id]);
   // Langue de la boutique : default_lang / languages (servis par /shops) →
   // Halle ouvre en néerlandais, le sélecteur se limite aux langues offertes.
   // N'impose la langue que si le visiteur n'a pas choisi lui-même (voir applyShop).
   React.useEffect(() => {
     if (shop && window.WSI18n && window.WSI18n.applyShop) window.WSI18n.applyShop(shop);
   }, [shop && shop.id, shop && shop.default_lang, shop && shop.languages]);
+  const hideOfficePeriods = mode === 'delivery' || browseContext.mode !== 'standard';
   const isAssortment = typeof cat === 'string' && cat.startsWith('season:');
+  React.useEffect(() => {
+    if (hideOfficePeriods && isAssortment) { setCat('all'); setSubCat(null); }
+  }, [hideOfficePeriods, isAssortment]);
   const assortmentId = isAssortment ? cat.slice('season:'.length) : null;
   const assortment = assortmentId ? assortments.find((a) => a.id === assortmentId) : null;
   const [allProducts, setAllProducts] = React.useState([]);
+  const [catalogueLoading, setCatalogueLoading] = React.useState(false);
+  const [catalogueError, setCatalogueError] = React.useState(false);
+  const [catalogueRefresh, setCatalogueRefresh] = React.useState(0);
+  const loadedCatalogueKey = React.useRef(null);
+  // Refresh on return without removing the currently visible same-context catalogue.
+  React.useEffect(() => {
+    const refresh = () => { if (!document.hidden) setCatalogueRefresh(value => value + 1); };
+    window.addEventListener('focus', refresh);
+    return () => window.removeEventListener('focus', refresh);
+  }, []);
   // Mode livraison : marque <body> pour recolorer (CSS, mobile) les boutons
   // d'action principaux du parcours en Abricot Pastel. Retiré hors livraison.
   React.useEffect(() => {
@@ -5704,33 +5649,28 @@ function ShopFrame({ variant }) {
   }, [mode]);
   React.useEffect(() => {
     let alive = true;
-    (async () => {
-      if (!window.WSCatalog) return;
-      // On passe le `mode` : en livraison bureau, l'API renvoie DÉJÀ la liste
-      // filtrée (produits éligibles) : filtre partagé, identique online et après
-      // handoff PWA, sans dépendre de l'état client. Le filtre client résiduel
-      // (slotFiltered) reste comme repli (seed/démo ou API sans le paramètre).
-      // `date` : les gammes saisonnières sont évaluées à la date de retrait /
-      // livraison. Formatage LOCAL : toISOString() décalerait d'un jour en
-      // soirée (heure belge d'été), et on interrogerait la mauvaise saison.
-      const dIso = date instanceof Date
-        ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-        : (date || '');
-      const list = await window.WSCatalog.listProducts({ shopId, mode, date: dIso });
-      // Une liste VIDE est une réponse valable, c'est le catalogue de cette
-      // date. L'ancien test `list.length` conservait la liste précédente, donc
-      // des produits d'une autre date/saison restaient affichés. Un échec HTTP
-      // lève déjà une exception : ici, vide veut bien dire vide.
-      if (alive && Array.isArray(list)) setAllProducts(list);
-    })();
+    const contextKey = JSON.stringify([shop?.id, mode, date, lang, user?.id, user?.officeId, browseContext]);
+    const background = loadedCatalogueKey.current === contextKey;
+    setCatalogueError(false);
+    if (!background) { loadedCatalogueKey.current = null; setAllProducts([]); setCategories([]); setAssortments([]); setCatalogueContextData(null); }
+    if (!shop || !window.WSCatalog) { loadedCatalogueKey.current = null; setCatalogueLoading(false); return; }
+    setCatalogueLoading(!background);
+    window.WSCatalog.loadCatalogue({ shopId: shop.id, mode, date, shoppingContext: browseContext })
+      .then((catalogue) => {
+        if (!alive) return;
+        loadedCatalogueKey.current = contextKey;
+        window.WSBug?.clear?.('catalogue');
+        setAllProducts(current => JSON.stringify(current) === JSON.stringify(catalogue.products) ? current : catalogue.products);
+        setCatalogueContextData(catalogue);
+        setCategories(catalogue.categories);
+        setAssortments(catalogue.assortments);
+      })
+      .catch((error) => {
+        if (alive) { setCatalogueError(error?.message || wsText('error.catalogue')); bug('catalogue', wsText('error.catalogue'), error); }
+      })
+      .finally(() => { if (alive) setCatalogueLoading(false); });
     return () => { alive = false; };
-    // `lang` : les NOMS de produits sont résolus par le serveur selon la
-    // langue : changer de langue doit redemander le catalogue, sinon la grille
-    // reste dans la langue du premier chargement.
-  // Le bureau du client change le catalogue servi (assortiment réduit, 0113) :
-  // rechargé à la connexion et à la déconnexion, pas seulement au changement
-  // de boutique, de mode ou de date.
-  }, [shopId, mode, date, lang, user ? user.officeId : null]);
+  }, [shop?.id, mode, date, lang, user?.id, user?.officeId, catalogueRefresh, JSON.stringify(browseContext)]);
   // Source commune GRILLE + LIGNE DE NAV : le catalogue restreint au créneau
   // et à la date en cours. La règle d'affichage de la nav (« n'afficher que ce
   // qui contient au moins un produit disponible ») est ainsi exactement celle
@@ -5759,24 +5699,33 @@ function ShopFrame({ variant }) {
     }
     if (cat === 'all') return src;
     if (isAssortment) {
+      if (hideOfficePeriods) return src;
       // Filtre par SAISON réelle (product.season = slug de la gamme ERP).
-      return src.filter((p) => (p.season || '') === assortmentId);
+      return src.filter((p) => (p.seasons || []).includes(String(assortmentId)));
     }
-    // Filtre par CATÉGORIE : l'API renvoie cat_id (num) ; fallback p.cat (seed).
-    let out = src.filter((p) => String(p.cat_id) === String(cat) || p.cat === cat);
-    // Filtre par SOUS-CATÉGORIE si une puce est sélectionnée (subCat = id num).
+    const selectedRoot = (categories || []).find((item) => String(item.id) === String(cat));
+    // product_category_group is the parent level and product_category is the
+    // child level. The API carries both: groupIds contains the parent groups,
+    // while cat_id identifies the product category itself.
+    let out = selectedRoot?.kind === 'group'
+      ? src.filter((p) => (p.groupIds || []).includes(String(selectedRoot.groupId)))
+      : src.filter((p) => String(p.cat_id) === String(selectedRoot?.categoryId ?? cat) || p.cat === cat);
     if (subCat != null) {
-      out = out.filter((p) => String(p.sub_cat_id) === String(subCat) || String(p.subCat) === String(subCat));
+      const selectedSub = (selectedRoot?.subs || []).find((item) => String(item.id) === String(subCat));
+      const categoryId = selectedSub?.categoryId ?? subCat;
+      out = out.filter((p) => String(p.cat_id) === String(categoryId) || p.cat === categoryId);
     }
     return out;
-  }, [cat, subCat, isAssortment, assortmentId, slotFiltered, mode, selectedSlot]);
+  }, [cat, subCat, isAssortment, assortmentId, slotFiltered, mode, selectedSlot, categories, hideOfficePeriods]);
 
   // Ligne de nav : catégories/sous-catégories qui contiennent au moins un
   // produit disponible pour le créneau + la date en cours. Une sous-catégorie
   // vide ne se grise pas : elle ne s'affiche pas. Idem pour une catégorie.
   const navCats = useMemo(() => {
-    const inCat = (p, c) => String(p.cat_id) === String(c.id) || p.cat === c.id;
-    const inSub = (p, s) => String(p.sub_cat_id) === String(s.id) || String(p.subCat) === String(s.id);
+    const inCat = (p, c) => c.kind === 'group'
+      ? (p.groupIds || []).includes(String(c.groupId))
+      : String(p.cat_id) === String(c.categoryId);
+    const inSub = (p, s) => String(p.cat_id) === String(s.categoryId);
     return (categories || [])
       .map((c) => ({ ...c, subs: (c.subs || []).filter((s) => slotFiltered.some((p) => inSub(p, s))) }))
       .filter((c) => slotFiltered.some((p) => inCat(p, c)));
@@ -5871,176 +5820,57 @@ function ShopFrame({ variant }) {
     }
   }, [navCats]); // volontairement déclenché par le seul recalcul de la nav
 
-  // Stock map: productId -> { qty_total, qty_reserved, qty_sold, qty_available }
-  // Reloaded whenever shop, date or mode changes.
-  const [productStock, setProductStock] = React.useState({});
-  React.useEffect(() => {
-    let alive = true;
-    if (window.WSCatalog && typeof window.WSCatalog.getStock === 'function') {
-      window.WSCatalog.getStock({ shopId, date, mode })
-        .then((map) => { if (alive) setProductStock(map || {}); })
-        .catch(() => {});
-    }
-    return () => { alive = false; };
-  }, [shopId, date, mode]);
-
   const cartCount = basket.reduce((t, l) => t + l.qty, 0);
-  /* LIVRABLE : deux chemins, parce que la base en connaît deux.
-     • l'entreprise ws_offices validée et rattachée à une tournée (chaîne ERP) ;
-     • OU le bureau lié porte lui-même une tournée active (user.officeSite.tourId).
-     Le second manquait. Or c'est celui que suit le rattachement depuis le
-     profil : la liste ne propose QUE des bureaux desservis, mais la porte
-     n'acceptait que la chaîne ERP, souvent vide. Le client liait un bureau
-     desservi et se voyait refuser la livraison faute de « bureau lié ». */
-  const siteTour = !!(user && user.officeSite && user.officeSite.tourId);
-  const userCanDeliver = !!((userOffice && userOffice.status === 'validated' && userTour) || siteTour);
-
-  // Maintien de stock (15 min) : clients connectés. Trois corrections :
-  //  • l'échec n'est plus avalé : il est affiché (sinon le produit était au
-  //    panier SANS être tenu, et le client l'apprenait au paiement) ;
-  //  • la date était calculée en UTC (toISOString) : après 22 h en heure belge
-  //    d'été, la réservation partait sur le JOUR PRÉCÉDENT, donc sur une autre
-  //    ligne de stock que celle réellement vendue ;
-  //  • retirer UNE ligne relâchait TOUT le panier (release sans productId).
-  const isoLocal = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  // The basket only reads availability; the order API owns reservations.
   const [stockErr, setStockErr] = React.useState('');
   /* MOTIF DE CE QUE L'APP VIENT DE FAIRE, ou de ce qu'elle refuse. Toute
      action décidée à la place du client s'annonce ici : refus de la livraison,
      bascule automatique de mode, panier vidé, boutique changée. Une app qui
      agit sans le dire oblige à deviner, et sur un panier perdu, à recommencer. */
   const [notice, setNotice] = React.useState(null);
-  /* RETOUR DE LA PAGE DE PAIEMENT Stripe (checkout_success / checkout_cancel →
-     ?paid=1 / ?canceled=1). La commande a été enregistrée AVANT la redirection ;
-     ici on accueille, on ne crée rien :
-       · paid=1     → toast de confirmation, données mémorisées au départ ;
-       · canceled=1 → avis persistant : la commande existe mais reste impayée.
-     Le retour du navigateur ne PROUVE pas l'encaissement (seul le webhook fait
-     foi, cf. config.php) : on annonce la commande, pas le paiement. Les
-     paramètres sont ensuite retirés de l'adresse : un rechargement ne doit pas
-     rejouer l'accueil. */
-  React.useEffect(() => {
-    let q;
-    try { q = new URLSearchParams(window.location.search); } catch (_) { return; }
-    const paid = q.get('paid') === '1';
-    const canceled = q.get('canceled') === '1';
-    if (!paid && !canceled) return;
-    let pend = null;
-    try {
-      pend = JSON.parse(sessionStorage.getItem('ws.pendingPay') || 'null');
-      sessionStorage.removeItem('ws.pendingPay');
-    } catch (_) {}
-    if (paid && pend && Number.isFinite(Number(pend.total))) {
-      /* Conversion : la commande est payée, c'est ICI que Google Ads doit la
-         voir. transaction_id = la référence de commande, pour que deux
-         rechargements de la page de retour ne comptent qu'un achat. */
-      wsTrack('purchase', { transaction_id: pend.orderRef || String(pend.orderId || ''),
-                            value: Number(pend.total), currency: 'EUR', payment: 'stripe' });
-      setOrderToast({ orderRef: pend.orderRef, slot: pend.slot,
-                      paymentLabel: pend.paymentLabel, total: Number(pend.total), ts: Date.now() });
-      setTimeout(() => setOrderToast(null), 6500);
+  function appendContextLine(line) {
+    if (browseContext.mode !== 'standard' && hasUnsupportedOfficeConfiguration(line)) {
+      setStockErr(t('officeAccess.configurationUnsupported')); return false;
     }
-    if (canceled) {
-      /* Le texte est CAPTURÉ ici : le rendu affiche notice.texte tel quel. Au
-         premier chargement, /i18n n'a souvent pas encore répondu : t() aurait
-         figé les clés brutes dans l'avis. On le pose quand le dictionnaire est
-         là (ou tout de suite s'il l'est déjà). */
-      const ref = (pend && pend.orderRef) || '';
-      const poser = () => setNotice({ titre: t('co.payCanceled'),
-                                      texte: t('co.payCanceledSub', { ref }) });
-      if (!window.WSI18n || !window.WSI18n.onChange || window.WSI18n.isLoaded()) poser();
-      else {
-        const off = window.WSI18n.onChange(() => { poser(); off(); });
-      }
-    }
-    try {
-      q.delete('paid'); q.delete('canceled');
-      const qs = q.toString();
-      window.history.replaceState(window.history.state, '',
-        window.location.pathname + (qs ? '?' + qs : '') + window.location.hash);
-    } catch (_) {}
-  }, []);
-  function refreshStock() {
-    return window.WSCatalog.getStock({ shopId, date, mode }).then((m) => setProductStock(m || {}));
+    const candidate = { ...line, shop_id: shopId, shopping_context: normaliseShoppingContext(browseContext),
+      context_label: { office_name: catalogueContextData?.office?.name, offer_name: catalogueContextData?.offer?.name } };
+    if (needsCartReplacement(basket, candidate.shopping_context, shopId)) { setPendingContextLine(candidate); return false; }
+    setBasket(current => [...current, candidate]);
+    return true;
   }
-  function stockReserve(productId, qty = 1, lineId = null) {
-    // Visiteur non connecté : aucun maintien possible (pas d'identité à qui le
-    // rattacher). On le TRACE : sans ça, l'absence de réservation était
-    // indiscernable d'une panne, y compris en test.
-    if (!user) { console.info('[stock] pas de maintien : client non connecté (panier invité)'); return; }
-    if (!window.WSCatalog || !window.WSCatalog.reserve) {
-      setStockErr('Service stock indisponible : please debug.'); return;
-    }
-    const iso = date instanceof Date ? isoLocal(date) : (date || '');
-    window.WSCatalog.reserve({ productId, shopId, date: iso, mode, qty, customerId: user.id })
-      .then((r) => {
-        // Trace systématique : le serveur peut répondre « ok » SANS avoir tenu
-        // quoi que ce soit (produit sans stock du jour → rien à tenir). Sans
-        // cette trace, une table de réservations vide restait inexplicable.
-        console.info('[stock] réponse réservation', r);
-        if (r && r.ok !== false && !r.reservationId) {
-          console.info('[stock] aucun maintien créé, raison :', (r && r.reason) || 'non précisée');
-        }
-        // On rattache le maintien à SA ligne de panier : sans cet identifiant,
-        // le retrait d'une ligne libérait toutes les réservations du même
-        // produit (deux lignes de brownies, on en retire une, les deux
-        // maintiens sautaient et le stock repassait dispo à tort).
-        if (r && r.reservationId && lineId != null) {
-          setBasket((b) => b.map((l) => (l.line === lineId ? { ...l, reservationId: r.reservationId } : l)));
-        }
-        setStockErr(r && r.ok === false ? (r.error || 'Stock non tenu : please debug.') : '');
-        return refreshStock();
-      })
-      .catch((e) => { bug('stock', 'réservation refusée', e);
-                      setStockErr('Stock non tenu : ' + (e && e.message ? e.message : 'erreur serveur') + ', la disponibilité sera revérifiée au paiement.');
-                      refreshStock().catch(() => {}); });
+  function confirmContextReplacement() {
+    if (!pendingContextLine) return;
+    setVoucherApplied(null); setVoucherInput(''); setBasket([pendingContextLine]); setPendingContextLine(null);
   }
-  // reservationId connu → on ne libère QUE ce maintien. Sinon (réservation non
-  // encore revenue du serveur), repli sur le produit : mieux vaut libérer un peu
-  // trop que geler du stock vendable.
-  function stockRelease(productId, reservationId = null) {
-    // Sortie silencieuse = enquête impossible : la libération n'était jamais
-    // appelée (session perdue, module absent) et la table restait à
-    // released_at NULL sans le moindre message, alors que TOUT le reste de la
-    // chaîne était tracé.
-    if (!user) { console.info('[stock] pas de libération : client non connecté, le maintien expirera seul'); return; }
-    if (!window.WSCatalog || !window.WSCatalog.release) {
-      bug('stock', 'pas de libération : module catalogue absent'); return;
+  function canAddProduct(productId, qty, portion) {
+    const product = allProducts.find(item => String(item.id) === String(productId));
+    if (!product || catalogueLoading) { setStockErr(wsText('stock.unavailable')); return false; }
+    const available = availablePortions(product.availability, portion, Number(cartShopId) === Number(shopId) && sameShoppingContext(cartContext, browseContext) ? basketProductUnits(basket, productId) : 0);
+    if (available !== null && qty > available) {
+      setStockErr(wsText(product.availability.status === 'uninitialized' ? 'stock.uninitialized' : 'stock.quantityChanged'));
+      return false;
     }
-    window.WSCatalog.release(reservationId
-        ? { customerId: user.id, reservationIds: [reservationId] }
-        : { customerId: user.id, productId })
-      .then((r) => {
-        if (r && r.ok !== false && !r.released) {
-          console.info('[stock] aucun maintien libéré, rien ne correspondait côté serveur');
-        }
-        return refreshStock();
-      })
-      .catch((e) => bug('stock', 'libération du stock', e));
-  }
-  function stockReleaseAll() {
-    if (!user) { console.info('[stock] pas de libération globale : client non connecté'); return; }
-    if (!window.WSCatalog || !window.WSCatalog.release) return;
-    window.WSCatalog.release({ customerId: user.id }).catch(() => {});
+    setStockErr('');
+    return true;
   }
 
   function handleAdd(p, portion) {
+    if (p.has_personalization && browseContext.mode==='standard') { openProductDetail(p); return; }
+    if (!canAddProduct(p.id, 1, portion)) return;
     const lineId = Date.now();
-    setBasket((b) => [...b, {
+    const added = appendContextLine({
       line: lineId, productId: p.id,
       name: p.name + (portion === 'demi' ? ', 1/2' : portion === 'quart' ? ', 1/4' : ''),
       qty: 1, price: p.price, options: [],
       portion: portion || null, cat: p.cat, crossPortion: !!p.crossPortion,
       lead_time: p.lead_time || 0, no_delivery: !!p.no_delivery,
       available_slots: Array.isArray(p.available_slots) ? p.available_slots : null,
-    }]);
-    stockReserve(p.id, 1, lineId);
+    });
   }
 
   // Configurable-product detail
-  function handleRemove(lineId) {
-    const line = basket.find((l) => l.line === lineId);
-    setBasket((b) => b.filter((l) => l.line !== lineId));
-    if (line) stockRelease(line.productId, line.reservationId || null);
+  function handleRemove(lineIds) {
+    setBasket((current) => wsRemoveBasketLines(current, lineIds));
   }
   function handleNote(lineId, note) {
     setBasket((b) => b.map((l) => (l.line === lineId ? { ...l, note } : l)));
@@ -6052,7 +5882,6 @@ function ShopFrame({ variant }) {
   // demande son arbre formule → étapes → choix (ws_bundles) et on l'attache en
   // available_bundles pour que le composer s'affiche. Sans ça, un menu ne
   // montrait jamais ses étapes côté webshop.
-  const bundleCache = React.useRef({});
   /* BOUTON RETOUR DU TÉLÉPHONE = fermer la fiche, pas quitter le site.
      Ouvrir la fiche pousse une étape d'historique (même URL) ; « back » la
      retire et le popstate ferme la fiche. La croix fait la même chose en
@@ -6075,38 +5904,94 @@ function ShopFrame({ variant }) {
     } catch (_) {}
     setDetailProduct(null);
   }, []);
+  const menuRequest = React.useRef(0);
   const openProductDetail = React.useCallback((p) => {
     if (!p) return;
-    if (p.has_menu_options && !p.available_bundles &&
-        window.WSCatalog && typeof window.WSCatalog.listBundles === 'function') {
-      const cached = bundleCache.current[p.id];
-      if (cached) { setDetailProduct({ ...p, available_bundles: cached }); return; }
-      setDetailProduct(p); // ouvre tout de suite ; le composer apparaît dès l'arrivée des étapes
-      window.WSCatalog.listBundles({ productId: p.id })
-        .then((bundles) => {
-          const list = Array.isArray(bundles) ? bundles : [];
-          bundleCache.current[p.id] = list;
-          setDetailProduct((cur) => (cur && cur.id === p.id ? { ...cur, available_bundles: list } : cur));
-        })
-        .catch(() => {});
-      return;
+    const request = ++menuRequest.current;
+    const menuRequired = p.has_menu_options && browseContext.mode === 'standard' && !!window.WSCatalog?.listBundles;
+    const standardCart = basket.length === 0 || (cartContext.mode === 'standard' && Number(cartShopId) === Number(shopId));
+    const promotionsRequired = !p.is_weighted && browseContext.mode === 'standard' && !voucherApplied?.ok
+      && standardCart && !!window.WSQuote?.quote;
+    const personalRequired = p.has_personalization && browseContext.mode==='standard' && !p.is_weighted;
+    setDetailOptionsState({ productId: Number(p.id), menuReady: !menuRequired, promotionsReady: !promotionsRequired, personalizationReady: !personalRequired });
+    setDetailProduct({...p,personalization:null});
+    if (personalRequired) {
+      window.WSCatalog.personalization({productId:p.id,shopId:shop?.id,date,lang,mode})
+        .then(definition=>{if(request===menuRequest.current) setDetailProduct(cur=>cur?.id===p.id?{...cur,personalization:definition}:cur);})
+        .catch(()=>{if(request===menuRequest.current) setDetailProduct(cur=>cur?.id===p.id?{...cur,personalization_error:true}:cur);})
+        .finally(()=>{if(request===menuRequest.current) markDetailOptionReady(p.id,'personalizationReady');});
     }
-    setDetailProduct(p);
-  }, []);
-  function handleAddConfigured(line) {
+    if (menuRequired) {
+      window.WSCatalog.listBundles({ productId: p.id, shopId: shop?.id, date, lang, mode })
+        .then(bundles => {
+          if (request !== menuRequest.current) return;
+          setDetailProduct(cur => cur && cur.id === p.id ? {...cur, available_bundles: Array.isArray(bundles) ? bundles : []} : cur);
+          markDetailOptionReady(p.id, 'menuReady');
+        })
+        .catch(() => {
+          if (request !== menuRequest.current) return;
+          setDetailProduct(cur => cur && cur.id === p.id ? {...cur, menu_load_error:true} : cur);
+          markDetailOptionReady(p.id, 'menuReady');
+        });
+    }
+  }, [shop?.id, date, lang, mode, browseContext.mode, basket, cartContext.mode, cartShopId, shopId, voucherApplied?.ok, markDetailOptionReady]);
+
+  function promotionAdditionLines(suggestion, createdAt, promotionGroup, promotionDisplay) {
+    return (suggestion?.items || []).flatMap((item, index) => {
+      // A selected offer is a full, dedicated composition. Never complete it
+      // with a matching ordinary item already present in the basket.
+      const quantity = Number(item.quantity || 0);
+      if (!Number.isFinite(quantity) || quantity <= 0) return [];
+      const product = allProducts.find(entry => Number(entry.id) === Number(item.id_product));
+      return [{
+        line: `${createdAt}-bundle-${suggestion.id_promotion}-${index}`,
+        productId: Number(item.id_product),
+        id_product_portion: item.id_product_portion == null ? null : Number(item.id_product_portion),
+        name: item.product_name || product?.name || `Product #${item.id_product}`,
+        qty: quantity,
+        price: Number(product?.price || 0),
+        options: [],
+        portion: null,
+        cat: product?.cat || null,
+        lead_time: product?.lead_time || 0,
+        no_delivery: !!product?.no_delivery,
+        available_slots: Array.isArray(product?.available_slots) ? product.available_slots : null,
+        promotion_group: promotionGroup,
+        promotion_id: Number(suggestion.id_promotion),
+        promotion_display: promotionDisplay,
+        shop_id: shopId,
+        shopping_context: normaliseShoppingContext(browseContext),
+      }];
+    });
+  }
+
+  function handleAddConfigured(line, selectedPromotion = null) {
     const product = allProducts.find((p) => p.id === line.productId);
-    // Même rattachement ligne ↔ réservation que dans handleAdd : sans lui, les
-    // produits configurables (portions, options, formules) retombaient sur le
-    // repli « par produit » et leur retrait libérait TOUTES les réservations du
-    // même produit.
+    if (!canAddProduct(line.productId, line.qty || 1, line.portion)) return;
     const lineId = line.line != null ? line.line : Date.now();
-    setBasket((b) => [...b, {
+    const candidate = {
       ...line,
       line: lineId,
       lead_time: line.lead_time ?? product?.lead_time ?? 0,
       no_delivery: line.no_delivery ?? !!product?.no_delivery,
-    }]);
-    stockReserve(line.productId, line.qty || 1, lineId);
+    };
+    if (selectedPromotion && !wsHasPromotionSelection(basket) && browseContext.mode === 'standard' && !needsCartReplacement(basket, normaliseShoppingContext(browseContext), shopId)) {
+      const promotionGroup = `promotion-${lineId}-${selectedPromotion.id_promotion}`;
+      const promotionDisplay = {
+        id_promotion: selectedPromotion.id_promotion,
+        display_name: selectedPromotion.name,
+        promotion_type: selectedPromotion.promotion_type,
+        total_gross_after_discount: selectedPromotion.total_gross_after_discount,
+        promotion_total_gross_after_discount: selectedPromotion.promotion_total_gross_after_discount,
+        bundle_price: selectedPromotion.bundle_price,
+        reward: selectedPromotion.reward,
+      };
+      // Keep raw product lines for the receipt, VAT and stock. The UI groups
+      // them into one promotion object and the API validates the composition.
+      setBasket(current => [...current, ...promotionAdditionLines(selectedPromotion, lineId, promotionGroup, promotionDisplay)]);
+      return;
+    }
+    appendContextLine(candidate);
   }
 
   /* Heure de RETRAIT du créneau choisi, décision validée : c'est elle que les
@@ -6121,9 +6006,7 @@ function ShopFrame({ variant }) {
     return m ? m[0] : null;
   }, [officeSlots, selectedSlot]);
 
-  /* Ajout depuis une suggestion « Panier Croisé ». On passe par le MÊME chemin
-     qu'un ajout ordinaire : réservation de stock comprise, pour qu'un produit
-     suggéré ne soit pas un citoyen de seconde zone dans le panier. */
+  // Cross-sell uses the same availability check as ordinary additions.
   function handleCrossAdd(it) {
     const p = allProducts.find((x) => String(x.id) === String(it.productId));
     handleAddConfigured({
@@ -6140,106 +6023,50 @@ function ShopFrame({ variant }) {
 
   const Nav = variant === 'A' ? NavbarA : variant === 'B' ? NavbarB : NavbarC;
 
-  /* L'heure limite tombe PENDANT la navigation : le mode repasse en Click &
-     Collect tout seul. Sans un mot, le client voyait ses prix et ses créneaux
-     changer sous ses yeux sans avoir rien touché. */
-  React.useEffect(() => {
-    if (mode === 'delivery' && deliveryCutoffPassed) {
-      setMode('collect');
-      setNotice({
-        titre: 'Passé en Click & Collect',
-        texte: 'L’heure limite de la livraison au bureau (' + deliveryCutoffLabel
-             + ') vient d’être atteinte. Pour être livré, choisissez une date ultérieure.',
-      });
+  async function handleMode(next) {
+    if (next === 'delivery') {
+      if (!user) { setAuthOpen(true); return; }
+      if (defaultDeliveryBusy) return;
+      if (mode === 'delivery') { setOfficeDeliveryOpen(true); return; }
+      const request = ++defaultDeliveryRequest.current;
+      setDefaultDeliveryBusy(true);
+      try {
+        const saved = await window.WSOffices.deliveryPreference(shopId);
+        if (request !== defaultDeliveryRequest.current) return;
+        if (!saved?.officeId || !saved?.siteId) { setOfficeDeliveryOpen(true); return; }
+        const result = await window.WSOffices.delivery({shop:shopId,officeId:saved.officeId});
+        if (request !== defaultDeliveryRequest.current) return;
+        const site = result.sites?.find(site=>Number(site.id)===Number(saved.siteId) && site.routes?.length>0);
+        if (!site || result.office?.status !== 'active') { setOfficeDeliveryOpen(true); return; }
+        if (latestBasket.current.length) setPendingDefaultDelivery({result,siteId:site.id});
+        else await confirmOfficeDelivery(result,site.id);
+      } catch (_) { if (request === defaultDeliveryRequest.current) setOfficeDeliveryOpen(true); }
+      finally { if (request === defaultDeliveryRequest.current) setDefaultDeliveryBusy(false); }
+      return;
     }
-  }, [deliveryCutoffPassed, mode]);
-
-  // Design system rule: changing mode OR date clears the basket instantly.
-  /* POURQUOI la livraison au bureau est refusée. Cinq situations distinctes
-     menaient au même geste muet, ouverture du panneau compte, ou rien du tout
-     dans le cas de l'heure limite. Le client voyait son écran changer sans
-     comprendre, et n'avait aucun moyen de savoir quoi corriger.
-     Chaque cas dit donc CE QUI MANQUE et CE QU'IL FAUT FAIRE. Aucun n'est
-     inventé : ils découlent de userCanDeliver = bureau lié ET validé ET
-     rattaché à une tournée. */
-  function deliveryBlockReason() {
-    if (!user) return {
-      titre: 'Connectez-vous pour la livraison au bureau',
-      texte: 'Ce mode est réservé aux comptes rattachés à un bureau livré. Connectez-vous ou créez un compte.',
-    };
-    if (!userOffice && !(user.officeSite && user.officeSite.id)) return {
-      titre: 'Aucun bureau lié à votre compte',
-      texte: 'Cherchez votre société dans « Livraison au bureau », ou demandez son ajout si elle n’y figure pas.',
-    };
-    if (!userOffice && user.officeSite && !user.officeSite.tourId) return {
-      titre: 'Votre bureau n’est pas desservi par une tournée',
-      texte: '« ' + (user.officeSite.name || 'Votre bureau') + ' » est bien lié à votre compte, mais aucune tournée ne le dessert encore. Votre Atelier doit l’y rattacher ; cela ne dépend pas de vous.',
-    };
-    if (userOffice.status !== 'validated') return {
-      titre: 'Votre bureau attend la validation de l’Atelier',
-      texte: 'La demande pour « ' + (userOffice.name || 'votre bureau') + ' » est enregistrée. Vous serez livrable dès qu’elle sera acceptée ; en attendant, commandez en Click & Collect.',
-    };
-    if (!userTour) return {
-      titre: 'Votre bureau n’est pas encore sur une tournée',
-      texte: '« ' + (userOffice.name || 'Votre bureau') + ' » est validé, mais votre Atelier doit encore le rattacher à une tournée de livraison. Cela ne dépend pas de vous.',
-    };
-    return null;
-  }
-
-  function handleMode(next) {
+    defaultDeliveryRequest.current++;
+    setDefaultDeliveryBusy(false); setPendingDefaultDelivery(null);
     if (next === mode) return;
-    // Livraison : compte connecté, bureau lié, validé, et rattaché à une tournée.
-    if (next === 'delivery' && !userCanDeliver) {
-      const why = deliveryBlockReason();
-      setNotice(why);
-      // On ouvre l'écran où l'action se fait : mais seulement quand il y a une
-      // action possible. Attendre une validation ou une tournée ne se règle pas
-      // depuis le compte : y renvoyer ferait chercher un réglage inexistant.
-      if (!user) setAuthOpen(true);
-      else if (!userOffice) setAccountOpen(true);
-      return;
-    }
-    // Livraison le jour même : refusée passé l'heure limite. Ce cas ne faisait
-    // RIEN : le bouton semblait cassé.
-    if (next === 'delivery' && deliveryCutoffPassed) {
-      setNotice({
-        titre: 'Livraison du jour clôturée',
-        texte: 'Les commandes en livraison au bureau se prennent avant ' + deliveryCutoffLabel
-             + '. Choisissez une date ultérieure, ou passez en Click & Collect.',
-      });
-      return;
-    }
-    stockReleaseAll();
-    if (basket.length > 0) setNotice({
-      titre: 'Panier vidé',
-      texte: 'Les prix et les créneaux diffèrent entre Click & Collect et livraison au bureau : le panier repart à zéro au changement de mode.',
-    });
-    else setNotice(null);
-    setMode(next);
-    setBasket([]);
+    if (basket.length) { setPendingMenu(normaliseShoppingContext(null)); return; }
+    manualMenuChoice.current = true;
+    setMode('collect'); setBrowseContext(normaliseShoppingContext(null));
+    setCat('all'); setSubCat(null); setDetailProduct(null);
+    setVoucherApplied(null); setVoucherInput('');
+    setQuoteState({status:'idle',quote:null,error:''});
+    setNotice(null);
   }
   function handleDate(next) {
     const a = date instanceof Date ? date.toDateString() : String(date);
     const b = next instanceof Date ? next.toDateString() : String(next);
     if (a === b) return;
     const avait = basket.length > 0;
-    stockReleaseAll();
     setDate(next);
     setBasket([]);
-    // Aujourd'hui + livraison + heure limite dépassée : retour forcé en Collect.
-    if (mode === 'delivery' && isToday(next) && deliveryCutoffMinutes !== null && nowHour >= deliveryCutoffMinutes) {
-      setMode('collect');
-      setNotice({
-        titre: 'Passé en Click & Collect',
-        texte: 'La livraison au bureau n’est plus possible aujourd’hui (commandes avant '
-             + deliveryCutoffLabel + ').'
-             + (avait ? ' Votre panier a été vidé : les prix et les créneaux dépendent du mode.' : ''),
-      });
-    } else if (avait) {
+    if (avait) {
       // Règle du design : changer de date vide le panier. Encore faut-il le dire.
       setNotice({
-        titre: 'Panier vidé',
-        texte: 'Les disponibilités et les prix changent d’un jour à l’autre : le panier est remis à zéro à chaque changement de date.',
+        titre: wsText("ui.basketCleared"),
+        texte: wsText("ui.dateClearsBasket"),
       });
     }
   }
@@ -6247,40 +6074,63 @@ function ShopFrame({ variant }) {
     if (user) setAccountOpen(true);
     else setAuthOpen(true);
   }
+  function applyShopChange(id) {
+    if (!id || String(id) === String(shopId)) return;
+    setShopId(id);
+    // A manual change may be saved as the preferred shop, but must never be
+    // made silently just because the customer has logged in.
+    if (user && String(user.preferredShopId || '') !== String(id)) {
+      const picked = shops.find((s) => String(s.id) === String(id));
+      setPrefNudge({ shopId: id, shopName: picked ? picked.name : id });
+    }
+  }
+  function requestShopChange(id) {
+    if (!id || String(id) === String(shopId)) return;
+    // A basket cannot be priced or fulfilled across shops. Make its removal
+    // explicit instead of carrying a hidden old-shop order into the new view.
+    if (basket.length && String(cartShopId) !== String(id)) {
+      setPendingShopChange(id);
+      return;
+    }
+    applyShopChange(id);
+  }
   function handleLogin(u) {
     setUser(u);
-    // Preferred shop: if the user has one, adopt it as the active shop on login
-    // (rule: "On login, load the preferred shop automatically").
-    // Don't reset cart : spec says "Do not reset cart unless the shop change requires it".
-    if (u && u.preferredShopId && u.preferredShopId !== shopId) {
-      const cible = (shops || []).find((x) => String(x.id) === String(u.preferredShopId));
+    // Use the preferred shop only as a first-shop default. An explicit deep
+    // link, a selected shop or an existing basket must remain authoritative.
+    if (!inviteToken && officeHint === null && u && u.preferredShopId && shopId == null) {
       setShopId(u.preferredShopId);
-      // Le catalogue et les prix changent avec la boutique : le dire, sinon le
-      // client croit s'être trompé de page en se connectant.
-      setNotice({
-        titre: 'Boutique ' + (cible ? cible.name : 'préférée') + ' chargée',
-        texte: 'C’est la boutique enregistrée dans votre compte. Vous pouvez en changer à tout moment en haut de l’écran.',
-      });
     }
+    if (!inviteToken && officeHint === null) setShopConfirmationPending(true);
     // If freshly logged-in user already has delivery enabled & was on collect, leave mode alone (don't surprise the user).
   }
   function handleLogout() {
-    stockReleaseAll(); // release before clearing user reference
-    setUser(null);
+    window.WSAuth?.logout();
+    setUser(null); setPendingContextLine(null); setOfficeAccessOpen(false);
+    setBrowseContext(normaliseShoppingContext(null)); setPendingMenu(null);
     // La livraison au bureau exige un compte : à la déconnexion, le mode revient
     // à Click & Collect et le panier tombe. Perdre un panier sans un mot oblige
     // à tout refaire sans comprendre.
-    if (mode === 'delivery') {
+    if (mode === 'delivery' || cartContext.mode !== 'standard') {
       const avait = basket.length > 0;
       setMode('collect');
       setBasket([]);
       setNotice({
-        titre: 'Retour en Click & Collect',
-        texte: 'La livraison au bureau demande un compte rattaché à un bureau.'
-             + (avait ? ' Votre panier a été vidé.' : ''),
+        titre: wsText("ui.returnCollect"),
+        texte: wsText(avait ? 'ui.logoutBasket' : 'ui.deliveryNeedsOffice'),
       });
     }
   }
+
+  // Go-live : sans boutique resolue (API /shops en echec ou vide), on affiche
+  const invitationDialog = inviteToken && !authOpen && <div className="ws-office-overlay"><section className="ws-office-modal" role="dialog" aria-modal="true" aria-labelledby="ws-invitation-title">
+    <h2 id="ws-invitation-title">{t('officeAccess.invitationTitle')}</h2>
+    {inviteError ? <p role="alert">{t('officeAccess.invitationError')}</p> : <p>{invitation ? t('officeAccess.invitationDescription', {name: invitation.office.name}) : t('common.loading2')}</p>}
+    {invitation && basket.length>0 && <p>{t('officeAccess.menuChange')}</p>}
+    <div className="ws-office-confirm-actions"><button type="button" className="ws-office-secondary" disabled={inviteBusy} onClick={closeInvitation}>{t('common.close2')}</button>
+    {invitation && <button type="button" className="ws-cta" disabled={inviteBusy} onClick={acceptInvitation}>{inviteBusy ? t('common.loading2') : t(user?.id?'officeAccess.invitationAccept':'co.auth.signin')}</button>}
+    {invitation && !user?.id && <button type="button" className="ws-office-secondary" onClick={() => authenticateInvitation('register')}>{t('officeAccess.registerAndJoin')}</button>}</div>
+  </section></div>;
 
   // Go-live : sans boutique resolue (API /shops en echec ou vide), on affiche
   // un etat explicite - jamais de boutique de demonstration.
@@ -6291,48 +6141,88 @@ function ShopFrame({ variant }) {
      chargement qui ne viendra jamais. */
   if (!shop) {
     const aChoisir = !shopsFailed && shops && shops.length > 0;
-    return (
-      <div className={`ws ws--${variant}`} style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem', textAlign: 'center' }}>
-        <div style={{ maxWidth: '30rem' }}>
-          <h2 style={{ marginBottom: '.5rem' }}>
-            {shopsFailed ? 'Boutiques indisponibles'
-                         : (aChoisir ? 'Choisissez votre boutique' : 'Chargement de la boutique…')}
-          </h2>
-          <p style={{ opacity: .7 }}>
-            {shopsFailed
-              ? 'Impossible de charger la liste des boutiques (API injoignable). Veuillez réessayer plus tard.'
-              : (aChoisir
-                  ? 'Chaque Atelier a sa carte. Aucune n’est choisie à votre place.'
-                  : 'Connexion en cours…')}
-          </p>
-          {aChoisir && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem', marginTop: '1.25rem' }}>
+    return (<>{invitationDialog}
+      <div className={`ws ws--${variant} ws-shopselect`}>
+        <div className="ws-shopselect__wash" aria-hidden="true"/>
+        <header className="ws-shopselect__header">
+          <div className="ws-shopselect__brand" aria-label="L'Atelier By">
+            <span className="ws-shopselect__monogram">A</span>
+            <span className="ws-shopselect__wordmark">L'Atelier <em>By</em></span>
+          </div>
+          {window.LangChip && <window.LangChip className="ws-shopselect__language"/>}
+        </header>
+        <main className="ws-shopselect__main" aria-live="polite">
+          <div className="ws-shopselect__intro">
+            <span className="ws-shopselect__kicker">{wsText('shoppick.title')}</span>
+            <h1>{shopsFailed ? wsText("ui.shopsUnavailable")
+                              : (aChoisir ? wsText("ui.pickShop") : wsText("ui.loadingShop"))}</h1>
+            <p>{shopsFailed
+              ? wsText("ui.shopsError")
+              : (aChoisir ? wsText("ui.pickShopHint") : wsText("ui.connecting"))}</p>
+          </div>
+          {aChoisir ? (
+            <div className="ws-shopselect__grid" role="list">
               {shops.map((s) => (
-                <button key={s.id} className="ws-btn ws-btn--primary"
-                        onClick={() => setShopId(s.id)}
-                        style={{ width: '100%', justifyContent: 'space-between' }}>
-                  <span>{s.name}</span>
-                  {s.city ? <span style={{ opacity: .7, fontWeight: 400 }}>{s.city}</span> : null}
+                <button key={s.id} type="button" className="ws-shopselect__card" role="listitem"
+                        onClick={() => setShopId(s.id)} style={{ '--shop-accent': s.accent || 'var(--color-primary)' }}>
+                  <span className="ws-shopselect__cardbar" aria-hidden="true"/>
+                  <span className="ws-shopselect__cardcopy">
+                    {s.city && <span className="ws-shopselect__city">{s.city}</span>}
+                    <strong>{s.name}</strong>
+                    {s.address && <span className="ws-shopselect__address">{s.address}</span>}
+                  </span>
+                  <span className="ws-shopselect__choose" aria-hidden="true">
+                    <Pict d={ICONS.chev} s={16}/>
+                  </span>
                 </button>
               ))}
             </div>
+          ) : !shopsFailed && (
+            <div className="ws-shopselect__loading">
+              <span className="ws-shopselect__spinner" aria-hidden="true"/>
+              <span>{wsText("ui.connecting")}</span>
+            </div>
           )}
-        </div>
-      </div>
+          {shopsFailed && <p className="ws-shopselect__help">{wsText("ui.connecting")}</p>}
+        </main>
+        <footer className="ws-shopselect__footer">© {new Date().getFullYear()} L'Atelier By</footer>
+      </div><PwaInstallPrompt /></>
     );
   }
 
   // PRIX MASQUÉS (0113) : le bureau du client l'impose ; le prix reste résolu
   // et facturé serveur, seul l'affichage disparaît (classe sur la racine).
-  const hidePrices = !!(user && user.office && user.office.showPrices === false);
+  const cartShop = (shops || []).find(item => Number(item.id) === Number(cartShopId)) || shop;
+  const hidePrices = false; // Office membership never silently changes the standard catalogue.
+  const hasOfficeMembership = officeMemberships.length > 0;
+  const menuOffices = mode === 'delivery' && userOffice
+    ? officeMemberships.filter(office => Number(office.id) === Number(userOffice.id))
+    : [];
+  const officeMenus = user ? (<div className="ws-office-menus" aria-label={t('officeAccess.title')}>
+              <div className="ws-office-menu-links">
+              {menuOffices.map(office => <React.Fragment key={office.id}>
+                <button type="button" className="ws-office-catalog-button" aria-label={t('officeAccess.catalogue', { name: office.name })} title={office.name} aria-pressed={browseContext.mode === 'office_catalog' && Number(browseContext.office_id) === Number(office.id)} onClick={() => browseOfficeMenu({ mode: 'office_catalog', office_id: office.id })}>
+                  <OfficeIdentity office={office} compact/>
+                </button>
+                {(office.offers || []).map(offer => <button type="button" key={offer.id} aria-pressed={browseContext.mode === 'office_offer' && Number(browseContext.offer_id) === Number(offer.id)} onClick={() => browseOfficeMenu({ mode: 'office_offer', office_id: office.id, offer_id: offer.id })}>{t('officeAccess.offer', { name: offer.name })}</button>)}
+              </React.Fragment>)}
+              </div><button type="button" className="ws-office-manage" onClick={() => setOfficeAccessOpen(true)}><img src={hasOfficeMembership ? linkedOfficeIcon : noLinkedOfficeIcon} alt="" aria-hidden="true"/><span>{t('officeAccess.manage')}</span></button>
+            </div>) : null;
   return (
     <div className={`ws ws--${variant}${hidePrices ? ' ws-noprice' : ''}`} data-mode={mode}>
-      <Nav shop={shop} mode={mode} onMode={handleMode} onSwitchShop={() => setSwitcherOpen(true)}
+      {invitationDialog}
+      <Nav officeMenus={officeMenus} shop={shop} mode={mode} onMode={handleMode} onSwitchShop={() => setSwitcherOpen(true)}
            cartCount={cartCount} date={date} onDate={handleDate} user={user} onAccount={handleAccount}
            onAllergens={() => setAllergensOpen(true)}
            collectCutoffPassed={collectCutoffPassed} collectCutoffLabel={collectCutoffLabel}
            deliveryCutoffPassed={deliveryCutoffPassed} deliveryCutoffLabel={deliveryCutoffLabel}
            minLeadDays={minLeadDays}/>
+      {variant !== 'A' && officeMenus}
+      {user?.activationRequired === true && <aside className="ws-activation-banner" role="status">
+        <span>{t('activation.accountWarning')}</span>
+        <button type="button" className="ws-linkbtn" onClick={handleAccount}>{t('activation.accountSettings')}</button>
+      </aside>}
+
 
       <div className="ws-body">
         <main className="ws-main" ref={mainScrollRef} onScroll={updateScrollState}>
@@ -6340,7 +6230,7 @@ function ShopFrame({ variant }) {
             <div className="ws-hero" style={{ '--shop-accent': shop.accent }}>
               <div className="ws-hero__copy">
                 <span className="ws-hero__eyebrow">{t('hero.eyebrow')}</span>
-                <h1 className="ws-hero__slogan">On prend.<br/>On divise.<br/><em style={{ color: 'var(--color-primary)' }}>On goûte.</em></h1>
+                <h1 className="ws-hero__slogan">{wsText("ui.sloganTake")}<br/>{wsText("ui.sloganShare")}<br/><em style={{ color: 'var(--color-primary)' }}>{wsText("ui.sloganTaste")}</em></h1>
                 <p className="ws-hero__lede">{t('hero.lede')}</p>
               </div>
               <div className="ws-hero__chip" style={{ background: 'var(--color-primary)' }}>
@@ -6350,9 +6240,13 @@ function ShopFrame({ variant }) {
             </div>
           )}
 
-          {/* page head removed */}
+          {user && <>
+            {membershipsError && <p role="alert" className="ws-co-error">{t('officeAccess.loadError')} <button type="button" onClick={() => refreshOfficeMemberships().catch(() => {})}>{t('officeAccess.search')}</button></p>}
+            {browseContext.mode === 'office_offer' && <p className="ws-office-context">{t('officeAccess.offerPriceNote')}</p>}
+          </>}
 
-          <GiftProgressBanner shop={shop} user={user} />
+
+
 
           {mode === 'delivery' && officeSlots.length >= 2 && (
             <SlotSegmented slots={officeSlots} selected={selectedSlot} onSelect={(t) => requestSlotChange(t)}/>
@@ -6361,19 +6255,25 @@ function ShopFrame({ variant }) {
             <p className="ws-slot-ask">{t('evening.q')} <button type="button" className="ws-linkbtn" onClick={() => window.WSSlots && window.WSSlots.requestEvening && window.WSSlots.requestEvening({ officeId: (user && user.officeId) || null })}>{t('evening.tellUs')}</button></p>
           )}
 
-          <CategoryRow active={cat} sub={subCat} onSelect={selectCat} onSelectSub={selectSub} onBack={backToCats} navIcons={navIcons} accent={mode === 'delivery' ? '#c17a2a' : 'var(--color-primary)'} tint={mode === 'delivery' ? 'invert(45%) sepia(60%) saturate(600%) hue-rotate(5deg)' : 'invert(15%) sepia(85%) saturate(2400%) hue-rotate(335deg)'} categories={navCats} assortments={seasonChips}/>
+          <CategoryRow active={cat} sub={subCat} onSelect={selectCat} onSelectSub={selectSub} onBack={backToCats} navIcons={navIcons} accent={mode === 'delivery' ? '#c17a2a' : 'var(--color-primary)'} tint={mode === 'delivery' ? 'invert(45%) sepia(60%) saturate(600%) hue-rotate(5deg)' : 'invert(15%) sepia(85%) saturate(2400%) hue-rotate(335deg)'} categories={navCats} assortments={hideOfficePeriods ? [] : seasonChips}/>
 
-          {user && user.office && user.office.assortment === 'custom' && (
-            <div className="ws-grid__office">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v16M15 9h3a1 1 0 0 1 1 1v11"/></svg>
-              <span>{t('catalog.officeSelection', { count: user.office.productCount == null ? '' : user.office.productCount })} · <strong>{user.office.name}</strong></span>
+          {catalogueError && <div className="pdm-delivery-notice" role="alert">
+            {wsMessage(catalogueError)}
+            <button type="button" className="ws-linkbtn" onClick={() => setCatalogueRefresh(value => value + 1)}>{t('stock.refresh')}</button>
+          </div>}
+          {!catalogueLoading && allProducts.some(product => stockMessageKey(product.availability)) &&
+            <div className="pdm-delivery-notice" role="status">{t('stock.unavailable')}</div>}
+          {catalogueLoading && (
+            <div className="ws-catalogue-loading" role="status" aria-live="polite">
+              <span className="ws-catalogue-loading__spinner" aria-hidden="true" />
+              <span>{t('common.loading2')}</span>
             </div>
           )}
-          <div className="ws-grid">
-            {products.map((p) => {
-              const bqty = basket.filter((l) => l.productId === p.id).reduce((t, l) => t + l.qty, 0);
-              const stock = productStock[p.id] || null;
-              return <ProductCard key={p.id} p={p} onAdd={handleAdd} onOpen={openProductDetail} mode={mode} basketQty={bqty} stock={stock} platsBadge={mode === 'delivery' && selectedSlot === 'soir' && p.cat === 'plats'}/>;
+          <div className="ws-grid" aria-busy={catalogueLoading}>
+            {products.map((p, index) => {
+              const bqty = Number(cartShopId) === Number(shopId) && sameShoppingContext(cartContext, browseContext) ? basketProductUnits(basket, p.id) : 0;
+              const stock = p.availability;
+              return <ProductCard key={p.id} p={p} imagePriority={index < 4} onAdd={handleAdd} onOpen={openProductDetail} mode={mode} basketQty={bqty} stock={stock} platsBadge={mode === 'delivery' && selectedSlot === 'soir' && p.cat === 'plats'}/>;
             })}
           </div>
         </main>
@@ -6404,7 +6304,7 @@ function ShopFrame({ variant }) {
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>
         </button>
 
-        <Basket hidePrices={hidePrices} officeName={user && user.office ? user.office.name : ''} shop={shop} mode={mode} basket={basket} onCheckout={handleCheckout} onRemove={handleRemove} onNote={handleNote} notesEnabled={lineNotesEnabled} deliveryFeeResult={deliveryFeeResult} date={date} slotTime={crossSlotTime} onCrossAdd={handleCrossAdd}/>
+        <Basket hidePrices={hidePrices} contextLabel={basket.length ? contextLabel : null} officeName={userOffice?.name || ''} shop={cartShop} mode={mode} basket={basket} quoteState={quoteState} onCheckout={handleCheckout} onRemove={handleRemove} onNote={handleNote} notesEnabled={lineNotesEnabled} deliveryFeeResult={deliveryFeeResult} date={date} slotTime={crossSlotTime} onCrossAdd={Number(cartShopId) === Number(shopId) && cartContext.mode === 'standard' && browseContext.mode === 'standard' ? handleCrossAdd : undefined}/>
       </div>
 
       {/* Mobile bottom tab bar : 2 buttons, 50/50 split */}
@@ -6426,7 +6326,7 @@ function ShopFrame({ variant }) {
       {pendingSlot && (
         <SlotChangeModal
           items={pendingSlot.dropped}
-          targetLabel={(pendingSlot.route && pendingSlot.route.cta && pendingSlot.route.cta.label) || (pendingSlot.slot_type === 'soir' ? 'Soirée' : 'Midi')}
+          targetLabel={(pendingSlot.route && pendingSlot.route.cta && window.WSI18n.translateKnown(pendingSlot.route.cta.label)) || (pendingSlot.slot_type === 'soir' ? wsText("ui.evening") : wsText("ui.noon"))}
           onConfirm={confirmSlotChange}
           onCancel={() => setPendingSlot(null)}
         />
@@ -6438,7 +6338,7 @@ function ShopFrame({ variant }) {
           <div className="ws-drawer__panel">
             <button className="ws-drawer__close" onClick={() => setCartDrawerOpen(false)} aria-label={t('common.close2')}>×</button>
             <div className="ws-drawer__handle" aria-hidden="true"/>
-            <Basket hidePrices={hidePrices} officeName={user && user.office ? user.office.name : ''} shop={shop} mode={mode} basket={basket} onCheckout={() => { setCartDrawerOpen(false); handleCheckout(); }} onRemove={handleRemove} onNote={handleNote} notesEnabled={lineNotesEnabled} date={date} slotTime={crossSlotTime} onCrossAdd={handleCrossAdd}/>
+            <Basket hidePrices={hidePrices} contextLabel={basket.length ? contextLabel : null} officeName={userOffice?.name || ''} shop={cartShop} mode={mode} basket={basket} quoteState={quoteState} onCheckout={handleCheckout} onRemove={handleRemove} onNote={handleNote} notesEnabled={lineNotesEnabled} date={date} slotTime={crossSlotTime} onCrossAdd={Number(cartShopId) === Number(shopId) && cartContext.mode === 'standard' && browseContext.mode === 'standard' ? handleCrossAdd : undefined}/>
           </div>
         </div>
       )}
@@ -6447,42 +6347,79 @@ function ShopFrame({ variant }) {
         open={switcherOpen}
         currentId={shopId}
         shops={shops}
-        onPick={(id) => {
-          if (id === shopId) return;
-          setShopId(id);
-          // Spec: "If the customer switches shop manually, ask whether
-          // they want to update the preferred shop."
-          if (user && user.preferredShopId !== id) {
-            const picked = shops.find((s) => s.id === id);
-            setPrefNudge({ shopId: id, shopName: picked ? picked.name : id });
-          }
-        }}
+        onPick={requestShopChange}
         onClose={() => setSwitcherOpen(false)}
       />
-      <LoginModal open={authOpen} onClose={() => setAuthOpen(false)} onLogin={handleLogin} onRegister={handleLogin} shopId={shopId}/>
+      <LoginModal open={authOpen} initialTab={authInitialTab} invitationRegistration={!!inviteToken && inviteAuthPending} onClose={() => { setAuthOpen(false); setAuthInitialTab('login'); }} onLogin={handleLogin} onRegister={handleLogin} onGoToAccount={(u) => { handleLogin(u); if (inviteToken) inviteAccountAfterJoin.current = true; else setAccountOpen(true); }} shopId={shopId}/>
       {/* Rattrapage CP : s'affiche seule après toute connexion (login, handoff
           PWA, session restaurée) tant que le code postal manque en base. */}
       <PostcodeCatchupModal user={user} onUpdateUser={(u) => setUser(u)}/>
+      <StripeReturnDialog />
       <AccountModal
         open={accountOpen}
         user={user}
         shops={shops}
         currentShopId={shopId}
-        onChangePreferredShop={(id) => { if (id && id !== shopId) setShopId(id); }}
+        onChangePreferredShop={requestShopChange}
         onClose={() => setAccountOpen(false)}
         onLogout={handleLogout}
-        onRequestOffice={() => setAccountOpen(true)}
+        onRequestOffice={() => setOfficeAccessOpen(true)}
+        onManageOffices={() => { setAccountOpen(false); setOfficeAccessOpen(true); }}
         onUpdateUser={(u) => setUser(u)}
         office={userOffice}
         tour={userTour}
       />
-      <ProductDetail open={!!detailProduct} product={detailProduct} mode={mode} onClose={closeProductDetail} onAdd={handleAddConfigured} stock={detailProduct ? (productStock[detailProduct.id] || null) : null}/>
+      {officeDeliveryOpen && !!user && <OfficeDeliveryModal open={true} shopId={shopId} officeId={basket.length ? requiredDeliveryOffice : null}
+        selectedOfficeId={userOffice?.id} selectedSiteId={userOffice ? selectedSiteId : null} clearBasket={basket.length > 0}
+        onClose={() => setOfficeDeliveryOpen(false)} onConfirm={confirmOfficeDelivery}
+        onManageOffices={() => { setOfficeDeliveryOpen(false); setOfficeAccessOpen(true); }}/>}
+      {defaultDeliveryBusy && <div className="ws-toast" role="status">{t('common.loading2')}</div>}
+      {pendingDefaultDelivery && <div className="ws-office-overlay"><section className="ws-office-modal" role="alertdialog" aria-modal="true" aria-labelledby="ws-default-delivery-title">
+        <h2 id="ws-default-delivery-title">{t('officeAccess.replaceTitle')}</h2><p>{t('officeAccess.menuChange')}</p>
+        <div className="ws-office-confirm-actions"><button type="button" className="ws-office-secondary" onClick={()=>setPendingDefaultDelivery(null)}>{t('officeAccess.cancel')}</button><button type="button" className="ws-cta" onClick={()=>{const pending=pendingDefaultDelivery;setPendingDefaultDelivery(null);confirmOfficeDelivery(pending.result,pending.siteId);}}>{t('officeAccess.menuConfirm')}</button></div>
+      </section></div>}
+      <OfficeMembershipModal open={officeAccessOpen && !!user} shopId={shopId} initialTax={officeHint || ''} offices={officeMemberships} onClose={() => setOfficeAccessOpen(false)} onChanged={refreshOfficeMemberships}/>
+      {pendingMenu && <div className="ws-office-overlay"><section className="ws-office-modal" role="alertdialog" aria-modal="true" aria-labelledby="ws-menu-title">
+        <h2 id="ws-menu-title">{t('officeAccess.replaceTitle')}</h2><p>{t('officeAccess.menuChange')}</p>
+        <div className="ws-office-confirm-actions"><button type="button" className="ws-office-secondary" onClick={() => setPendingMenu(null)}>{t('officeAccess.cancel')}</button><button type="button" className="ws-cta" onClick={confirmMenuChange}>{t('officeAccess.menuConfirm')}</button></div>
+      </section></div>}
+      {pendingContextLine && <div className="ws-office-overlay"><section className="ws-office-modal" role="alertdialog" aria-modal="true" aria-labelledby="ws-context-title" aria-describedby="ws-context-body">
+        <h2 id="ws-context-title">{t('officeAccess.replaceTitle')}</h2><p id="ws-context-body">{t('officeAccess.replaceBody')}</p>
+        <div className="ws-office-confirm-actions"><button type="button" className="ws-office-secondary" onClick={() => setPendingContextLine(null)}>{t('officeAccess.cancel')}</button><button type="button" className="ws-cta" onClick={confirmContextReplacement}>{t('officeAccess.replaceConfirm')}</button></div>
+      </section></div>}
+      <OrderingShopConfirmation
+        open={shopConfirmationOpen}
+        shop={orderingShop}
+        onConfirm={() => setShopConfirmationOpen(false)}
+        onChange={() => { setShopConfirmationOpen(false); setSwitcherOpen(true); }}
+      />
+      {pendingShopChange && <div className="ws-office-overlay"><section className="ws-office-modal" role="alertdialog" aria-modal="true" aria-labelledby="ws-shop-change-title">
+        <h2 id="ws-shop-change-title">{wsShopConfirmText('shopConfirm.clearBasketTitle')}</h2>
+        <p>{wsShopConfirmText('shopConfirm.clearBasketBody')}</p>
+        <div className="ws-office-confirm-actions">
+          <button type="button" className="ws-office-secondary" onClick={() => setPendingShopChange(null)}>{t('officeAccess.cancel')}</button>
+          <button type="button" className="ws-cta" onClick={() => {
+            const nextShopId = pendingShopChange;
+            setPendingShopChange(null);
+            setBasket([]); setVoucherApplied(null); setVoucherInput('');
+            setMode('collect'); setBrowseContext(normaliseShoppingContext(null));
+            setQuoteState({ status: 'idle', quote: null, error: '' });
+            applyShopChange(nextShopId);
+          }}>{wsShopConfirmText('shopConfirm.clearBasketConfirm')}</button>
+        </div>
+      </section></div>}
+      <ProductDetail open={!!detailProduct} product={detailProduct} mode={mode} onClose={closeProductDetail} onAdd={handleAddConfigured}
+        onPromotionPreview={previewPromotionsForDetail} promotionSuggestions={Number(detailPromotionPreview.productId) === Number(detailProduct?.id) ? detailPromotionPreview.suggestions : []}
+        upcomingPromotionSuggestions={Number(detailPromotionPreview.productId) === Number(detailProduct?.id) ? detailPromotionPreview.upcomingSuggestions : []}
+        promotionLocked={cartHasPromotionSelection}
+        optionsLoading={Number(detailOptionsState.productId) === Number(detailProduct?.id) && (!detailOptionsState.menuReady || !detailOptionsState.promotionsReady || detailOptionsState.personalizationReady===false)}
+        stock={detailProduct ? allProducts.find(p => p.id === detailProduct.id)?.availability : null} basketUnits={detailProduct && Number(cartShopId) === Number(shopId) && sameShoppingContext(cartContext, browseContext) ? basketProductUnits(basket, detailProduct.id) : 0}/>
       {window.AllergensModal && <window.AllergensModal open={allergensOpen} onClose={() => setAllergensOpen(false)}/>}
-      <CheckoutWizard open={checkoutOpen} onClose={() => setCheckoutOpen(false)} shop={shop} mode={mode} basket={basket} user={user} onLogin={() => setAuthOpen(true)} onPlaced={handlePlaced}
+      <CheckoutWizard open={checkoutOpen} onClose={() => setCheckoutOpen(false)} shop={cartShop} mode={mode} basket={basket} quoteState={quoteState} user={user} onLogin={() => setAuthOpen(true)} onPlaced={handlePlaced} onQuoteChanged={() => setQuoteRevision(value => value + 1)}
         voucherInput={voucherInput} setVoucherInput={setVoucherInput}
         voucherApplied={voucherApplied} setVoucherApplied={setVoucherApplied}
-        office={userOffice} tour={userTour} date={date}
-        deliveryFeeResult={deliveryFeeResult} deliveryFeeErr={deliveryFeeErr}
+        office={userOffice} tour={userTour} date={date} onDate={setDate}
+        deliveryFeeResult={deliveryFeeResult} deliveryFeeErr={wsMessage(deliveryFeeErr)}
         officeSites={officeSites} selectedSiteId={selectedSiteId} setSelectedSiteId={setSelectedSiteId}
       />
       {prefNudge && (
@@ -6513,8 +6450,8 @@ function ShopFrame({ variant }) {
            entier sur un téléphone. */
         <div className="ws-toast ws-toast--notice" role="alert">
           <div className="ws-toast__body">
-            <div className="ws-toast__title">{notice.titre}</div>
-            <div className="ws-toast__sub">{notice.texte}</div>
+            <div className="ws-toast__title">{wsMessage(notice.titre)}</div>
+            <div className="ws-toast__sub">{wsMessage(notice.texte)}</div>
           </div>
           {/* « Fermer » EN BAS : à droite du texte, il comprimait le titre sur
               deux lignes et tombait haut dans l'écran, loin du pouce. */}
@@ -6524,26 +6461,22 @@ function ShopFrame({ variant }) {
       {stockErr && (
         <div className="ws-toast ws-toast--err" role="alert" style={{ background: '#7a1f1f' }}>
           <div>
-            <div className="ws-toast__title">{t('stock.untracked')}</div>
-            <div className="ws-toast__sub">{stockErr}</div>
+            <div className="ws-toast__title">{t('stock.checkAvailability')}</div>
+            <div className="ws-toast__sub">{wsMessage(stockErr)}</div>
           </div>
           <button type="button" onClick={() => setStockErr('')}
             style={{ marginLeft: 'auto', background: 'transparent', border: 0, color: 'inherit', cursor: 'pointer', font: '600 13px var(--font-ui)' }}>{t('common.close2')}</button>
         </div>
       )}
-      {orderToast && (
-        <div className="ws-toast" role="status">
-          <span className="ws-toast__check"><Pict d={<path d="M5 12l4 4 10-10"/>} s={14}/></span>
-          <div>
-            <div className="ws-toast__title">{t('order.confirmed')}</div>
-            <div className="ws-toast__sub">Créneau {typeof orderToast.slot === 'object' ? orderToast.slot?.label : orderToast.slot} · {orderToast.paymentLabel || orderToast.payment} · €{orderToast.total.toFixed(2)}</div>
-          </div>
-        </div>
-      )}
+      {orderToast && <OrderConfirmation orderRef={orderToast.orderRef} total={orderToast.total} shop={cartShop} onClose={() => setOrderToast(null)}/>}
+      <PwaInstallPrompt />
     </div>
   );
 }
 
 // =========================================================================
-ReactDOM.createRoot(document.getElementById('root')).render(<ShopFrame variant="A"/>);
-
+window.WSI18n.detectFromIp()
+  .then(() => window.WSI18n.load())
+  .then((ready) => {
+    if (ready) ReactDOM.createRoot(document.getElementById('root')).render(<ShopFrame variant="A"/>);
+  });
