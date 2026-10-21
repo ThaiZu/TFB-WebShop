@@ -2,7 +2,6 @@
 /* Front controller — même API que le buddy-server Node, en PHP sur ws_.
  * .htaccess renvoie toutes les requêtes ici ; on route sur méthode + chemin. */
 require __DIR__ . '/lib.php';
-require __DIR__ . '/order_print_feed.php';
 require __DIR__ . '/promo_lib.php';
 require __DIR__ . '/tel.php';
 require __DIR__ . '/erp_alias.php';
@@ -732,12 +731,6 @@ function ws_voucher_upsert(array $o) {
   }
 
 function dispatch($m, $p) {
-  if ($m === 'GET' && $p === '/internal/order-print-feed') {
-    if (!order_print_feed_authorized((string)getenv('WEBSHOP_ORDER_FEED_TOKEN'), (string)($_SERVER['HTTP_AUTHORIZATION'] ?? ''))) json_out(['error' => 'Unauthorized'], 401);
-    try { json_out(order_print_feed(db(), $_GET)); }
-    catch (InvalidArgumentException $e) { json_out(['error' => 'Invalid range'], 422); }
-  }
-
   // helper de matching avec :param
   $match = function ($pat) use ($p) {
     $rx = '#^' . preg_replace('#:([\w]+)#', '(?<$1>[^/]+)', $pat) . '$#';
