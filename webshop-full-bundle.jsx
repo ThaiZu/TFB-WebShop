@@ -787,8 +787,55 @@ function PortionOptions({ value, onChange, product }) {
 // =========================================================================
 // PRODUCT DETAIL MODAL : options, upsells, bundles
 // =========================================================================
-function wsPromotionItemsSummary(promotion, product) {
-  return (promotion.items || []).map((item) => `${Number(item.quantity || 0)} × ${item.product_name || (Number(item.id_product) === Number(product.id) ? product.name : `#${item.id_product}`)}`).join(' · ');
+function wsPromotionItemsSummary(promotion, product, t) {
+  const portions = { WHOLE: '1/1', THREE_QUARTERS: '3/4', TWO_THIRDS: '2/3', ONE_HALF: '1/2', ONE_THIRD: '1/3', ONE_QUARTER: '1/4', ONE_SIXTH: '1/6', ONE_EIGHTH: '1/8' };
+  const label = (item, quantity) => {
+    const portion = portions[item.product_portion_type] || item.product_portion_label;
+    const name = item.product_name || (Number(item.id_product) === Number(product.id) ? product.name : `#${item.id_product}`);
+    return `${Number(quantity || 0)} × ${portion ? `${portion} ` : ''}${name}`;
+  };
+  return (promotion.items || []).map((item) => {
+    if (promotion.promotion_type !== 'BUY_X_GET_Y') return label(item, item.quantity);
+    const rewardKey = promotion.reward?.type === 'FREE' ? 'promotion.inline.receiveFree' : 'promotion.inline.receiveReward';
+    if (item.role === 'trigger_and_reward' && item.trigger_quantity != null && item.reward_quantity != null) {
+      return `${t('promotion.inline.buy', { items: label(item, item.trigger_quantity) })} + ${t(rewardKey, { items: label(item, item.reward_quantity) })}`;
+    }
+    if (item.role === 'trigger') return t('promotion.inline.buy', { items: label(item, item.quantity) });
+    if (item.role === 'reward') return t(rewardKey, { items: label(item, item.quantity) });
+    return label(item, item.quantity);
+  }).join(' · ');
+}
+
+function wsFractionalPromotionRule(promotion, product, t) {
+  if (promotion.promotion_type !== 'BUY_X_GET_Y' || promotion.trigger?.quantity_unit !== 'PIECE_FRACTION') return null;
+  const rewardItems = (promotion.items || []).filter((item) => item.role === 'reward' || item.role === 'trigger_and_reward')
+    .map((item) => ({ ...item, role: 'reward', quantity: item.role === 'trigger_and_reward' ? item.reward_quantity : item.quantity }));
+  if (!rewardItems.length || rewardItems.some((item) => item.quantity == null)) return null;
+  const examples = [];
+  if (promotion.trigger.any_portion && Number(promotion.trigger.quantity) === 1) {
+    const options = new Set((product.portionOptions || [{ v: 'entier' }]).map((option) => option.v));
+    if (options.has('entier')) examples.push('1 × 1/1');
+    if (options.has('demi')) examples.push('2 × 1/2');
+    if (options.has('quart')) examples.push('4 × 1/4');
+    if (options.has('huitieme')) examples.push('8 × 1/8');
+    if (options.has('demi') && options.has('quart')) examples.push('1 × 1/2 + 2 × 1/4');
+  }
+  return {
+    description: t('promotion.inline.mixDescription', { quantity: Number(promotion.trigger.quantity) }),
+    examples: examples.length ? t('promotion.inline.mixExamples', { examples: examples.join(' · ') }) : '',
+    reward: wsPromotionItemsSummary({ ...promotion, items: rewardItems }, product, t),
+  };
+}
+
+function FractionalPromotionRule({ promotion, product, t }) {
+  const rule = wsFractionalPromotionRule(promotion, product, t);
+  if (!rule) return null;
+  return <span className="pdm-promotion__rule">
+    <strong>{t('promotion.inline.mixTitle')}</strong>
+    <span>{rule.description}</span>
+    {rule.examples && <span>{rule.examples}</span>}
+    <span>{t('promotion.inline.mixReward', { reward: rule.reward })}</span>
+  </span>;
 }
 
 function wsPromotionBenefit(promotion) {
@@ -1464,7 +1511,7 @@ function ProductDetail({ open, product, mode, onClose, onAdd, onPromotionPreview
                 <div className="pdm-promotion__list">
                   {promotionSuggestions.map((promotion) => {
                     const selected = Number(promotion.id_promotion) === Number(selectedPromotionId);
-                    const items = wsPromotionItemsSummary(promotion, product);
+                    const items = wsPromotionItemsSummary(promotion, product, t);
                     const type = t(`promotion.inline.type.${promotion.promotion_type}`);
                     const benefit = wsPromotionBenefit(promotion);
                     return <button key={promotion.id_promotion} type="button"
@@ -1475,7 +1522,9 @@ function ProductDetail({ open, product, mode, onClose, onAdd, onPromotionPreview
                         setSelectedPromotionId(selected ? null : promotion.id_promotion);
                       })}>
                       <span className="pdm-promotion__radio" aria-hidden="true"/>
-                      <span className="pdm-promotion__body"><strong>{promotion.name}</strong><small>{type} · {items}</small></span>
+                      <span className="pdm-promotion__body"><strong>{promotion.name}</strong>
+                        <FractionalPromotionRule promotion={promotion} product={product} t={t}/>
+                        <small className="pdm-promotion__composition">{type} · {items}</small></span>
                       {benefit && <span className="pdm-promotion__price">{benefit}</span>}
                     </button>;
                   })}
@@ -1490,7 +1539,7 @@ function ProductDetail({ open, product, mode, onClose, onAdd, onPromotionPreview
                 </div>
                 <div className="pdm-promotion__list">
                   {upcomingPromotionSuggestions.map((promotion) => {
-                    const items = wsPromotionItemsSummary(promotion, product);
+                    const items = wsPromotionItemsSummary(promotion, product, t);
                     const type = t(`promotion.inline.type.${promotion.promotion_type}`);
                     const benefit = wsPromotionBenefit(promotion);
                     const schedule = wsUpcomingPromotionSchedule(promotion, lang, t);
@@ -1499,7 +1548,8 @@ function ProductDetail({ open, product, mode, onClose, onAdd, onPromotionPreview
                       <span className="pdm-promotion__radio pdm-promotion__radio--upcoming" aria-hidden="true"/>
                       <span className="pdm-promotion__body">
                         <strong>{promotion.name}</strong>
-                        <small>{type} · {items}</small>
+                        <FractionalPromotionRule promotion={promotion} product={product} t={t}/>
+                        <small className="pdm-promotion__composition">{type} · {items}</small>
                         <small className="pdm-promotion__period">{t('promotion.inline.availableDays', { schedule })}</small>
                         {validity && <small className="pdm-promotion__period">{validity}</small>}
                       </span>
@@ -1899,8 +1949,81 @@ function CrossSell({ shopId, mode, date, time, basket, placement, onAdd }) {
   );
 }
 
+function CartRewardModal({ promotion, options, onSelect, onClose, t }) {
+  const panel = React.useRef(null);
+  React.useEffect(() => {
+    const previousFocus = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    panel.current?.querySelector('button')?.focus();
+    const onKey = (event) => {
+      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); onClose(); }
+      if (event.key !== 'Tab') return;
+      const buttons = panel.current?.querySelectorAll('button:not([disabled]), [href], input, select, textarea, [tabindex="0"]');
+      if (!buttons?.length) return;
+      const first = buttons[0], last = buttons[buttons.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
+    document.addEventListener('keydown', onKey, true);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', onKey, true);
+      if (previousFocus?.isConnected) previousFocus.focus();
+    };
+  }, []);
+  return createPortal(<div className="ws-reward-overlay" onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+    <section className="ws-reward-modal" ref={panel} role="dialog" aria-modal="true" aria-label={t('cart.reward.choose')}>
+      <header><h2>{t('cart.reward.choose')}</h2><button type="button" onClick={onClose} aria-label={t('common.close2')}>×</button></header>
+      <p>{promotion.name}</p>
+      <p className="ws-reward-modal__explanation">{t('cart.reward.cheapest')}</p>
+      <div className="ws-cart-reward__options">
+        {options.map((item) => <button type="button" key={`${item.id_product}-${item.id_product_portion || 0}`} onClick={() => onSelect(item)}>
+          <span>{wsPromotionItemsSummary({ items: [item] }, {}, t)}</span>
+          <strong>{Number(item.additional_cost_gross || 0) > 0
+            ? t('cart.reward.extraCost', { amount: wsCurrency(Number(item.additional_cost_gross)) })
+            : t('cart.reward.noExtraCost')}</strong>
+        </button>)}
+      </div>
+    </section>
+  </div>, document.body);
+}
+
+function CartPromotionRewards({ quoteState, onAddReward, products = [] }) {
+  const { t } = wsUseT();
+  const [choosing, setChoosing] = useState(null);
+  if (quoteState.status !== 'ready' || typeof onAddReward !== 'function') return null;
+  return <div className="ws-cart-rewards" aria-live="polite">
+    {(quoteState.quote?.promotion_rewards || []).map((promotion) => {
+      const applied = promotion.status === 'APPLIED';
+      const options = (promotion.options || []).filter((item) => products.some((product) =>
+        Number(product.id) === Number(item.id_product) && !product.has_personalization
+        && (item.id_product_portion == null || (product.portionOptions || []).some((portion) => Number(portion.id_product_portion) === Number(item.id_product_portion)))));
+      if (!applied && !options.length) return null;
+      const composition = wsPromotionItemsSummary({ items: promotion.trigger_items }, {}, t);
+      const threshold = t(promotion.trigger.quantity_unit === 'PIECE_FRACTION' ? 'cart.reward.wholeThreshold' : 'cart.reward.itemThreshold', { quantity: Number(promotion.trigger.quantity) });
+      return <section className="ws-cart-reward" key={promotion.id_promotion}>
+        <strong>{t(applied ? 'cart.reward.added' : 'cart.reward.available')}</strong>
+        <span>{promotion.name}</span>
+        {!applied && <p>{t('cart.reward.qualified', { items: composition })}</p>}
+        <details><summary>{t('cart.reward.rules')}</summary>
+          <p>{threshold}</p>
+          <p>{t('cart.reward.quantity', { quantity: promotion.reward_quantity })}</p>
+          <p>{t('cart.reward.cheapest')}</p>
+          <p>{t('cart.reward.noStacking')}</p>
+          <p>{t(promotion.is_repeatable ? 'cart.reward.repeatable' : 'cart.reward.once')}</p>
+          {promotion.max_applications_per_transaction != null && <p>{t('cart.reward.limit', { quantity: promotion.max_applications_per_transaction })}</p>}
+        </details>
+        {!applied && <button type="button" className="ws-cart-reward__choose" onClick={() => setChoosing(choosing === promotion.id_promotion ? null : promotion.id_promotion)}>{t('cart.reward.choose')}</button>}
+        {!applied && choosing === promotion.id_promotion && <CartRewardModal promotion={promotion} options={options} t={t}
+          onClose={() => setChoosing(null)} onSelect={(item) => { onAddReward(promotion, item); setChoosing(null); }}/>}
+      </section>;
+    })}
+  </div>;
+}
+
 function Basket({ hidePrices, contextLabel, officeName, shop, mode, basket, quoteState, onClose, onCheckout, onRemove, onNote, notesEnabled, deliveryFeeResult,
-                  date, slotTime, onCrossAdd }) {
+                  date, slotTime, onCrossAdd, onAddReward, rewardProducts }) {
   // Display the authoritative API quote for this cart.
   const { t } = wsUseT();
   const deliveryFee = (mode === 'delivery' && deliveryFeeResult) ? (deliveryFeeResult.fee_amount || 0) : 0;
@@ -1985,6 +2108,7 @@ function Basket({ hidePrices, contextLabel, officeName, shop, mode, basket, quot
         )}
       </div>
 
+      <CartPromotionRewards quoteState={quoteState} onAddReward={onAddReward} products={rewardProducts}/>
       {hidePrices ? (
         <div className="ws-basket__office">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v16M15 9h3a1 1 0 0 1 1 1v11"/></svg>
@@ -6006,6 +6130,24 @@ function ShopFrame({ variant }) {
     return m ? m[0] : null;
   }, [officeSlots, selectedSlot]);
 
+  function handleAddPromotionReward(promotion, item) {
+    if (quoteState.status !== 'ready' || !quoteState.quote?.promotion_rewards?.some((entry) =>
+      entry.id_promotion === promotion.id_promotion && entry.status === 'AVAILABLE' && entry.options.some((option) =>
+        option.id_product === item.id_product && option.id_product_portion === item.id_product_portion))) return;
+    if (Number(cartShopId) !== Number(shopId) || cartContext.mode !== 'standard' || browseContext.mode !== 'standard') return;
+    const product = allProducts.find((entry) => Number(entry.id) === Number(item.id_product));
+    if (!product) return;
+    const option = portionOptionList(product).find((entry) => (entry.id_product_portion == null ? null : Number(entry.id_product_portion)) === item.id_product_portion);
+    if (!option || !canAddProduct(product.id, Number(item.quantity), option.v)) return;
+    appendContextLine({
+      line: `reward-${Date.now()}-${promotion.id_promotion}`, productId: product.id,
+      id_product_portion: item.id_product_portion, name: product.name, qty: Number(item.quantity),
+      price: option.price, options: option.v === 'entier' ? [] : [{ label: option.name }], portion: option.v,
+      cat: product.cat, lead_time: product.lead_time || 0, no_delivery: !!product.no_delivery,
+      available_slots: Array.isArray(product.available_slots) ? product.available_slots : null,
+    });
+  }
+
   // Cross-sell uses the same availability check as ordinary additions.
   function handleCrossAdd(it) {
     const p = allProducts.find((x) => String(x.id) === String(it.productId));
@@ -6304,7 +6446,7 @@ function ShopFrame({ variant }) {
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>
         </button>
 
-        <Basket hidePrices={hidePrices} contextLabel={basket.length ? contextLabel : null} officeName={userOffice?.name || ''} shop={cartShop} mode={mode} basket={basket} quoteState={quoteState} onCheckout={handleCheckout} onRemove={handleRemove} onNote={handleNote} notesEnabled={lineNotesEnabled} deliveryFeeResult={deliveryFeeResult} date={date} slotTime={crossSlotTime} onCrossAdd={Number(cartShopId) === Number(shopId) && cartContext.mode === 'standard' && browseContext.mode === 'standard' ? handleCrossAdd : undefined}/>
+        <Basket hidePrices={hidePrices} contextLabel={basket.length ? contextLabel : null} officeName={userOffice?.name || ''} shop={cartShop} mode={mode} basket={basket} quoteState={quoteState} onAddReward={Number(cartShopId) === Number(shopId) && cartContext.mode === 'standard' && browseContext.mode === 'standard' ? handleAddPromotionReward : undefined} rewardProducts={allProducts} onCheckout={handleCheckout} onRemove={handleRemove} onNote={handleNote} notesEnabled={lineNotesEnabled} deliveryFeeResult={deliveryFeeResult} date={date} slotTime={crossSlotTime} onCrossAdd={Number(cartShopId) === Number(shopId) && cartContext.mode === 'standard' && browseContext.mode === 'standard' ? handleCrossAdd : undefined}/>
       </div>
 
       {/* Mobile bottom tab bar : 2 buttons, 50/50 split */}
@@ -6338,7 +6480,7 @@ function ShopFrame({ variant }) {
           <div className="ws-drawer__panel">
             <button className="ws-drawer__close" onClick={() => setCartDrawerOpen(false)} aria-label={t('common.close2')}>×</button>
             <div className="ws-drawer__handle" aria-hidden="true"/>
-            <Basket hidePrices={hidePrices} contextLabel={basket.length ? contextLabel : null} officeName={userOffice?.name || ''} shop={cartShop} mode={mode} basket={basket} quoteState={quoteState} onCheckout={handleCheckout} onRemove={handleRemove} onNote={handleNote} notesEnabled={lineNotesEnabled} date={date} slotTime={crossSlotTime} onCrossAdd={Number(cartShopId) === Number(shopId) && cartContext.mode === 'standard' && browseContext.mode === 'standard' ? handleCrossAdd : undefined}/>
+            <Basket hidePrices={hidePrices} contextLabel={basket.length ? contextLabel : null} officeName={userOffice?.name || ''} shop={cartShop} mode={mode} basket={basket} quoteState={quoteState} onAddReward={Number(cartShopId) === Number(shopId) && cartContext.mode === 'standard' && browseContext.mode === 'standard' ? handleAddPromotionReward : undefined} rewardProducts={allProducts} onCheckout={handleCheckout} onRemove={handleRemove} onNote={handleNote} notesEnabled={lineNotesEnabled} date={date} slotTime={crossSlotTime} onCrossAdd={Number(cartShopId) === Number(shopId) && cartContext.mode === 'standard' && browseContext.mode === 'standard' ? handleCrossAdd : undefined}/>
           </div>
         </div>
       )}

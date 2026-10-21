@@ -219,3 +219,140 @@ test('removing legacy vouchers preserves navigation deep links without accepting
   });
   assert.equal(window.WSVouchers, undefined);
 });
+
+const promotionSummaryContext = {};
+vm.runInNewContext(extract('wsPromotionItemsSummary'), promotionSummaryContext);
+const plMessages = JSON.parse(fs.readFileSync(new URL('../public/locales/pl.json', import.meta.url), 'utf8'));
+const promotionTranslate = (key, params) => Object.entries(params || {}).reduce((text, [name, value]) => text.replace(`{${name}}`, value), plMessages[key]);
+
+test('fractional offer distinguishes four paid quarters from the free quarter', () => {
+  const summary = promotionSummaryContext.wsPromotionItemsSummary({
+    promotion_type: 'BUY_X_GET_Y', reward: { type: 'FREE' },
+    items: [{ product_name: 'Quiche', product_portion_type: 'ONE_QUARTER', quantity: 5,
+      role: 'trigger_and_reward', trigger_quantity: 4, reward_quantity: 1 }],
+  }, {}, promotionTranslate);
+  assert.equal(summary, 'Kup 4 × 1/4 Quiche + odbierz 1 × 1/4 Quiche gratis');
+});
+
+test('reduced-price reward is described without promising a free product', () => {
+  const summary = promotionSummaryContext.wsPromotionItemsSummary({
+    promotion_type: 'BUY_X_GET_Y', reward: { type: 'FIXED_PRICE' },
+    items: [{ product_name: 'Quiche', quantity: 2,
+      role: 'trigger_and_reward', trigger_quantity: 1, reward_quantity: 1 }],
+  }, {}, promotionTranslate);
+  assert.equal(summary, 'Kup 1 × Quiche + odbierz 1 × Quiche w cenie promocyjnej');
+});
+
+test('different trigger and reward products retain their separate portions', () => {
+  const summary = promotionSummaryContext.wsPromotionItemsSummary({
+    promotion_type: 'BUY_X_GET_Y', reward: { type: 'FREE' },
+    items: [{ product_name: 'Quiche', product_portion_type: 'ONE_HALF', quantity: 2, role: 'trigger' },
+      { product_name: 'Tarta', product_portion_type: 'ONE_QUARTER', quantity: 1, role: 'reward' }],
+  }, {}, promotionTranslate);
+  assert.equal(summary, 'Kup 2 × 1/2 Quiche · odbierz 1 × 1/4 Tarta gratis');
+});
+
+test('older offer responses still show their total composition', () => {
+  assert.equal(promotionSummaryContext.wsPromotionItemsSummary({ promotion_type: 'BUY_X_GET_Y',
+    items: [{ product_name: 'Quiche', quantity: 2, role: 'trigger_and_reward' }],
+  }, {}, promotionTranslate), '2 × Quiche');
+});
+
+vm.runInNewContext(transformSync(['wsFractionalPromotionRule', 'FractionalPromotionRule'].map(extract).join('\n'), { loader: 'jsx' }).code, Object.assign(promotionSummaryContext, { React }));
+const fractionalOffer = {
+  promotion_type: 'BUY_X_GET_Y', trigger: { quantity: 1, quantity_unit: 'PIECE_FRACTION', any_portion: true },
+  reward: { type: 'FREE' }, items: [
+    { product_name: 'Quiche', quantity: 1, role: 'trigger' },
+    { product_name: 'Quiche', product_portion_type: 'ONE_QUARTER', quantity: 1, role: 'reward' },
+  ],
+};
+const fractionalProduct = { portionOptions: [{ v: 'entier' }, { v: 'demi' }, { v: 'quart' }] };
+
+test('fractional rule explains combinations independently of the selected portion', () => {
+  const rule = promotionSummaryContext.wsFractionalPromotionRule(fractionalOffer, fractionalProduct, promotionTranslate);
+  assert.match(rule.description, /dowolnej konfiguracji/);
+  assert.match(rule.examples, /1 × 1\/1/);
+  assert.match(rule.examples, /2 × 1\/2/);
+  assert.match(rule.examples, /4 × 1\/4/);
+  assert.match(rule.examples, /1 × 1\/2 \+ 2 × 1\/4/);
+  assert.equal(rule.reward, 'odbierz 1 × 1/4 Quiche gratis');
+});
+
+test('examples omit portions absent from the product catalogue', () => {
+  const rule = promotionSummaryContext.wsFractionalPromotionRule(fractionalOffer, { portionOptions: [{ v: 'quart' }] }, promotionTranslate);
+  assert.match(rule.examples, /4 × 1\/4/);
+  assert.doesNotMatch(rule.examples, /1\/2|1\/1|1\/8/);
+});
+
+test('restricted trigger portions do not claim the example combinations qualify', () => {
+  const rule = promotionSummaryContext.wsFractionalPromotionRule({ ...fractionalOffer, trigger: { ...fractionalOffer.trigger, any_portion: false } }, fractionalProduct, promotionTranslate);
+  assert.equal(rule.examples, '');
+  assert.match(rule.description, /kwalifikujące/);
+});
+
+test('rendered explanation includes the exact reward and excludes it from paid quantity', () => {
+  const html = renderToStaticMarkup(React.createElement(promotionSummaryContext.FractionalPromotionRule, { promotion: fractionalOffer, product: fractionalProduct, t: promotionTranslate }));
+  assert.match(html, /pdm-promotion__rule/);
+  assert.match(html, /1 × 1\/4 Quiche gratis/);
+  assert.match(html, /Nagroda nie wlicza się/);
+});
+
+test('item-count promotions keep their existing description', () => {
+  assert.equal(promotionSummaryContext.wsFractionalPromotionRule({ ...fractionalOffer, trigger: { quantity: 1, quantity_unit: 'ITEM' } }, fractionalProduct, promotionTranslate), null);
+});
+
+const cartRewardContext = { React, useState: React.useState, wsUseT: () => ({ t: promotionTranslate }), wsPromotionItemsSummary: promotionSummaryContext.wsPromotionItemsSummary };
+vm.runInNewContext(transformSync(extract('CartPromotionRewards'), { loader: 'jsx' }).code, cartRewardContext);
+const cartRewardOffer = { id_promotion: 17, name: 'Quiche offer', status: 'AVAILABLE',
+  trigger: { quantity: 1, quantity_unit: 'PIECE_FRACTION' }, reward_quantity: 1,
+  trigger_items: [{ id_product: 10, product_name: 'Quiche', product_portion_type: 'ONE_QUARTER', quantity: 4 }],
+  options: [{ id_product: 10, id_product_portion: 3, product_name: 'Quiche', product_portion_type: 'ONE_QUARTER', quantity: 1 }],
+};
+function renderCartReward(status = 'ready', offer = cartRewardOffer, products = [{ id: 10, portionOptions: [{ id_product_portion: 3 }] }]) {
+  return renderToStaticMarkup(React.createElement(cartRewardContext.CartPromotionRewards, {
+    quoteState: { status, quote: { promotion_rewards: [offer] } }, onAddReward() {}, products,
+  }));
+}
+
+test('qualified cart shows the server condition and reward chooser', () => {
+  const html = renderCartReward();
+  assert.match(html, /Możesz dobrać gratis/);
+  assert.match(html, /4 × 1\/4 Quiche/);
+  assert.match(html, /Wybierz gratis/);
+  assert.match(html, /Zasady promocji/);
+  assert.match(html, /Nagroda nie wlicza/);
+});
+
+test('pending and failed quotes hide outdated reward entitlement', () => {
+  assert.equal(renderCartReward('loading'), '');
+  assert.equal(renderCartReward('error'), '');
+});
+
+test('applied reward has no add button', () => {
+  const html = renderCartReward('ready', { ...cartRewardOffer, status: 'APPLIED', options: [] });
+  assert.match(html, /Gratis dodany/);
+  assert.doesNotMatch(html, /Wybierz gratis/);
+});
+
+test('rewards absent from the current catalogue are not offered', () => {
+  assert.doesNotMatch(renderCartReward('ready', cartRewardOffer, []), /Możesz dobrać gratis/);
+  assert.doesNotMatch(renderCartReward('ready', cartRewardOffer, [{ id: 10, portionOptions: [] }]), /Możesz dobrać gratis/);
+});
+
+const modalContext = { React, createPortal: (element) => element, document: { body: {} },
+  wsPromotionItemsSummary: promotionSummaryContext.wsPromotionItemsSummary,
+  wsCurrency: (value) => `€${Number(value).toFixed(2)}` };
+vm.runInNewContext(transformSync(extract('CartRewardModal'), { loader: 'jsx' }).code, modalContext);
+test('reward modal shows every eligible choice with its own server-calculated extra cost', () => {
+  const options = [{ ...cartRewardOffer.options[0], additional_cost_gross: '0.00' },
+    { ...cartRewardOffer.options[0], id_product: 11, product_name: 'Other quiche', additional_cost_gross: '4.00' }];
+  const html = renderToStaticMarkup(React.createElement(modalContext.CartRewardModal, {
+    promotion: cartRewardOffer, options, onSelect() {}, onClose() {}, t: promotionTranslate,
+  }));
+  assert.match(html, /role="dialog"/);
+  assert.match(html, /aria-modal="true"/);
+  assert.match(html, /Other quiche/);
+  assert.match(html, /Bez dopłaty/);
+  assert.match(html, /Dopłata do koszyka: €4.00/);
+  assert.match(html, /najtańszy/);
+});

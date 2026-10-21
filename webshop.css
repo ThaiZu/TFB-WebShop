@@ -4458,3 +4458,39 @@
 .ws-date-desktop-layer .ws-datepop{position:fixed;pointer-events:auto;max-height:calc(100dvh - 24px);overflow-y:auto}
 
 .pdm-personalization{margin:12px 0;text-align:left}.pdm-personalization fieldset{border:0;border-top:1px solid #e8dfd5;margin:8px 0;padding:8px 0}.pdm-personalization legend{font-size:1rem;font-weight:600}.pdm-personalization label{display:flex;align-items:center;gap:10px;min-height:44px}.pdm-personalization label span{flex:1}.pdm-personalization p,.pdm-personalization small{font-size:.8rem;color:#68605b}
+
+/* Promotion rules and mixed-portion examples must remain readable on mobile. */
+.pdm-promotion__rule { display: grid; gap: 5px; margin: 5px 0 7px; font-size: 12px; line-height: 1.45; color: var(--color-text-secondary); }
+.pdm-promotion__body .pdm-promotion__rule strong { color: var(--color-primary); line-height: 1.4; }
+.pdm-promotion__body .pdm-promotion__composition { white-space: normal; overflow: visible; }
+
+.ws-cart-rewards { display: grid; gap: 10px; }
+.ws-cart-reward { display: grid; gap: 7px; margin: 10px 0; padding: 12px; border: 1px solid var(--color-primary); border-radius: 8px; background: #fff9f9; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.ws-cart-reward > strong { color: var(--color-primary); font-size: 14px; }
+.ws-cart-reward p { margin: 0; }
+.ws-cart-reward summary { cursor: pointer; text-decoration: underline; }
+.ws-cart-reward__choose, .ws-cart-reward__options button { padding: 12px; border: 0; border-radius: 10px; background: var(--color-primary); color: #fff; font-weight: 600; cursor: pointer; text-align: left; white-space: normal; }
+.ws-cart-reward__choose:hover, .ws-cart-reward__options button:hover { filter: brightness(.94); }
+.ws-cart-reward__choose:active, .ws-cart-reward__options button:active { filter: brightness(.88); }
+.ws-cart-reward__choose:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.ws-cart-reward__options { display: grid; gap: 6px; }
+
+.ws-reward-overlay { position: fixed; inset: 0; z-index: 10050; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(0, 0, 0, .48); }
+.ws-reward-modal { box-sizing: border-box; width: 100%; max-width: 560px; max-height: 90vh; max-height: 90dvh; display: flex; flex-direction: column; gap: 12px; padding: 20px; border-radius: 16px; background: #fff; color: var(--color-text); box-shadow: 0 12px 48px rgba(0, 0, 0, .2); }
+.ws-reward-modal header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ws-reward-modal h2 { margin: 0; font-size: 20px; }
+.ws-reward-modal header button { flex-shrink: 0; width: 44px; height: 44px; border: 0; border-radius: 50%; background: var(--color-surface); color: var(--color-text); font-size: 28px; cursor: pointer; }
+.ws-reward-modal p { margin: 0; font-size: 13px; line-height: 1.5; }
+.ws-reward-modal__explanation { color: var(--color-text-muted); }
+.ws-reward-modal .ws-cart-reward__options { overflow-y: auto; overscroll-behavior: contain; min-height: 0; padding: 2px; }
+.ws-reward-modal .ws-cart-reward__options button { display: grid; gap: 6px; min-height: 64px; padding: 12px; font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; touch-action: manipulation; }
+.ws-reward-modal button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+@media (max-width: 600px) {
+  .ws-reward-overlay { align-items: flex-end; padding: 0; }
+  .ws-reward-modal { max-width: none; max-height: 90vh; max-height: 90dvh; border-radius: 18px 18px 0 0; padding: 16px 16px max(16px, env(safe-area-inset-bottom)); }
+}
+
+@media (max-width: 1024px) {
+  body.ws-mode-delivery .ws-cart-reward__choose,
+  body.ws-mode-delivery .ws-cart-reward__options button { background: #F2C9A0; color: #5b3a1a; }
+}
