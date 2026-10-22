@@ -869,9 +869,18 @@
   "promotion.suggestion.note": "De definitieve prijs wordt gecontroleerd wanneer uw winkelmand wordt bijgewerkt.",
   "promotion.suggestion.skip": "Niet nu",
   "promotion.suggestion.add": "Pakket toevoegen",
-  "promotion.inline.title": "Beschikbare pakketten",
+  "promotion.inline.title": "Promotiesets",
   "promotion.inline.choose": "Kies een aanbieding om deze aan uw winkelmand toe te voegen",
   "promotion.inline.type.BUNDLE_PROMOTION": "Pakket",
+  "promotion.inline.receiptMissing": "Na toevoeging van deze set ontbreekt nog {amount} voor het minimumbedrag. Voeg eerst andere producten toe aan uw mandje.",
+  "promotion.inline.oneSet": "U voegt 1 set met de hierboven beschreven inhoud toe, in plaats van uw productkeuze.",
+  "promotion.inline.minimumReceipt": "Actie vanaf {amount} aan producten incl. btw vóór kortingen (exclusief bezorging).",
+  "cart.unlocked.applied": "De promotie is toegepast op uw mandje.",
+  "cart.unlocked.title": "Ontgrendelde promoties",
+  "cart.unlocked.reached": "U heeft de drempel van {amount} bereikt (producten vóór korting, exclusief bezorging) en krijgt toegang tot een speciale aanbieding.",
+  "cart.unlocked.conditions": "De korting vereist producten die aan de actievoorwaarden voldoen.",
+  "cart.unlocked.browse": "Bekijk producten",
+  "cart.unlocked.chooseProduct": "Kies een product om de inhoud en prijs van de set te bekijken. Alleen het drempelbedrag bereiken geeft nog geen korting.",
   "cart.reward.cheapest": "Het goedkoopste deelnemende product in het winkelmandje is gratis. Kiest u een duurder product, dan betaalt u het verschil dat bij elke optie staat.",
   "cart.reward.extraCost": "Extra voor het winkelmandje: {amount}",
   "cart.reward.noExtraCost": "Zonder bijbetaling",
@@ -939,5 +948,7 @@
   "personalization.unavailable": "Personalisatie is niet beschikbaar. Probeer opnieuw of neem contact op met de winkel.",
   "personalization.required": "Selecteer de verplichte opties.",
   "personalization.invalid": "Controleer de geselecteerde personalisatieopties.",
-  "personalization.changed": "De configuratie is gewijzigd. Open het product opnieuw en selecteer de opties."
+  "personalization.changed": "De configuratie is gewijzigd. Open het product opnieuw en selecteer de opties.",
+  "error.promotionAddFailed": "Deze set kon niet worden bevestigd. Uw mandje is niet gewijzigd. Controleer de actievoorwaarden en probeer opnieuw.",
+  "error.promotionConditions": "Het winkelmandje voldoet niet aan de voorwaarden van de gekozen aanbieding. Controleer de samenstelling en de minimale kassabonwaarde."
 }

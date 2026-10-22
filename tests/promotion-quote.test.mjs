@@ -130,7 +130,7 @@ test('product sheet previews every automatic promotion type before the item is a
   assert.match(source, /className="pdm-promotion"/);
   assert.match(source, /promotion_suggestions \|\| quote\?\.bundle_suggestions/);
   assert.match(source, /promotion\.promotion_type/);
-  assert.match(source, /disabled=\{promotionLocked\}/);
+  assert.match(source, /disabled=\{blocked\}/);
   assert.match(source, /promotion\.inline\.locked/);
   assert.match(source, /onAdd\(\{[\s\S]*?\}, selectedPromotion\)/);
   assert.match(source, /promotionAdditionLines\(selectedPromotion, lineId, promotionGroup, promotionDisplay\)/);
@@ -301,7 +301,7 @@ test('item-count promotions keep their existing description', () => {
   assert.equal(promotionSummaryContext.wsFractionalPromotionRule({ ...fractionalOffer, trigger: { quantity: 1, quantity_unit: 'ITEM' } }, fractionalProduct, promotionTranslate), null);
 });
 
-const cartRewardContext = { React, useState: React.useState, wsUseT: () => ({ t: promotionTranslate }), wsPromotionItemsSummary: promotionSummaryContext.wsPromotionItemsSummary };
+const cartRewardContext = { React, useState: React.useState, wsCurrency: value => `€${Number(value).toFixed(2)}`, wsUseT: () => ({ t: promotionTranslate }), wsPromotionItemsSummary: promotionSummaryContext.wsPromotionItemsSummary };
 vm.runInNewContext(transformSync(extract('CartPromotionRewards'), { loader: 'jsx' }).code, cartRewardContext);
 const cartRewardOffer = { id_promotion: 17, name: 'Quiche offer', status: 'AVAILABLE',
   trigger: { quantity: 1, quantity_unit: 'PIECE_FRACTION' }, reward_quantity: 1,
@@ -355,4 +355,115 @@ test('reward modal shows every eligible choice with its own server-calculated ex
   assert.match(html, /Bez dopłaty/);
   assert.match(html, /Dopłata do koszyka: €4.00/);
   assert.match(html, /najtańszy/);
+});
+
+test('cart reward rules display the API receipt minimum without deciding it in the browser', () => {
+  const html = renderCartReward('ready', { ...cartRewardOffer, minimum_receipt_gross: '50.00' });
+  assert.match(html, /€50.00/);
+  assert.match(html, /przed rabatami/);
+  assert.match(html, /bez dostawy/);
+});
+
+const basketContext = { ...context, ICONS: { back: null, pin: null }, wsTap: () => ({}), CartPromotionRewards: () => null, CartUnlockedPromotions: () => null };
+vm.runInNewContext(transformSync(extract('Basket'), { loader: 'jsx' }).code, basketContext);
+function renderBasketPricing(status) {
+  const old = { items: [{ line_key: 'web-1', total_gross_value_after_discount: '59.60' }], totals: { gross_before_discount: '59.60', gross_after_discount: '59.60', discount: '0.00' } };
+  const current = { items: [...old.items, { line_key: 'web-2', total_gross_value_after_discount: '27.60' }], totals: { gross_before_discount: '94.10', gross_after_discount: '87.20', discount: '6.90' } };
+  return renderToStaticMarkup(React.createElement(basketContext.Basket, {
+    mode: 'collect', shop: { id: 2, address: 'Test shop' },
+    basket: [{ line: 1, productId: 1, name: 'Quiche', qty: 4, options: [] },
+      { line: 2, productId: 2, name: 'Quarters', qty: 5, options: [], promotion_group: 'offer-2' }],
+    quoteState: { status, quote: status === 'ready' ? current : old, error: 'Pricing failed' },
+  }));
+}
+
+test('a failed or pending basket quote shows unavailable prices instead of zero or stale totals', () => {
+  for (const status of ['error', 'loading']) {
+    const html = renderBasketPricing(status);
+    assert.doesNotMatch(html, /€0.00|€59.60/);
+    assert.match(html, /class="ws-line__price">—/);
+    assert.match(html, /class="ws-basket__total-amount">—/);
+    assert.match(html, /disabled=""/);
+  }
+});
+
+test('a successful quote displays ordinary purchases and the additional discounted group price', () => {
+  const html = renderBasketPricing('ready');
+  assert.match(html, /€59.60/);
+  assert.match(html, /€27.60/);
+  assert.match(html, /€87.20/);
+});
+
+
+test('product preview identifies its synthetic line without marking ordinary cart quotes', async () => {
+  const { api, calls } = apiFixture(quote(null));
+  const basket = [{ line: 1, productId: 10, qty: 2 }];
+  await api.quote({ shopId: 2, basket, promotionPreviewLineKey: 1 });
+  const preview = JSON.parse(calls[0].request.body);
+  assert.equal(preview.promotion_preview_line_key, preview.products[0].line_key);
+  await api.quote({ shopId: 2, basket });
+  assert.equal(JSON.parse(calls[1].request.body).promotion_preview_line_key, undefined);
+});
+
+
+const unlockedContext = { React, useState: React.useState, wsUseT: () => ({ t: promotionTranslate }),
+  wsCurrency: value => `€${Number(value).toFixed(2)}`,
+  getPlaceholder: () => '/img/placeholder.svg',
+  portionOptionList: product => product.portionOptions || [{ id_product_portion: null }] };
+vm.runInNewContext(transformSync(extract('CartUnlockedPromotions'), { loader: 'jsx' }).code, unlockedContext);
+const unlockedOffer = { id_promotion: 2, name: 'Exclusive offer', minimum_receipt_gross: '50.00', status: 'UNLOCKED',
+  options: [{ id_product: 10, id_product_portion: null, quantity: 1 }] };
+function renderUnlocked(status = 'ready', unlocked = [unlockedOffer], rewards = [], extra = {}) {
+  return renderToStaticMarkup(React.createElement(unlockedContext.CartUnlockedPromotions, {
+    quoteState: { status, quote: { unlocked_promotions: unlocked, promotion_rewards: rewards } },
+    products: [{ id: 10 }], onBrowsePromotion() {}, ...extra,
+  }));
+}
+test('unlocked level has a clear invitation without claiming the discount is already applied', () => {
+  const html = renderUnlocked();
+  assert.match(html, /Odblokowane promocje/);
+  assert.match(html, /Osiągnięto próg €50.00/);
+  assert.match(html, /Rabat wymaga wybrania produktów/);
+  assert.match(html, /Zobacz produkty/);
+  assert.doesNotMatch(html, /Gratis został dodany/);
+});
+test('unlocked offers disappear below the level, during repricing, with errors and after a group selection', () => {
+  for (const status of ['loading', 'error', 'idle']) assert.equal(renderUnlocked(status), '');
+  assert.doesNotMatch(renderUnlocked('ready', []), /Exclusive offer/);
+  assert.equal(renderUnlocked('ready', [unlockedOffer], [], { locked: true }), '');
+  assert.doesNotMatch(renderUnlocked('ready', [unlockedOffer], [], { products: [] }), /Exclusive offer/);
+});
+test('one promotion is not repeated alongside its existing reward picker', () => {
+  assert.doesNotMatch(renderUnlocked('ready', [unlockedOffer], [{ id_promotion: 2 }]), /Exclusive offer/);
+});
+test('the exclusive product chooser does not promise a free product or a zero surcharge', () => {
+  const html = renderToStaticMarkup(React.createElement(modalContext.CartRewardModal, {
+    promotion: unlockedOffer, options: unlockedOffer.options, onSelect() {}, onClose() {}, t: promotionTranslate,
+    titleKey: 'cart.unlocked.browse', explanationKey: 'cart.unlocked.chooseProduct', showCost: false,
+  }));
+  assert.match(html, /Zobacz produkty/);
+  assert.match(html, /Samo osiągnięcie progu nie nalicza rabatu/);
+  assert.doesNotMatch(html, /Bez dopłaty|najtańszy|Wybierz gratis/);
+});
+
+
+test('an automatically applied bundle is described as an applied promotion rather than a free gift', () => {
+  const html = renderUnlocked('ready', [{ ...unlockedOffer, promotion_type: 'BUNDLE_PROMOTION', status: 'APPLIED' }]);
+  assert.match(html, /Promocja została naliczona/);
+  assert.doesNotMatch(html, /Gratis dodany|Zobacz produkty/);
+});
+
+
+test('exclusive product buttons render small lazy images without changing their catalogue URLs', () => {
+  const options = [{ ...unlockedOffer.options[0], image_src: '/photos/apricot.webp', image_fallback: '/img/placeholder.svg' },
+    { ...unlockedOffer.options[0], id_product_portion: 3, image_src: '/photos/apricot.webp', image_fallback: '/img/placeholder.svg' }];
+  const html = renderToStaticMarkup(React.createElement(modalContext.CartRewardModal, {
+    promotion: unlockedOffer, options, onSelect() {}, onClose() {}, t: promotionTranslate,
+    titleKey: 'cart.unlocked.browse', explanationKey: 'cart.unlocked.chooseProduct', showCost: false, productCards: true,
+  }));
+  assert.match(html, /ws-cart-reward__options--products/);
+  assert.equal((html.match(/src="\/photos\/apricot.webp"/g) || []).length, 2);
+  assert.equal((html.match(/loading="lazy"/g) || []).length, 2);
+  assert.equal((html.match(/decoding="async"/g) || []).length, 2);
+  assert.match(html, /alt="" width="52" height="52"/);
 });
