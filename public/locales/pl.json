@@ -869,9 +869,18 @@
   "promotion.suggestion.note": "Cena końcowa zostanie potwierdzona po aktualizacji koszyka.",
   "promotion.suggestion.skip": "Nie teraz",
   "promotion.suggestion.add": "Dodaj zestaw",
-  "promotion.inline.title": "Dostępne zestawy",
+  "promotion.inline.title": "Zestawy promocyjne",
   "promotion.inline.choose": "Wybierz ofertę, aby dodać ją do koszyka",
   "promotion.inline.type.BUNDLE_PROMOTION": "Zestaw",
+  "promotion.inline.receiptMissing": "Po dodaniu tego zestawu do progu promocji zabraknie {amount}. Dodaj najpierw inne produkty do koszyka.",
+  "promotion.inline.oneSet": "Dodajesz 1 zestaw o składzie opisanym powyżej. Zastępuje on zwykły wybór produktu.",
+  "promotion.inline.minimumReceipt": "Promocja od {amount} brutto produktów przed rabatami (bez dostawy).",
+  "cart.unlocked.applied": "Promocja została naliczona w koszyku.",
+  "cart.unlocked.title": "Odblokowane promocje",
+  "cart.unlocked.reached": "Osiągnięto próg {amount} (produkty przed rabatami, bez dostawy) — masz dostęp do specjalnej oferty.",
+  "cart.unlocked.conditions": "Rabat wymaga wybrania produktów zgodnych z zasadami promocji.",
+  "cart.unlocked.browse": "Zobacz produkty",
+  "cart.unlocked.chooseProduct": "Wybierz produkt, aby sprawdzić skład i cenę zestawu. Samo osiągnięcie progu nie nalicza rabatu.",
   "cart.reward.cheapest": "Gratisem jest najtańszy kwalifikujący się produkt w koszyku. Przy wyborze droższego produktu zapłacisz różnicę — kwotę pokazujemy przy każdej opcji.",
   "cart.reward.extraCost": "Dopłata do koszyka: {amount}",
   "cart.reward.noExtraCost": "Bez dopłaty",
@@ -939,5 +948,7 @@
   "personalization.unavailable": "Nie można teraz skonfigurować tego produktu. Spróbuj ponownie lub skontaktuj się ze sklepem.",
   "personalization.required": "Wybierz wymagane opcje personalizacji.",
   "personalization.invalid": "Sprawdź wybrane opcje personalizacji.",
-  "personalization.changed": "Konfiguracja produktu zmieniła się. Otwórz produkt ponownie i wybierz opcje."
+  "personalization.changed": "Konfiguracja produktu zmieniła się. Otwórz produkt ponownie i wybierz opcje.",
+  "error.promotionAddFailed": "Nie udało się potwierdzić tego zestawu. Koszyk nie został zmieniony. Sprawdź warunki promocji i spróbuj ponownie.",
+  "error.promotionConditions": "Koszyk nie spełnia warunków wybranego zestawu promocyjnego. Sprawdź jego skład i minimalną wartość paragonu."
 }

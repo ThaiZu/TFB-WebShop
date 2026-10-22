@@ -869,9 +869,18 @@
   "promotion.suggestion.note": "Le prix final est vérifié lorsque le panier est mis à jour.",
   "promotion.suggestion.skip": "Pas maintenant",
   "promotion.suggestion.add": "Ajouter le lot",
-  "promotion.inline.title": "Lots disponibles",
+  "promotion.inline.title": "Offres promotionnelles",
   "promotion.inline.choose": "Choisissez une offre pour l’ajouter au panier",
   "promotion.inline.type.BUNDLE_PROMOTION": "Lot",
+  "promotion.inline.receiptMissing": "Après l’ajout de cette offre, il manquera {amount} pour atteindre le minimum. Ajoutez d’abord d’autres produits au panier.",
+  "promotion.inline.oneSet": "Vous ajoutez 1 offre avec la composition décrite ci-dessus, à la place de votre sélection de produit.",
+  "promotion.inline.minimumReceipt": "Offre à partir de {amount} TTC de produits avant remises (hors livraison).",
+  "cart.unlocked.applied": "La promotion est appliquée au panier.",
+  "cart.unlocked.title": "Offres débloquées",
+  "cart.unlocked.reached": "Vous avez atteint le seuil de {amount} (produits avant remise, hors livraison) : une offre spéciale vous est accessible.",
+  "cart.unlocked.conditions": "La remise nécessite les produits prévus par les conditions de l’offre.",
+  "cart.unlocked.browse": "Voir les produits",
+  "cart.unlocked.chooseProduct": "Choisissez un produit pour consulter la composition et le prix de l’offre. Atteindre le seuil seul ne déclenche pas la remise.",
   "cart.reward.cheapest": "Le produit éligible le moins cher du panier est offert. Si vous choisissez un produit plus cher, la différence à payer est indiquée pour chaque option.",
   "cart.reward.extraCost": "Supplément au panier : {amount}",
   "cart.reward.noExtraCost": "Sans supplément",
@@ -939,5 +948,7 @@
   "personalization.unavailable": "La personnalisation est indisponible. Réessayez ou contactez la boutique.",
   "personalization.required": "Choisissez les options de personnalisation obligatoires.",
   "personalization.invalid": "Vérifiez les options de personnalisation choisies.",
-  "personalization.changed": "La configuration a changé. Ouvrez à nouveau le produit et choisissez les options."
+  "personalization.changed": "La configuration a changé. Ouvrez à nouveau le produit et choisissez les options.",
+  "error.promotionAddFailed": "Impossible de confirmer cette offre. Votre panier n’a pas été modifié. Vérifiez les conditions de la promotion et réessayez.",
+  "error.promotionConditions": "Le panier ne remplit pas les conditions de l’offre sélectionnée. Vérifiez sa composition et le montant minimum du ticket."
 }
