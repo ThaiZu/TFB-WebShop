@@ -787,7 +787,7 @@ function PortionOptions({ value, onChange, product }) {
 // =========================================================================
 // PRODUCT DETAIL MODAL : options, upsells, bundles
 // =========================================================================
-function wsPromotionItemsSummary(promotion, product, t) {
+function wsPromotionItemsSummary(promotion, product, t, rewardCost = null) {
   const portions = { WHOLE: '1/1', THREE_QUARTERS: '3/4', TWO_THIRDS: '2/3', ONE_HALF: '1/2', ONE_THIRD: '1/3', ONE_QUARTER: '1/4', ONE_SIXTH: '1/6', ONE_EIGHTH: '1/8' };
   const label = (item, quantity) => {
     const portion = portions[item.product_portion_type] || item.product_portion_label || (item.id_product_portion == null ? '1/1' : '');
@@ -796,7 +796,7 @@ function wsPromotionItemsSummary(promotion, product, t) {
   };
   return (promotion.items || []).map((item) => {
     if (promotion.promotion_type !== 'BUY_X_GET_Y') return label(item, item.quantity);
-    const rewardKey = promotion.reward?.type === 'FREE' ? 'promotion.inline.receiveFree' : 'promotion.inline.receiveReward';
+    const rewardKey = promotion.reward?.type === 'FREE' && !(Number(rewardCost) > 0) ? 'promotion.inline.receiveFree' : 'promotion.inline.receiveReward';
     if (item.role === 'trigger_and_reward' && item.trigger_quantity != null && item.reward_quantity != null) {
       return `${t('promotion.inline.buy', { items: label(item, item.trigger_quantity) })} + ${t(rewardKey, { items: label(item, item.reward_quantity) })}`;
     }
@@ -908,7 +908,6 @@ function ProductDetail({ open, product, mode, onClose, onAdd, onPromotionPreview
   const [selectedPromotionId, setSelectedPromotionId] = React.useState(null);
   const initialPromotionChosen = React.useRef(false);
   const [rewardChoiceKey, setRewardChoiceKey] = React.useState(null);
-  const [choosingReward, setChoosingReward] = React.useState(false);
   const [adding, setAdding] = React.useState(false);
   const [addError, setAddError] = React.useState('');
   const carRef = React.useRef(null);
@@ -940,7 +939,6 @@ function ProductDetail({ open, product, mode, onClose, onAdd, onPromotionPreview
     setSelectedPromotionId(null);
     initialPromotionChosen.current = false;
     setRewardChoiceKey(null);
-    setChoosingReward(false);
     setAddError('');
     setCarIdx(0);
     if (product?.options) {
@@ -1021,11 +1019,16 @@ function ProductDetail({ open, product, mode, onClose, onAdd, onPromotionPreview
   const selectedPromotionBase = !activeBundle && promotionSuggestions.find((item) => item.is_available !== false && Number(item.id_promotion) === Number(selectedPromotionId)) || null;
   const rewardOptions = (selectedPromotionBase?.reward_options || []).flatMap(item => {
     const choiceProduct = promotionProducts.find(entry => Number(entry.id) === Number(item.id_product) && !entry.has_personalization);
-    if (!choiceProduct || !portionOptionList(choiceProduct).some(option => (option.id_product_portion == null ? null : Number(option.id_product_portion)) === (item.id_product_portion == null ? null : Number(item.id_product_portion)))) return [];
-    return [{ ...item, product_name: choiceProduct.name || item.product_name,
+    const portionOptions = choiceProduct ? portionOptionList(choiceProduct) : [];
+    const regularOption = portionOptions.find(option => (option.id_product_portion == null ? null : Number(option.id_product_portion)) === (item.id_product_portion == null ? null : Number(item.id_product_portion)));
+    if (!choiceProduct || !portionOptions.some(option => (option.id_product_portion == null ? null : Number(option.id_product_portion)) === (item.id_product_portion == null ? null : Number(item.id_product_portion)))) return [];
+    return [{ ...item, regular_price: regularOption ? Number(regularOption.price) * Number(item.quantity || 1) : null, product_name: choiceProduct.name || item.product_name,
       image_src: choiceProduct.img || getPlaceholder(choiceProduct), image_fallback: getPlaceholder(choiceProduct) }];
   });
-  const rewardChoice = rewardOptions.find(item => `${item.id_product}-${item.id_product_portion ?? 0}` === rewardChoiceKey);
+  const defaultReward = selectedPromotionBase?.items?.find(item => item.role === 'reward' || item.role === 'trigger_and_reward');
+  const rewardChoice = rewardOptions.find(item => `${item.id_product}-${item.id_product_portion ?? 0}` === rewardChoiceKey)
+    || rewardOptions.find(item => Number(item.id_product) === Number(defaultReward?.id_product)
+      && (item.id_product_portion ?? null) === (defaultReward?.id_product_portion ?? null));
   const selectedPromotion = selectedPromotionBase && rewardChoice?.suggestion
     ? { ...selectedPromotionBase, ...rewardChoice.suggestion } : selectedPromotionBase;
   const upsellDelta = Object.entries(upsellIds).reduce((t, [id, on]) => {
@@ -1084,7 +1087,7 @@ function ProductDetail({ open, product, mode, onClose, onAdd, onPromotionPreview
     setSelectedPromotionId(initial.id_promotion);
   }, [product, promotionSuggestions, promotionLocked, optionsLoading]);
 
-  React.useEffect(() => { setRewardChoiceKey(null); setChoosingReward(false); }, [selectedPromotionId]);
+  React.useEffect(() => { setRewardChoiceKey(null); }, [selectedPromotionId]);
 
   // Re-pulse price on any change
   React.useEffect(() => { setPulse((p) => p + 1); }, [unit, bundleDelta, upsellDelta, qty, bundleId, offerPicked, selectedPromotionId, displayedTotal]);
@@ -1552,39 +1555,33 @@ function ProductDetail({ open, product, mode, onClose, onAdd, onPromotionPreview
                   {promotionSuggestions.map((basePromotion) => {
                     const promotion = Number(basePromotion.id_promotion) === Number(selectedPromotionId) ? (selectedPromotion || basePromotion) : basePromotion;
                     const selected = Number(promotion.id_promotion) === Number(selectedPromotionId);
-                    const items = wsPromotionItemsSummary(promotion, product, t);
+                    const items = wsPromotionItemsSummary(promotion, product, t, selected ? rewardChoice?.additional_cost_gross : null);
                     const type = t(`promotion.inline.type.${promotion.promotion_type}`);
                     const blocked = promotionLocked || promotion.is_available === false;
                     const benefit = blocked ? null : wsPromotionBenefit(promotion);
-                    return <button key={promotion.id_promotion} type="button"
+                    return <div key={promotion.id_promotion} className={`pdm-promotion__offer${selected && rewardOptions.length ? ' has-gifts' : ''}`}><button type="button"
                       className={`pdm-promotion__card${selected ? ' is-selected' : ''}${blocked ? ' is-locked' : ''}`}
                       aria-pressed={selected} aria-disabled={blocked} disabled={blocked}
                       {...wsTap(() => {
                         if (blocked) return;
                         setSelectedPromotionId(selected ? null : promotion.id_promotion);
                       })}>
-                      <span className="pdm-promotion__radio" aria-hidden="true"/>
+                      <span className={selected && rewardOptions.length ? "pdm-gift-icon" : "pdm-promotion__radio"} aria-hidden="true">{selected && rewardOptions.length > 0 && <PromotionGiftIcon/>}</span>
                       <span className="pdm-promotion__body"><strong>{promotion.name}</strong>
-                        {promotion.is_available !== false && <FractionalPromotionRule promotion={promotion} product={product} t={t}/>}
-                        <small className="pdm-promotion__composition">{promotion.is_available === false ? items : `${type} · ${items}`}</small>
-                        {promotion.is_available !== false && Number(promotion.minimum_receipt_gross || 0) > 0 && <small className="pdm-promotion__period">{t('promotion.inline.minimumReceipt', { amount: wsCurrency(Number(promotion.minimum_receipt_gross)) })}</small>}
+                        {promotion.is_available !== false && !(selected && rewardOptions.length) && <FractionalPromotionRule promotion={promotion} product={product} t={t}/>}
+                        <small className="pdm-promotion__composition">{promotion.is_available === false || (selected && rewardOptions.length) ? items : `${type} · ${items}`}</small>
+                        {promotion.is_available !== false && !(selected && rewardOptions.length) && Number(promotion.minimum_receipt_gross || 0) > 0 && <small className="pdm-promotion__period">{t('promotion.inline.minimumReceipt', { amount: wsCurrency(Number(promotion.minimum_receipt_gross)) })}</small>}
                         <PromotionReceiptProgress promotion={promotion} t={t}/></span>
                       {benefit && <span className="pdm-promotion__price">{benefit}</span>}
-                    </button>;
+                    </button>
+                      {selected && rewardOptions.length > 0 && <PromotionRewardChoices options={rewardOptions}
+                        selectedKey={rewardChoice ? `${rewardChoice.id_product}-${rewardChoice.id_product_portion ?? 0}` : null}
+                        onSelect={item => setRewardChoiceKey(`${item.id_product}-${item.id_product_portion ?? 0}`)} t={t}/>}
+                    </div>;
                   })}
                 </div>
               </section>
             )}
-            {selectedPromotion && rewardOptions.length > 0 && <div className="pdm-promotion__reward-choice">
-              {rewardChoice && <p>{wsPromotionItemsSummary({ items: [rewardChoice] }, product, t)}</p>}
-              <button type="button" className="ws-cart-reward__choose" onClick={() => setChoosingReward(true)}>{t('promotion.inline.chooseReward')}</button>
-              {choosingReward && <CartRewardModal promotion={selectedPromotion} options={rewardOptions} t={t} productCards
-                titleKey="promotion.inline.chooseReward" explanationKey="promotion.inline.rewardHint"
-                onClose={() => setChoosingReward(false)} onSelect={item => {
-                  setRewardChoiceKey(`${item.id_product}-${item.id_product_portion ?? 0}`);
-                  setChoosingReward(false);
-                }}/>}
-            </div>}
             {!offerPicked && !activeBundle && upcomingPromotionSuggestions.length > 0 && (
               <section className="pdm-promotion pdm-promotion--upcoming" aria-label={t('promotion.inline.upcomingTitle')}>
                 <div className="pdm-promotion__head">
@@ -1640,6 +1637,11 @@ function ProductDetail({ open, product, mode, onClose, onAdd, onPromotionPreview
           </div>
 
           {/* STICKY FOOTER */}
+          {selectedPromotion && rewardChoice && !optionsLoading && <div className="pdm-gift-summary" role="status">
+              <PromotionGiftIcon/>
+              <span>{t('promotion.inline.yourReward', { product: wsPromotionItemsSummary({ items: [rewardChoice] }, product, t) })}</span>
+              <strong>{wsCurrency(Number(rewardChoice.additional_cost_gross || 0))}</strong>
+            </div>}
           <div className="pdm-foot">
             {deliveryBlocked && (
               <div className="pdm-delivery-notice pdm-delivery-notice--blocked"> {wsText("ui.collectOnly")} </div>
@@ -1656,7 +1658,7 @@ function ProductDetail({ open, product, mode, onClose, onAdd, onPromotionPreview
             {!availabilityMessage && deliveryStockLeft > 0 && qty > deliveryStockLeft &&
               <div className="pdm-delivery-notice" role="status">{t('stock.quantityChanged')}</div>}
             {addError && <div className="pdm-delivery-notice" role="alert">{addError}</div>}
-            {selectedPromotion && <div className="pdm-delivery-notice">{t('promotion.inline.oneSet')}</div>}
+            {selectedPromotion && !rewardChoice && <div className="pdm-delivery-notice">{t('promotion.inline.oneSet')}</div>}
             <div className="pdm-qty" style={selectedPromotion || product.is_weighted ? { display: 'none' } : undefined}>
               <button className="pdm-qty__btn" {...wsTap(() => changeQuantity((q) => Math.max(1, q - 1)))} disabled={qty <= 1} aria-label={t('qty.dec')}>−</button>
               <span className="pdm-qty__val">{qty}</span>
@@ -2004,6 +2006,49 @@ function CrossSell({ shopId, mode, date, time, basket, placement, onAdd }) {
       ))}
     </div>
   );
+}
+
+function PromotionGiftIcon() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <rect x="3.5" y="8.5" width="17" height="4" rx="1"/>
+    <path d="M5 12.5v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7M12 8.5v12M12 8.5c-1.5-3.5-5.5-4-5.5-1.5 0 1.3 1.6 1.5 5.5 1.5zM12 8.5c1.5-3.5 5.5-4 5.5-1.5 0 1.3-1.6 1.5-5.5 1.5z"/>
+  </svg>;
+}
+
+function PromotionRewardChoices({ options, selectedKey, onSelect, t }) {
+  return <div className="pdm-gifts">
+    <div className="pdm-gifts__title">{t('promotion.inline.chooseReward')}</div>
+    <div className="pdm-gifts__options" role="radiogroup" aria-label={t('promotion.inline.chooseReward')}
+      onKeyDown={event => {
+        if (!['ArrowDown', 'ArrowRight', 'ArrowUp', 'ArrowLeft', 'Home', 'End'].includes(event.key)) return;
+        const buttons = [...event.currentTarget.querySelectorAll('[role="radio"]')];
+        const current = buttons.indexOf(document.activeElement);
+        const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1
+          : (current + (['ArrowUp', 'ArrowLeft'].includes(event.key) ? -1 : 1) + buttons.length) % buttons.length;
+        event.preventDefault();
+        buttons[next]?.focus();
+        if (options[next]) onSelect(options[next]);
+      }}>
+      {options.map((item, index) => {
+        const key = `${item.id_product}-${item.id_product_portion ?? 0}`;
+        const selected = key === selectedKey;
+        const cost = Number(item.additional_cost_gross || 0);
+        return <button type="button" role="radio" aria-checked={selected} tabIndex={selected || (!selectedKey && index === 0) ? 0 : -1}
+          className={`pdm-gifts__option${selected ? ' is-selected' : ''}`} key={key} onClick={() => onSelect(item)}>
+          <span className="pdm-gifts__radio" aria-hidden="true"/>
+          <img src={item.image_src} alt="" width="44" height="44" loading="lazy" decoding="async" onError={event => {
+            if (event.currentTarget.dataset.imgFallback) return;
+            event.currentTarget.dataset.imgFallback = '1'; event.currentTarget.src = item.image_fallback;
+          }}/>
+          <span className="pdm-gifts__name">{wsPromotionItemsSummary({ items: [item] }, {}, t)}</span>
+          <span className="pdm-gifts__prices">
+            {item.regular_price != null && Number(item.regular_price) > cost && <del>{wsCurrency(item.regular_price)}</del>}
+            <span className="pdm-gifts__badge">{cost === 0 ? t('promotion.inline.freeReward') : wsCurrency(cost)}</span>
+          </span>
+        </button>;
+      })}
+    </div>
+  </div>;
 }
 
 function PromotionReceiptProgress({ promotion, t }) {

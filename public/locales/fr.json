@@ -952,5 +952,7 @@
   "error.promotionAddFailed": "Impossible de confirmer cette offre. Votre panier n’a pas été modifié. Vérifiez les conditions de la promotion et réessayez.",
   "error.promotionConditions": "Le panier ne remplit pas les conditions de l’offre sélectionnée. Vérifiez sa composition et le montant minimum du ticket.",
   "promotion.inline.chooseReward": "Choisir le produit en promotion",
-  "promotion.inline.rewardHint": "Choisissez le cadeau ou le produit à prix réduit pour cette offre."
+  "promotion.inline.rewardHint": "Choisissez le cadeau ou le produit à prix réduit pour cette offre.",
+  "promotion.inline.yourReward": "Votre cadeau : {product}",
+  "promotion.inline.freeReward": "Offert"
 }
