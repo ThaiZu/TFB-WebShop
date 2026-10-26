@@ -301,7 +301,7 @@ test('item-count promotions keep their existing description', () => {
   assert.equal(promotionSummaryContext.wsFractionalPromotionRule({ ...fractionalOffer, trigger: { quantity: 1, quantity_unit: 'ITEM' } }, fractionalProduct, promotionTranslate), null);
 });
 
-const cartRewardContext = { React, useState: React.useState, wsCurrency: value => `€${Number(value).toFixed(2)}`, wsUseT: () => ({ t: promotionTranslate }), wsPromotionItemsSummary: promotionSummaryContext.wsPromotionItemsSummary };
+const cartRewardContext = { getPlaceholder: () => '/img/placeholder.svg', React, useState: React.useState, wsCurrency: value => `€${Number(value).toFixed(2)}`, wsUseT: () => ({ t: promotionTranslate }), wsPromotionItemsSummary: promotionSummaryContext.wsPromotionItemsSummary };
 vm.runInNewContext(transformSync(extract('CartPromotionRewards'), { loader: 'jsx' }).code, cartRewardContext);
 const cartRewardOffer = { id_promotion: 17, name: 'Quiche offer', status: 'AVAILABLE',
   trigger: { quantity: 1, quantity_unit: 'PIECE_FRACTION' }, reward_quantity: 1,
@@ -466,4 +466,18 @@ test('exclusive product buttons render small lazy images without changing their 
   assert.equal((html.match(/loading="lazy"/g) || []).length, 2);
   assert.equal((html.match(/decoding="async"/g) || []).length, 2);
   assert.match(html, /alt="" width="52" height="52"/);
+});
+
+
+test('reward chooser keeps the server surcharge alongside lazy catalogue thumbnails', () => {
+  const html = renderToStaticMarkup(React.createElement(modalContext.CartRewardModal, {
+    promotion: cartRewardOffer,
+    options: [{ ...cartRewardOffer.options[0], image_src: '/photos/quiche.webp', image_fallback: '/img/placeholder.svg', additional_cost_gross: '1.00' }],
+    onSelect() {}, onClose() {}, t: promotionTranslate, productCards: true,
+  }));
+  assert.match(html, /ws-cart-reward__options--products/);
+  assert.match(html, /src="\/photos\/quiche.webp"/);
+  assert.match(html, /loading="lazy" decoding="async"/);
+  assert.match(html, /ws-promotion-product__body/);
+  assert.match(html, /Dopłata do koszyka: €1.00/);
 });

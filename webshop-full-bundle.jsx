@@ -2005,10 +2005,12 @@ function CartRewardModal({ promotion, options, onSelect, onClose, t, titleKey = 
               image.dataset.imgFallback = '1';
               image.src = item.image_fallback;
             }}/>}
-          <span>{wsPromotionItemsSummary({ items: [item] }, {}, t)}</span>
-          {showCost && <strong>{Number(item.additional_cost_gross || 0) > 0
-            ? t('cart.reward.extraCost', { amount: wsCurrency(Number(item.additional_cost_gross)) })
-            : t('cart.reward.noExtraCost')}</strong>}
+          <span className="ws-promotion-product__body">
+            <span>{wsPromotionItemsSummary({ items: [item] }, {}, t)}</span>
+            {showCost && <strong>{Number(item.additional_cost_gross || 0) > 0
+              ? t('cart.reward.extraCost', { amount: wsCurrency(Number(item.additional_cost_gross)) })
+              : t('cart.reward.noExtraCost')}</strong>}
+          </span>
         </button>)}
       </div>
     </section>
@@ -2022,9 +2024,12 @@ function CartPromotionRewards({ quoteState, onAddReward, products = [] }) {
   return <div className="ws-cart-rewards" aria-live="polite">
     {(quoteState.quote?.promotion_rewards || []).map((promotion) => {
       const applied = promotion.status === 'APPLIED';
-      const options = (promotion.options || []).filter((item) => products.some((product) =>
-        Number(product.id) === Number(item.id_product) && !product.has_personalization
-        && (item.id_product_portion == null || (product.portionOptions || []).some((portion) => Number(portion.id_product_portion) === Number(item.id_product_portion)))));
+      const options = (promotion.options || []).flatMap(item => {
+        const product = products.find(product => Number(product.id) === Number(item.id_product) && !product.has_personalization
+          && (item.id_product_portion == null || (product.portionOptions || []).some(portion => Number(portion.id_product_portion) === Number(item.id_product_portion))));
+        return product ? [{ ...item, product_name: product.name || item.product_name,
+          image_src: product.img || getPlaceholder(product), image_fallback: getPlaceholder(product) }] : [];
+      });
       if (!applied && !options.length) return null;
       const composition = wsPromotionItemsSummary({ items: promotion.trigger_items }, {}, t);
       const threshold = t(promotion.trigger.quantity_unit === 'PIECE_FRACTION' ? 'cart.reward.wholeThreshold' : 'cart.reward.itemThreshold', { quantity: Number(promotion.trigger.quantity) });
@@ -2044,7 +2049,7 @@ function CartPromotionRewards({ quoteState, onAddReward, products = [] }) {
           {promotion.max_applications_per_transaction != null && <p>{t('cart.reward.limit', { quantity: promotion.max_applications_per_transaction })}</p>}
         </details>
         {!applied && <button type="button" className="ws-cart-reward__choose" onClick={() => setChoosing(choosing === promotion.id_promotion ? null : promotion.id_promotion)}>{t('cart.reward.choose')}</button>}
-        {!applied && choosing === promotion.id_promotion && <CartRewardModal promotion={promotion} options={options} t={t}
+        {!applied && choosing === promotion.id_promotion && <CartRewardModal promotion={promotion} options={options} t={t} productCards
           onClose={() => setChoosing(null)} onSelect={(item) => { onAddReward(promotion, item); setChoosing(null); }}/>}
       </section>;
     })}

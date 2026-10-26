@@ -4502,6 +4502,7 @@
   border: .5px solid var(--color-border-tertiary); border-radius: 14px;
 }
 .ws-cart-reward__options--products button > span { min-width: 0; }
+.ws-promotion-product__body { display: grid; gap: 6px; min-width: 0; }
 .ws-promotion-product__image {
   display: block; width: 52px; height: 52px; border-radius: 9px;
   object-fit: contain; background: #f5efe6;
