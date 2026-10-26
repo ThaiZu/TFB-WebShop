@@ -4494,3 +4494,16 @@
   body.ws-mode-delivery .ws-cart-reward__choose,
   body.ws-mode-delivery .ws-cart-reward__options button { background: #F2C9A0; color: #5b3a1a; }
 }
+
+/* Product choices reuse the catalogue card surface and the catalogue image URL. */
+.ws-reward-modal .ws-cart-reward__options.ws-cart-reward__options--products button {
+  grid-template-columns: 52px minmax(0, 1fr); align-items: center; gap: 12px;
+  min-height: 76px; background: var(--color-surface); color: var(--color-text);
+  border: .5px solid var(--color-border-tertiary); border-radius: 14px;
+}
+.ws-cart-reward__options--products button > span { min-width: 0; }
+.ws-promotion-product__body { display: grid; gap: 6px; min-width: 0; }
+.ws-promotion-product__image {
+  display: block; width: 52px; height: 52px; border-radius: 9px;
+  object-fit: contain; background: #f5efe6;
+}

@@ -108,6 +108,8 @@
   "Erreur réseau lors de la validation du cadeau.": "error.network",
   "Erreur réseau lors de la validation du code.": "error.network",
   "Cart pricing is unavailable.": "error.quote",
+  "WEBSHOP_PROMOTION_GROUP_NOT_APPLICABLE": "error.promotionConditions",
+  "WEBSHOP_PROMOTION_GROUP_INCOMPLETE": "error.promotionConditions",
   "Stock non tenu : please debug.": "error.stock",
   "Order API is unavailable.": "error.orderUnavailable",
   "Suggestions unavailable": "error.service",
