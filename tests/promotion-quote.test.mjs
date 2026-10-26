@@ -503,3 +503,27 @@ test('selected promotion suppresses its reward notification while other promotio
   assert.doesNotMatch(html, /Quiche offer/);
   assert.match(html, /Other offer/);
 });
+
+const inlineRewardContext = { React, wsCurrency: value => `€${Number(value).toFixed(2)}`, wsPromotionItemsSummary: promotionSummaryContext.wsPromotionItemsSummary };
+vm.runInNewContext(transformSync(extract('PromotionRewardChoices'), { loader: 'jsx' }).code, inlineRewardContext);
+test('inline gift choices expose selection, catalogue pictures and honest free or discounted prices', () => {
+  const html = renderToStaticMarkup(React.createElement(inlineRewardContext.PromotionRewardChoices, {
+    options: [{ ...cartRewardOffer.options[0], image_src: '/photos/quiche.webp', regular_price: 6.30, additional_cost_gross: '0.00' },
+      { ...cartRewardOffer.options[0], id_product: 20, product_name: 'Apricot', regular_price: 8.90, additional_cost_gross: '2.00' }],
+    selectedKey: '20-3', onSelect() {}, t: promotionTranslate,
+  }));
+  assert.match(html, /role="radiogroup"/);
+  assert.equal((html.match(/role="radio"/g) || []).length, 2);
+  assert.equal((html.match(/aria-checked="true"/g) || []).length, 1);
+  assert.match(html, /src="\/photos\/quiche.webp"/);
+  assert.match(html, /<del>€6.30<\/del>/);
+  assert.match(html, /Gratis/);
+  assert.match(html, /€2.00/);
+  assert.doesNotMatch(html, /role="dialog"/);
+});
+
+test('a reward option with an actual surcharge is not described as free', () => {
+  const text = promotionSummaryContext.wsPromotionItemsSummary({ ...cartRewardOffer, promotion_type: 'BUY_X_GET_Y', reward: { type: 'FREE' }, items: [{ ...cartRewardOffer.options[0], role: 'reward' }] }, {}, promotionTranslate, '2.00');
+  assert.doesNotMatch(text, /gratis/);
+  assert.match(text, /w cenie promocyjnej/);
+});

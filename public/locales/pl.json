@@ -952,5 +952,7 @@
   "error.promotionAddFailed": "Nie udało się potwierdzić tego zestawu. Koszyk nie został zmieniony. Sprawdź warunki promocji i spróbuj ponownie.",
   "error.promotionConditions": "Koszyk nie spełnia warunków wybranego zestawu promocyjnego. Sprawdź jego skład i minimalną wartość paragonu.",
   "promotion.inline.chooseReward": "Wybierz produkt w promocji",
-  "promotion.inline.rewardHint": "Wybierz gratis lub produkt w cenie promocyjnej do tego zestawu."
+  "promotion.inline.rewardHint": "Wybierz gratis lub produkt w cenie promocyjnej do tego zestawu.",
+  "promotion.inline.yourReward": "Twój produkt w zestawie: {product}",
+  "promotion.inline.freeReward": "Gratis"
 }
