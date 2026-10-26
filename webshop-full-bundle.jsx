@@ -850,7 +850,7 @@ function wsPromotionDateLabel(value, lang, timezone) {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return '';
     return new Intl.DateTimeFormat(lang || 'fr', {
-      day: '2-digit', month: '2-digit', year: 'numeric', ...(timezone ? { timeZone: timezone } : {}),
+      day: 'numeric', month: 'long', year: 'numeric', ...(timezone ? { timeZone: timezone } : {}),
     }).format(date);
   } catch (_) {
     return '';
@@ -859,8 +859,8 @@ function wsPromotionDateLabel(value, lang, timezone) {
 
 function wsPromotionWeekday(day, lang) {
   try {
-    // 1 January 2024 was a Monday; noon avoids a day shift in every shop timezone.
-    return new Intl.DateTimeFormat(lang || 'fr', { weekday: 'short' })
+    // Weekday labels are fixed calendar values, independent of browser timezone.
+    return new Intl.DateTimeFormat(lang || 'fr', { weekday: 'short', timeZone: 'UTC' })
       .format(new Date(Date.UTC(2024, 0, 1 + Math.max(0, Number(day || 1) - 1), 12)))
       .replace(/\.$/, '');
   } catch (_) {
@@ -881,6 +881,61 @@ function wsUpcomingPromotionValidity(promotion, lang, t) {
   if (from) return t('promotion.inline.validFrom', { from });
   if (to) return t('promotion.inline.validUntil', { to });
   return '';
+}
+
+function UpcomingPromotionSchedule({ promotion, lang, t }) {
+  const schedule = Array.isArray(promotion.availability_schedule) ? promotion.availability_schedule : [];
+  const groups = [];
+  schedule.forEach((entry) => {
+    const day = Number(entry.day_of_week);
+    if (!Number.isInteger(day) || day < 1 || day > 7) return;
+    const from = String(entry.time_from || '').slice(0, 5);
+    const to = String(entry.time_to || '').slice(0, 5);
+    let group = groups.find((item) => item.from === from && item.to === to);
+    if (!group) { group = { from, to, days: [] }; groups.push(group); }
+    if (!group.days.includes(day)) group.days.push(day);
+  });
+  const activeDays = new Set(groups.flatMap((group) => group.days));
+  const validity = wsUpcomingPromotionValidity(promotion, lang, t);
+  return <span className="pdm-promotion__schedule">
+    <span className="pdm-promotion__weekdays" role="img" aria-label={t('promotion.inline.availableDays', { schedule: wsUpcomingPromotionSchedule(promotion, lang, t) })}>
+      {[1, 2, 3, 4, 5, 6, 7].map((day) => {
+        const label = wsPromotionWeekday(day, lang);
+        return <span key={day} className={`pdm-promotion__day${!schedule.length || activeDays.has(day) ? ' is-active' : ''}`} title={label} aria-hidden="true">{label.slice(0, 1).toLocaleUpperCase(lang || 'fr')}</span>;
+      })}
+    </span>
+    <span className="pdm-promotion__hours">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+      <span>{groups.length ? groups.map((group) => {
+        const days = group.days.sort((a, b) => a - b);
+        const label = days.length === 7 ? t('promotion.inline.everyDay')
+          : days.length === 2 && days[0] === 6 && days[1] === 7 ? t('promotion.inline.weekend')
+          : days.map((day) => wsPromotionWeekday(day, lang)).join(', ');
+        return <span key={`${group.from}-${group.to}`}>{label}, {t('promotion.inline.timeRange', { from: group.from, to: group.to })}</span>;
+      }) : t('promotion.inline.everyDay')}</span>
+    </span>
+    {validity && <span className="pdm-promotion__validity">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14.5" rx="2.5"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></svg>
+      <span>{validity}</span>
+    </span>}
+  </span>;
+}
+
+function UpcomingPromotionCard({ promotion, product, lang, t }) {
+  const items = wsPromotionItemsSummary(promotion, product, t);
+  const type = t(`promotion.inline.type.${promotion.promotion_type}`);
+  const benefit = wsPromotionBenefit(promotion);
+  return <div className="pdm-promotion__card pdm-promotion__card--upcoming" aria-disabled="true">
+    <span className="pdm-promotion__radio pdm-promotion__radio--upcoming" aria-hidden="true"/>
+    <span className="pdm-promotion__body">
+      <strong>{promotion.name}</strong>
+      <FractionalPromotionRule promotion={promotion} product={product} t={t}/>
+      <small className="pdm-promotion__composition">{type} · {items}</small>
+      {Number(promotion.minimum_receipt_gross || 0) > 0 && <small className="pdm-promotion__period">{t('promotion.inline.minimumReceipt', { amount: wsCurrency(Number(promotion.minimum_receipt_gross)) })}</small>}
+      <UpcomingPromotionSchedule promotion={promotion} lang={lang} t={t}/>
+    </span>
+    {benefit && <span className="pdm-promotion__price">{benefit}</span>}
+  </div>;
 }
 
 function ProductDetail({ open, product, mode, onClose, onAdd, onPromotionPreview, promotionSuggestions = [], upcomingPromotionSuggestions = [], promotionLocked = false, optionsLoading = false, promotionProducts = [], stock, basketUnits = 0 }) {
@@ -1589,25 +1644,9 @@ function ProductDetail({ open, product, mode, onClose, onAdd, onPromotionPreview
                   <small>{t('promotion.inline.upcomingHint')}</small>
                 </div>
                 <div className="pdm-promotion__list">
-                  {upcomingPromotionSuggestions.map((promotion) => {
-                    const items = wsPromotionItemsSummary(promotion, product, t);
-                    const type = t(`promotion.inline.type.${promotion.promotion_type}`);
-                    const benefit = wsPromotionBenefit(promotion);
-                    const schedule = wsUpcomingPromotionSchedule(promotion, lang, t);
-                    const validity = wsUpcomingPromotionValidity(promotion, lang, t);
-                    return <div key={`upcoming-${promotion.id_promotion}-${promotion.available_from}`} className="pdm-promotion__card pdm-promotion__card--upcoming" aria-disabled="true">
-                      <span className="pdm-promotion__radio pdm-promotion__radio--upcoming" aria-hidden="true"/>
-                      <span className="pdm-promotion__body">
-                        <strong>{promotion.name}</strong>
-                        <FractionalPromotionRule promotion={promotion} product={product} t={t}/>
-                        <small className="pdm-promotion__composition">{type} · {items}</small>
-                        {Number(promotion.minimum_receipt_gross || 0) > 0 && <small className="pdm-promotion__period">{t('promotion.inline.minimumReceipt', { amount: wsCurrency(Number(promotion.minimum_receipt_gross)) })}</small>}
-                        <small className="pdm-promotion__period">{t('promotion.inline.availableDays', { schedule })}</small>
-                        {validity && <small className="pdm-promotion__period">{validity}</small>}
-                      </span>
-                      {benefit && <span className="pdm-promotion__price">{benefit}</span>}
-                    </div>;
-                  })}
+                  {upcomingPromotionSuggestions.map((promotion) => <UpcomingPromotionCard
+                    key={`upcoming-${promotion.id_promotion}-${promotion.available_from}`}
+                    promotion={promotion} product={product} lang={lang} t={t}/>)}
                 </div>
               </section>
             )}

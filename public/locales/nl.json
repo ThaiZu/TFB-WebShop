@@ -913,6 +913,8 @@
   "promotion.inline.availableFrom": "Beschikbaar vanaf {from}",
   "promotion.inline.availableBetween": "Beschikbaar van {from} tot {to}",
   "promotion.inline.availableDays": "Beschikbaar: {schedule}",
+  "promotion.inline.weekend": "In het weekend",
+  "promotion.inline.timeRange": "van {from} tot {to}",
   "promotion.inline.everyDay": "elke dag",
   "promotion.inline.validBetween": "Van {from} tot {to}",
   "promotion.inline.validFrom": "Vanaf {from}",
