@@ -240,7 +240,7 @@ test('reduced-price reward is described without promising a free product', () =>
     items: [{ product_name: 'Quiche', quantity: 2,
       role: 'trigger_and_reward', trigger_quantity: 1, reward_quantity: 1 }],
   }, {}, promotionTranslate);
-  assert.equal(summary, 'Kup 1 × Quiche + odbierz 1 × Quiche w cenie promocyjnej');
+  assert.equal(summary, 'Kup 1 × 1/1 Quiche + odbierz 1 × 1/1 Quiche w cenie promocyjnej');
 });
 
 test('different trigger and reward products retain their separate portions', () => {
@@ -255,7 +255,7 @@ test('different trigger and reward products retain their separate portions', () 
 test('older offer responses still show their total composition', () => {
   assert.equal(promotionSummaryContext.wsPromotionItemsSummary({ promotion_type: 'BUY_X_GET_Y',
     items: [{ product_name: 'Quiche', quantity: 2, role: 'trigger_and_reward' }],
-  }, {}, promotionTranslate), '2 × Quiche');
+  }, {}, promotionTranslate), '2 × 1/1 Quiche');
 });
 
 vm.runInNewContext(transformSync(['wsFractionalPromotionRule', 'FractionalPromotionRule'].map(extract).join('\n'), { loader: 'jsx' }).code, Object.assign(promotionSummaryContext, { React }));
@@ -314,13 +314,11 @@ function renderCartReward(status = 'ready', offer = cartRewardOffer, products = 
   }));
 }
 
-test('qualified cart shows the server condition and reward chooser', () => {
+test('qualified cart shows a concise reward chooser without promotion rules', () => {
   const html = renderCartReward();
   assert.match(html, /Możesz dobrać gratis/);
-  assert.match(html, /4 × 1\/4 Quiche/);
+  assert.doesNotMatch(html, /<details|Zasady promocji|Nagroda nie wlicza/);
   assert.match(html, /Wybierz gratis/);
-  assert.match(html, /Zasady promocji/);
-  assert.match(html, /Nagroda nie wlicza/);
 });
 
 test('pending and failed quotes hide outdated reward entitlement', () => {
@@ -357,11 +355,11 @@ test('reward modal shows every eligible choice with its own server-calculated ex
   assert.match(html, /najtańszy/);
 });
 
-test('cart reward rules display the API receipt minimum without deciding it in the browser', () => {
+test('cart reward displays a concise reached threshold without rule details', () => {
   const html = renderCartReward('ready', { ...cartRewardOffer, minimum_receipt_gross: '50.00' });
   assert.match(html, /€50.00/);
-  assert.match(html, /przed rabatami/);
-  assert.match(html, /bez dostawy/);
+  assert.match(html, /Próg €50.00 osiągnięty/);
+  assert.doesNotMatch(html, /<details|przed rabatami|bez dostawy/);
 });
 
 const basketContext = { ...context, ICONS: { back: null, pin: null }, wsTap: () => ({}), CartPromotionRewards: () => null, CartUnlockedPromotions: () => null };
@@ -422,8 +420,8 @@ function renderUnlocked(status = 'ready', unlocked = [unlockedOffer], rewards = 
 test('unlocked level has a clear invitation without claiming the discount is already applied', () => {
   const html = renderUnlocked();
   assert.match(html, /Odblokowane promocje/);
-  assert.match(html, /Osiągnięto próg €50.00/);
-  assert.match(html, /Rabat wymaga wybrania produktów/);
+  assert.match(html, /Próg €50.00 osiągnięty/);
+  assert.doesNotMatch(html, /Rabat wymaga|Zasady promocji|przed rabatami|bez dostawy/);
   assert.match(html, /Zobacz produkty/);
   assert.doesNotMatch(html, /Gratis został dodany/);
 });
@@ -447,9 +445,9 @@ test('the exclusive product chooser does not promise a free product or a zero su
 });
 
 
-test('an automatically applied bundle is described as an applied promotion rather than a free gift', () => {
+test('an applied promotion no longer has an unlocked notification', () => {
   const html = renderUnlocked('ready', [{ ...unlockedOffer, promotion_type: 'BUNDLE_PROMOTION', status: 'APPLIED' }]);
-  assert.match(html, /Promocja została naliczona/);
+  assert.doesNotMatch(html, /Odblokowane promocje|Promocja została naliczona/);
   assert.doesNotMatch(html, /Gratis dodany|Zobacz produkty/);
 });
 
@@ -480,4 +478,28 @@ test('reward chooser keeps the server surcharge alongside lazy catalogue thumbna
   assert.match(html, /loading="lazy" decoding="async"/);
   assert.match(html, /ws-promotion-product__body/);
   assert.match(html, /Dopłata do koszyka: €1.00/);
+});
+
+const progressContext = { React, wsCurrency: value => `€${Number(value).toFixed(2)}` };
+vm.runInNewContext(transformSync(extract('PromotionReceiptProgress'), { loader: 'jsx' }).code, progressContext);
+test('locked promotion shows the server missing amount and accessible basket progress', () => {
+  const html = renderToStaticMarkup(React.createElement(progressContext.PromotionReceiptProgress, {
+    promotion: { minimum_receipt_gross: '20.00', minimum_receipt_missing: '7.00', is_available: false }, t: promotionTranslate,
+  }));
+  assert.match(html, /Brakuje Ci jeszcze €7.00/);
+  assert.match(html, /<progress max="20" value="13" aria-label=/);
+});
+test('unlocked promotions and offers without a receipt minimum have no locked progress', () => {
+  for (const promotion of [{ minimum_receipt_gross: '20.00', is_available: true }, { is_available: false }]) {
+    assert.equal(renderToStaticMarkup(React.createElement(progressContext.PromotionReceiptProgress, { promotion, t: promotionTranslate })), '');
+  }
+});
+
+test('selected promotion suppresses its reward notification while other promotions remain', () => {
+  const html = renderToStaticMarkup(React.createElement(cartRewardContext.CartPromotionRewards, {
+    quoteState: { status: 'ready', quote: { promotion_rewards: [cartRewardOffer, { ...cartRewardOffer, id_promotion: 99, name: 'Other offer' }] } },
+    selectedPromotionId: cartRewardOffer.id_promotion, onAddReward() {}, products: [{ id: 10, portionOptions: [{ id_product_portion: 3 }] }],
+  }));
+  assert.doesNotMatch(html, /Quiche offer/);
+  assert.match(html, /Other offer/);
 });

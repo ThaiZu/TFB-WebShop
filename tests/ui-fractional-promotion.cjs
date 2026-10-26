@@ -17,11 +17,11 @@ for(const width of [1440,390]){
   else if(url.pathname.endsWith('/payment-methods'))body=[{method:'stripe',family:'stripe',label:'Online'}];
   return route.fulfill({json:body});
  });
- const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto('https://webshop.tfbuddy.local/?shop=2');
+ const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto('https://webshop.tfbuddy.local/?shop=2&category=category%3A14100');
  await page.locator('.ws-card .ws-add').first().click();
  const card=page.locator('.pdm-promotion__card');
  await card.locator('.pdm-promotion__rule').waitFor();
- for(const [name,quantity,fraction] of [['Całość',1,null],['1/2',2,'1/2'],['1/4',4,'1/4']]){
+ for(const [name,quantity,fraction] of [['Całość',1,'1/1'],['1/2',2,'1/2'],['1/4',4,'1/4']]){
   await page.locator('.pdm-seg--portions').getByRole('radio',{name,exact:false}).click();
   await card.locator('.pdm-promotion__composition').filter({hasText:`Kup ${quantity} ×${fraction?' '+fraction:''} Quiche`}).waitFor();
   const text=await card.innerText();
