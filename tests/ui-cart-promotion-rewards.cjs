@@ -25,7 +25,7 @@ for(const width of [1440,390]){
   else if(url.pathname.endsWith('/payment-methods'))body=[{method:'stripe',family:'stripe',label:'Online'}];
   return route.fulfill({json:body});
  });
- const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto('https://webshop.tfbuddy.local/?shop=2');
+ const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto('https://webshop.tfbuddy.local/?shop=2&category=category%3A14100');
  await page.locator('.ws-card .ws-add').first().click();
  await page.locator('.pdm-seg--portions').getByRole('radio',{name:/1\/4/}).click();
  for(let i=0;i<3;i++)await page.locator('.pdm-qty__btn').last().click();
@@ -33,9 +33,9 @@ for(const width of [1440,390]){
  if(width<600)await page.locator('.ws-tabbar__btn--cart').click();
  const basket=width<600?page.locator('.ws-drawer .ws-basket'):page.locator('.ws-basket').first();
  await basket.getByText('Możesz dobrać gratis!',{exact:true}).waitFor();
- await basket.getByText('Zasady promocji',{exact:true}).click();
- assert.match(await basket.locator('.ws-cart-reward').innerText(),/Nagroda nie wlicza/);
- assert.match(await basket.locator('.ws-cart-reward').innerText(),/Promocja od 12[,.]00/);
+ assert.doesNotMatch(await basket.locator('.ws-cart-reward').innerText(),/Nagroda nie wlicza|Zasady promocji/);
+ assert.equal(await basket.locator('.ws-cart-reward details').count(),0);
+ assert.match(await basket.locator('.ws-cart-reward').innerText(),/Próg .*12[,.]00.*osiągnięty/);
  const choose=basket.getByRole('button',{name:'Wybierz gratis',exact:true});
  const quotesBeforeChooser=quotes.length;
  assert.equal(await page.locator('.ws-promotion-product__image').count(),0);
