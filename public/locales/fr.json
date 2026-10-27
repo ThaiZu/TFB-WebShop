@@ -913,6 +913,8 @@
   "promotion.inline.availableFrom": "Disponible à partir du {from}",
   "promotion.inline.availableBetween": "Disponible du {from} au {to}",
   "promotion.inline.availableDays": "Disponible : {schedule}",
+  "promotion.inline.weekend": "Le week-end",
+  "promotion.inline.timeRange": "de {from} à {to}",
   "promotion.inline.everyDay": "tous les jours",
   "promotion.inline.validBetween": "Du {from} au {to}",
   "promotion.inline.validFrom": "À partir du {from}",
