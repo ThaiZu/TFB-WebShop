@@ -444,7 +444,7 @@
           "line": 71
         }
       ],
-      "sha256": "49ef04d16958b92ce8c24e6fe5069bdbfff682169a85de5ed38ed6ed96c8b1dd"
+      "sha256": "b6b091862c50ebaa9bd327bb3c0594a2bbe5c6ad18f560a0c602089e82545d71"
     },
     {
       "path": "TFB-WebShop/privacy-policies.json",
@@ -614,7 +614,7 @@
           "line": 4
         }
       ],
-      "sha256": "b5dae8b535142cc40e39cc32c814a6640b3194dbe0f93708d6c96d15f1b19bd8"
+      "sha256": "c39863c8be1b13d10faa78279d5cc81b55f5b2f1672fc4c894296710fe927949"
     },
     {
       "path": "TFB-WebShop/webshop-policy-links.js",

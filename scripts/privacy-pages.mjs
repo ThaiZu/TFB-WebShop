@@ -74,7 +74,7 @@ export function privacyPagesPlugin({root,base,preview=false}) {
     const sources=readPolicySources(root,manifest);
     return policyPages({manifest,sources,base,preview});
   }
-  function runtime(){const m=JSON.parse(readFileSync(new URL('privacy-policies.json',root),'utf8'));return 'window.WSPolicyNotice = '+JSON.stringify({published:m.status==='approved',version:m.version})+';';}
+  function runtime(){const m=JSON.parse(readFileSync(new URL('privacy-policies.json',root),'utf8'));return 'window.WSPolicyNotice = '+JSON.stringify({published:m.status==='approved',version:m.version,directory:preview?'privacy-preview':'privacy'})+';';}
   return {name:'webshop-privacy-pages',generateBundle(){for(const page of pages())this.emitFile({type:'asset',...page});this.emitFile({type:'asset',fileName:'privacy-runtime.js',source:runtime()});},configureServer(server){server.middlewares.use((req,res,next)=>{
     const file=(req.url||'').split('?')[0].slice(base.length);
     if(file==='privacy-runtime.js'){res.setHeader('Content-Type','application/javascript; charset=utf-8');res.setHeader('Cache-Control','no-store');res.end(runtime());return;}
