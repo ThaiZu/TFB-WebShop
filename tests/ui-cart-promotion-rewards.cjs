@@ -6,7 +6,7 @@ const cartRewards={"3":{"milliseconds":0,"rewards":[]},"4":{"milliseconds":62,"r
 (async()=>{const browser=await chromium.launch({headless:true,args:['--no-sandbox','--host-resolver-rules=MAP webshop.tfbuddy.local 127.0.0.1']});try{
 for(const width of [1440,390]){
  const context=await browser.newContext({ignoreHTTPSErrors:true,viewport:{width,height:1000}});
- await context.addInitScript(()=>localStorage.setItem('ws.lang','pl'));
+ await context.addInitScript(()=>sessionStorage.setItem('ws.session.v1:' + 'ws.lang', ((createdAt)=>JSON.stringify({value:'pl', createdAt, expiresAt:createdAt+43200000}))(Date.now())));
  const errors=[],quotes=[];await context.route('**/*',async route=>{
   const req=route.request(),url=new URL(req.url());if(!['webshop.tfbuddy.local','tfb.tfbuddy.local',new URL(base).hostname].includes(url.hostname))return route.abort();
   if(url.pathname==='/reward-product-fixture.svg')return route.fulfill({contentType:'image/svg+xml',headers:{'Cache-Control':'public, max-age=3600'},body:'<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="#f5ce92"/></svg>'});

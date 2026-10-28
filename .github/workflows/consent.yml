@@ -1,0 +1,29 @@
+name: Webshop consent regression
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  consent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      VITE_API_BASE_URL: https://api.tfbuddy.local/api/v1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:unit
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:consent:browser
+      - run: PRIVACY_POLICY_PREVIEW=1 SITE_BASE=/ npm run build -- --outDir work/policy-preview --emptyOutDir
+      - run: POLICY_BUILD=work/policy-preview POLICY_PREVIEW=1 npm run test:policies:browser
+      - run: npm run test:storage:browser
+      - run: npm run test:consent:stripe
+      - run: SITE_BASE=/ VITE_SAME_ORIGIN_API=1 npm run build -- --outDir work/consent-pwa-build --emptyOutDir
+      - run: npm run test:consent:pwa

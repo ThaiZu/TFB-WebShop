@@ -1,3 +1,6 @@
+import {PolicyLinks} from './webshop-policy-links.jsx';
+import { analyticsEvent } from './webshop-analytics.js';
+import { CookieConsent } from './webshop-cookie-consent.jsx';
 import { PickupDates } from './webshop-pickup-dates.jsx';
 import { OfficeIdentity } from './webshop-office-identity.jsx';
 import { OrderConfirmation } from './webshop-order-confirmation.jsx';
@@ -127,19 +130,6 @@ document.addEventListener('click', (e) => {
       && (t === e.target || t.contains(e.target) || e.target.contains(t))) return;
   e.stopPropagation(); e.preventDefault();
 }, { capture: true });
-/* ── SUIVI MARKETING : un seul point d'envoi vers Google Tag Manager.
-   Le conteneur (index.html) ne mesure rien par lui-même ; c'est l'application
-   qui pousse les faits métier dans dataLayer, et l'agence configure ses
-   balises dessus sans toucher au code. Rien n'est envoyé si dataLayer
-   n'existe pas (page servie sans le conteneur, bloqueur) : jamais d'erreur
-   côté client pour du suivi. Un achat = un événement « purchase » au
-   vocabulaire Google Ads / GA4 : transaction_id, value, currency. */
-function wsTrack(event, data) {
-  try {
-    if (!Array.isArray(window.dataLayer)) return;
-    window.dataLayer.push(Object.assign({ event: event }, data || {}));
-  } catch (_) { /* le suivi ne casse jamais l'achat */ }
-}
 
 function wsTap(fn, opts) {
   /* ÉCOUTEURS NATIFS, PAS SYNTHÉTIQUES. Diagnostic au doigt sur la fiche
@@ -3161,6 +3151,7 @@ function LoginModal({ open, onClose, onLogin, onRegister, onGoToAccount, shopId,
       ) : (
       <>
       <h2 className="ws-modal__title">{tRich(t, tab === 'login' ? 'auth.welcomeBack' : 'auth.createTitle')}</h2>
+      {tab !== 'login' && <p className="ws-registration-privacy">{wsText("privacy.notice")} <PolicyLinks/></p>}
       <p className="ws-modal__lede">{tab === 'login' ? wsText("ui.loginHint") : wsText("ui.registerHint")}</p>
       <div className="ws-tabs">
         <button className={`ws-tab${tab === 'login' ? ' is-active' : ''}`} onClick={() => { setTab('login'); setErr(''); }}>{t('auth.login')}</button>
@@ -3506,7 +3497,7 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
   const [purchaseRevision, setPurchaseRevision] = useState(0);
   const [purchaseDetailsOpen, setPurchaseDetailsOpen] = useState(false);
   const [tab, setTab] = useState(() => {
-    try { return localStorage.getItem(ACCOUNT_TAB_LS) || 'profil'; } catch (_) { return 'profil'; }
+    try { return window.WSSessionStorage.getItem(ACCOUNT_TAB_LS) || 'profil'; } catch (_) { return 'profil'; }
   });
   // Sociétés de facturation : flux d'ajout (VIES ou sans TVA), jamais
   // d'édition en place d'une société existante.
@@ -3537,7 +3528,7 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
   const activeTab = visibleTabs.some((t) => t.key === tab) ? tab : 'profil';
   function selectTab(k) {
     setTab(k); setPurchaseDetailsOpen(false);
-    try { localStorage.setItem(ACCOUNT_TAB_LS, k); } catch (_) {}
+    try { window.WSSessionStorage.setItem(ACCOUNT_TAB_LS, k); } catch (_) {}
   }
 
   async function addByVies() {
@@ -5019,6 +5010,9 @@ function CheckoutStep3({ basket, subtotal, totaux, total, payment, setPayment, i
       {shop && <section className="ws-co-ordering-shop" aria-label={shop.name}>
         <strong>{shop.name}</strong>
         <span>{shop.address}</span>
+        <span>{t('privacy.seller')}: {shop.legal_name || shop.representative_name || shop.name}</span>
+        {shop.vat_number && <span>VAT: {shop.vat_number}</span>}
+        {shop.email && <span>{shop.email}</span>}
       </section>}
       <h3 className="ws-co-step__title">{t('sum.payment')}</h3>
       <p className="ws-co-step__lede">{t('co.pay.subtitle')}</p>
@@ -5258,7 +5252,7 @@ function ShopFrame({ variant }) {
       window.WSBrand.apply(shopId);
     }
     /* LA BOUTIQUE ACTIVE S'ÉCRIT DANS L'URL. Elle n'y était pas : ?shop= était
-       LU au chargement puis rangé dans localStorage, et jamais réaffiché. Trois
+       LU au chargement puis rangé dans la session de cet onglet, et jamais réaffiché. Trois
        conséquences, toutes constatées :
          · on ne pouvait pas savoir quelle boutique on regardait ;
          · un lien copié ne portait pas la boutique, le destinataire tombait
@@ -5556,7 +5550,7 @@ function ShopFrame({ variant }) {
   //
   // AVANT le login token, on force un HARD REFRESH pour repartir d'un état 100%
   // propre : une session/onglet précédent laisse en mémoire (état React) et en
-  // localStorage un contexte résiduel (jeton, boutique active, mode, office/site,
+  // session de cet onglet un contexte résiduel (jeton, boutique active, mode, office/site,
   // LISTE PRODUITS déjà chargée) qui « colle » et empêche les filtres livraison
   // de s'appliquer comme sur le webshop online. Le reload wipe tout l'état React
   // en mémoire (panier, mode, listes) et re-fetch le catalogue de la bonne
@@ -5579,7 +5573,7 @@ function ShopFrame({ variant }) {
       let persisted = false;
       try { sessionStorage.setItem(CLEAN_FLAG, '1'); persisted = sessionStorage.getItem(CLEAN_FLAG) === '1'; } catch (_) {}
       if (persisted) {
-        try { localStorage.removeItem('ws_auth_token'); } catch (_) {} // drop la session précédente
+        try { window.WSSessionStorage.removeItem('ws_auth_token'); } catch (_) {} // drop la session précédente
         window.location.reload();                                       // hard refresh (l'URL garde ?handoff)
         return;
       }
@@ -5608,7 +5602,7 @@ function ShopFrame({ variant }) {
     return () => { alive = false; };
   }, []);
   // Restauration de la session au chargement. Le jeton était bien écrit dans
-  // localStorage à la connexion et WSAuth.me() existait pour le revalider, mais
+  // la session de cet onglet à la connexion et WSAuth.me() existait pour le revalider, mais
   // RIEN ne l'appelait : après le moindre rechargement, le client redevenait
   // invité, et un checkout traité en visiteur alors
   // qu'il a un compte.
@@ -5818,6 +5812,7 @@ function ShopFrame({ variant }) {
   function handleCheckout() {
     if (!basket.length || quoteState.status !== 'ready' || !quoteState.quote?.totals) return;
     setCartDrawerOpen(false);
+    analyticsEvent('begin_checkout', basket, Number(quoteState.quote.totals.gross_after_discount));
     setCheckoutOpen(true);
   }
   function handlePlaced(payload) {
@@ -5827,12 +5822,7 @@ function ShopFrame({ variant }) {
       setCatalogueRefresh(value => value + 1);
       return;
     }
-    /* Conversion sans passage par Stripe (paiement en boutique, sur compte,
-       différé) : la commande est enregistrée, c'est l'achat. Même événement,
-       même vocabulaire que le retour Stripe, pour que Google Ads compte les
-       deux chemins de la même façon. */
-    wsTrack('purchase', { transaction_id: payload.orderRef || '', value: Number(payload.total) || 0,
-                          currency: 'EUR', payment: payload.paymentLabel || 'autre' });
+    // Analytics uses the saved order fetched by OrderConfirmation.
     setOrderToast({ ...payload, ts: Date.now() });
     setBasket([]);
     setCatalogueRefresh(value => value + 1); // Accepted orders may change availability.
@@ -6071,11 +6061,12 @@ function ShopFrame({ variant }) {
       context_label: { office_name: catalogueContextData?.office?.name, offer_name: catalogueContextData?.offer?.name } };
     if (needsCartReplacement(basket, candidate.shopping_context, shopId)) { setPendingContextLine(candidate); return false; }
     setBasket(current => [...current, candidate]);
+    analyticsEvent('add_to_cart', [candidate]);
     return true;
   }
   function confirmContextReplacement() {
     if (!pendingContextLine) return;
-    setVoucherApplied(null); setVoucherInput(''); setBasket([pendingContextLine]); setPendingContextLine(null);
+    setVoucherApplied(null); setVoucherInput(''); setBasket([pendingContextLine]); analyticsEvent('add_to_cart', [pendingContextLine]); setPendingContextLine(null);
   }
   function canAddProduct(productId, qty, portion) {
     const product = allProducts.find(item => String(item.id) === String(productId));
@@ -6142,6 +6133,7 @@ function ShopFrame({ variant }) {
   const menuRequest = React.useRef(0);
   const openProductDetail = React.useCallback((p) => {
     if (!p) return;
+    analyticsEvent('view_item', [{ productId: p.id, qty: 1, price: p.price }]);
     const request = ++menuRequest.current;
     const menuRequired = p.has_menu_options && browseContext.mode === 'standard' && !!window.WSCatalog?.listBundles;
     const standardCart = basket.length === 0 || (cartContext.mode === 'standard' && Number(cartShopId) === Number(shopId));
@@ -6237,6 +6229,7 @@ function ShopFrame({ variant }) {
         shoppingContext: normaliseShoppingContext(browseContext), deliveryDate: date });
       if (latestBasket.current !== snapshot) throw new Error('error.quote');
       setBasket(nextBasket);
+      analyticsEvent('add_to_cart', nextBasket.slice(snapshot.length));
       return true;
     }
     return appendContextLine(candidate);
@@ -6434,7 +6427,8 @@ function ShopFrame({ variant }) {
           {shopsFailed && <p className="ws-shopselect__help">{wsText("ui.connecting")}</p>}
         </main>
         <footer className="ws-shopselect__footer">© {new Date().getFullYear()} L'Atelier By</footer>
-      </div><PwaInstallPrompt /></>
+      </div><PwaInstallPrompt />
+      <CookieConsent /></>
     );
   }
 
@@ -6728,6 +6722,7 @@ function ShopFrame({ variant }) {
       )}
       {orderToast && <OrderConfirmation orderRef={orderToast.orderRef} total={orderToast.total} shop={cartShop} onClose={() => setOrderToast(null)}/>}
       <PwaInstallPrompt />
+      <CookieConsent />
     </div>
   );
 }

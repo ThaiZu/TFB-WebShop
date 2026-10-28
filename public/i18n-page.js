@@ -3,7 +3,7 @@
 window.WSPageReady = window.WSI18n.load().then(async function (ready) {
   if (!ready) throw new Error('Translation dictionaries unavailable');
   const linkLanguage = new URLSearchParams(location.search).get('lang');
-  if (linkLanguage && !localStorage.getItem('ws.lang')) await window.WSI18n.setLang(linkLanguage);
+  if (linkLanguage && !window.WSSessionStorage.getItem('ws.lang')) await window.WSI18n.setLang(linkLanguage);
   function render() {
     document.querySelectorAll('[data-i18n]').forEach(function (element) {
       element.textContent = window.WSI18n.t(element.dataset.i18n);

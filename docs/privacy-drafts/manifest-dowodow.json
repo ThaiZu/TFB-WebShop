@@ -1,0 +1,631 @@
+{
+  "date": "2026-10-28",
+  "basis": {
+    "webshop_head": "977644b24a0934af9bc92f036bf1bf5525a7bf05",
+    "api_head": "24a547d52ced82a9f8a53fd2a5fd78e837919ea3"
+  },
+  "uncommitted_files_audited": true,
+  "files": [
+    {
+      "path": "TFB-WebShop/public/cookie-consent.js",
+      "sha256": "e5ade1adcfd9d4b106eefa3c7c2bd1feabbb52fe9ff2d6220c8aad9c804ad417",
+      "anchors": [
+        {
+          "line": 6,
+          "anchor": "const KEY"
+        },
+        {
+          "line": 10,
+          "anchor": "function sixMonthsAfter"
+        },
+        {
+          "line": 21,
+          "anchor": "function cleanCookies"
+        },
+        {
+          "line": 42,
+          "anchor": "function stopAdapter"
+        },
+        {
+          "line": 139,
+          "anchor": "status: value.status"
+        },
+        {
+          "line": 142,
+          "anchor": "localStorage has no native TTL"
+        }
+      ]
+    },
+    {
+      "path": "TFB-WebShop/webshop-ga4.js",
+      "sha256": "437e16704ec53c4d0baaa36902580e1f33dcc41ece7db3d831a1f2d3956fdfd8",
+      "anchors": [
+        {
+          "line": 2,
+          "anchor": "createGa4Adapter"
+        },
+        {
+          "line": 6,
+          "anchor": "const keyPrefix"
+        },
+        {
+          "line": 17,
+          "anchor": "send_page_view"
+        },
+        {
+          "line": 20,
+          "anchor": "cookie_expires"
+        },
+        {
+          "line": 38,
+          "anchor": "script.referrerPolicy"
+        },
+        {
+          "line": 60,
+          "anchor": "sanitizeGa4Event"
+        }
+      ]
+    },
+    {
+      "path": "TFB-WebShop/webshop-analytics.js",
+      "sha256": "2fab1b5d54b659f40aad1027ae1abdff04de79c38e0335a05b07238912a34bcc",
+      "anchors": [
+        {
+          "line": 4,
+          "anchor": "analyticsItems"
+        },
+        {
+          "line": 15,
+          "anchor": "analyticsPurchase"
+        },
+        {
+          "line": 1,
+          "anchor": "observedPurchases"
+        }
+      ]
+    },
+    {
+      "path": "TFB-WebShop/webshop-cookie-consent.jsx",
+      "sha256": "f0a59f6e91007b4f317d56153f39642271deb8721dfce8dbeafcddd7b2b998ee",
+      "anchors": [
+        {
+          "line": 76,
+          "anchor": "contact?.verified"
+        },
+        {
+          "line": 64,
+          "anchor": "aria-modal"
+        },
+        {
+          "line": 84,
+          "anchor": "save({ analytics: true"
+        }
+      ]
+    },
+    {
+      "path": "TFB-WebShop/webshop-auth-api.jsx",
+      "sha256": "34c94ecc558e4ecbc64b45760f74932b49263697cee17a86e46066f903cf82ab",
+      "anchors": [
+        {
+          "line": 22,
+          "anchor": "const TOKEN_KEY"
+        },
+        {
+          "line": 23,
+          "anchor": "const REFRESH_TOKEN_KEY"
+        },
+        {
+          "line": 434,
+          "anchor": "async logout"
+        }
+      ]
+    },
+    {
+      "path": "TFB-WebShop/webshop-i18n.jsx",
+      "sha256": "c6c54a95c224a3517d1d5044979433a021329e1f6723882b215a19da4bbf79bd",
+      "anchors": [
+        {
+          "line": 22,
+          "anchor": "const LS_LANG"
+        },
+        {
+          "line": 23,
+          "anchor": "const LS_CUSTOMER"
+        },
+        {
+          "line": 367,
+          "anchor": "function signOut"
+        }
+      ]
+    },
+    {
+      "path": "TFB-WebShop/webshop-orders-api.jsx",
+      "sha256": "77c8ea581a643e46325e0787973d9b8182cfcc9e12559807df289ebe88e0528b",
+      "anchors": [
+        {
+          "line": 53,
+          "anchor": "sessionStorage.setItem('ws.order.token."
+        },
+        {
+          "line": 56,
+          "anchor": "sessionStorage.setItem('ws.pendingPay'"
+        }
+      ]
+    },
+    {
+      "path": "TFB-WebShop/webshop-pwa-install.jsx",
+      "sha256": "b7a039c09aa13af8493b44b3d3f208068127e1c79bc4e9fa9a72580ab534c04a",
+      "anchors": [
+        {
+          "line": 8,
+          "anchor": "WS_PWA_LATER_KEY ="
+        },
+        {
+          "line": 9,
+          "anchor": "WS_PWA_INSTALLED_KEY ="
+        },
+        {
+          "line": 10,
+          "anchor": "WS_PWA_DELAY_MS ="
+        }
+      ]
+    },
+    {
+      "path": "TFB-WebShop/webshop-delivery-preference.js",
+      "sha256": "ab03e7ccac74bd67038c1ca404511604b152405fa258faf6082767557f311a0e",
+      "anchors": [
+        {
+          "line": 2,
+          "anchor": "const key ="
+        },
+        {
+          "line": 16,
+          "anchor": "window.WSSessionStorage.setItem"
+        }
+      ]
+    },
+    {
+      "path": "TFB-WebShop/webshop-shop-router.jsx",
+      "sha256": "d63907ea340b5d7c7fdca77205756ef39665ccb153952e5c7105e9e983231032",
+      "anchors": [
+        {
+          "line": 12,
+          "anchor": "const KEY ="
+        }
+      ]
+    },
+    {
+      "path": "TFB-WebShop/webshop-full-bundle.jsx",
+      "sha256": "b270c9c7b2240288bd929ea0b431aa506ee30b400e23ec23bd8aead2c150b6ca",
+      "anchors": [
+        {
+          "line": 3226,
+          "anchor": "const ACCOUNT_TAB_LS"
+        },
+        {
+          "line": 5565,
+          "anchor": "const CLEAN_FLAG"
+        },
+        {
+          "line": 5815,
+          "anchor": "analyticsEvent('begin_checkout"
+        }
+      ]
+    },
+    {
+      "path": "TFB-WebShop/vite.config.js",
+      "sha256": "e97564165a76526f007d345b6f510fd671818e59d0144a547a2a76511b03843e",
+      "anchors": [
+        {
+          "line": 158,
+          "anchor": "globPatterns:"
+        },
+        {
+          "line": 160,
+          "anchor": "importScripts:"
+        },
+        {
+          "line": 173,
+          "anchor": "urlPattern:"
+        },
+        {
+          "line": 179,
+          "anchor": "cacheName:"
+        }
+      ]
+    },
+    {
+      "path": "TFB-Api/app/Services/Webshop/WebshopPrivacyConfig.php",
+      "sha256": "8352955a4a9d1d32c5696dddde2b338e2044cc97b872fd24c2eb6bf6df31d0d5",
+      "anchors": [
+        {
+          "line": 11,
+          "anchor": "GA4_MEASUREMENT_ID ="
+        },
+        {
+          "line": 24,
+          "anchor": "'status' =>"
+        },
+        {
+          "line": 33,
+          "anchor": "'contact' =>"
+        },
+        {
+          "line": 34,
+          "anchor": "'controllerRolesConfirmed' =>"
+        },
+        {
+          "line": 46,
+          "anchor": "'integrations' =>"
+        }
+      ]
+    },
+    {
+      "path": "TFB-Api/app/Services/Auth/ClientAuthService.php",
+      "sha256": "84db2ea87fd053012894fb79e73ed961c885539f541e6a2d5d146150b3854e44",
+      "anchors": [
+        {
+          "line": 19,
+          "anchor": "ACCESS_TTL ="
+        },
+        {
+          "line": 20,
+          "anchor": "REFRESH_TTL ="
+        },
+        {
+          "line": 485,
+          "anchor": "requestSmsPasswordReset"
+        },
+        {
+          "line": 501,
+          "anchor": "smsResetRepository->create"
+        }
+      ]
+    },
+    {
+      "path": "TFB-Api/app/Services/Auth/SmsApiClient.php",
+      "sha256": "47387ba1dd56544cf89dceb20b44e4b219b8a2754cf334bc54e19b71f09cbcf9",
+      "anchors": [
+        {
+          "line": 47,
+          "anchor": "https://api.smsapi.pl"
+        }
+      ]
+    },
+    {
+      "path": "TFB-Api/app/Services/Webshop/WebshopOrderService.php",
+      "sha256": "08dd2bfc906b0802f00851ff03625cd4e4e135ec13c365ee08562bf2b3cca136",
+      "anchors": [
+        {
+          "line": 176,
+          "anchor": "'contact' =>"
+        },
+        {
+          "line": 177,
+          "anchor": "'delivery' =>"
+        },
+        {
+          "line": 178,
+          "anchor": "'invoice' =>"
+        },
+        {
+          "line": 182,
+          "anchor": "'items' =>"
+        },
+        {
+          "line": 385,
+          "anchor": "INSERT INTO webshop_order"
+        }
+      ]
+    },
+    {
+      "path": "TFB-Api/app/Services/Webshop/WebshopOrderEmailOutboxService.php",
+      "sha256": "d67078eaddf8d1a23cd1cd138fee73d9bac1cab6be31b66338e43224c637a407",
+      "anchors": [
+        {
+          "line": 14,
+          "anchor": "class WebshopOrderEmailOutboxService"
+        }
+      ]
+    },
+    {
+      "path": "TFB-Api/app/Services/Webshop/Stripe/WebshopCheckoutService.php",
+      "sha256": "dd9e7855d4e25d0f51eff93741684c2a7450e0ef3853839dbaf23d16fcace23f",
+      "anchors": [
+        {
+          "line": 55,
+          "anchor": "'line_items'"
+        },
+        {
+          "line": 56,
+          "anchor": "'metadata'"
+        }
+      ]
+    },
+    {
+      "path": "TFB-Api/app/Services/Client/OfficeGeoService.php",
+      "sha256": "e44fe1646fdaae9300347255c347607c9e6e225f6d98b57016c82a2be4b0f905",
+      "anchors": [
+        {
+          "line": 98,
+          "anchor": "https://maps.googleapis.com"
+        },
+        {
+          "line": 60,
+          "anchor": "local_reference"
+        }
+      ]
+    },
+    {
+      "path": "TFB-Api/app/Services/Client/ClientService.php",
+      "sha256": "0fec7fb41b974108a22adc9c9413dc673d51f8d59c78d67180996910257f2e97",
+      "anchors": [
+        {
+          "line": 645,
+          "anchor": "https://api.vatcomply.com"
+        }
+      ]
+    },
+    {
+      "path": "TFB-Api/v1/Routes/Webshop/webshopLocaleRoutes.php",
+      "sha256": "7db3512f45d05952dc51753693840fe5e461598239f15da400323310cf3de4c3",
+      "anchors": [
+        {
+          "line": 15,
+          "anchor": "resolve($_SERVER, null, false)"
+        }
+      ]
+    },
+    {
+      "path": "TFB-WebShop/landing/b2b/evenements-b2b.html",
+      "sha256": "56f0f9e3660cc60d8da55220bf3669310d70805c4e0e3ea84864842ca5499a4d",
+      "anchors": [
+        {
+          "line": 5,
+          "anchor": "Optional marketing disabled"
+        }
+      ]
+    },
+    {
+      "path": "TFB-WebShop/landing/b2b/webshop-landing-b2b.js",
+      "sha256": "7b6d8e551cbdb2f2364c15fe991f1859c944a79143c95f3c440effe748a7b657",
+      "anchors": [
+        {
+          "line": 69,
+          "anchor": "sessionStorage.getItem('la_lang'"
+        },
+        {
+          "line": 122,
+          "anchor": "sessionStorage.setItem('la_lang'"
+        }
+      ]
+    },
+    {
+      "path": "TFB-WebShop/php-api/bo/guard.php",
+      "sha256": "69ea12d25309ff2ba1b2c85bffac5c0c8ccd83836969df5c3ffcb834b63ad9ed",
+      "anchors": [
+        {
+          "line": 60,
+          "anchor": "43200"
+        },
+        {
+          "line": 63,
+          "anchor": "setcookie"
+        }
+      ]
+    },
+    {
+      "path": "TFB-WebShop/public/session-storage.js",
+      "anchors": [
+        {
+          "anchor": "const MAX_AGE",
+          "line": 5
+        },
+        {
+          "anchor": "function sweep",
+          "line": 38
+        },
+        {
+          "anchor": "function clearCustomer",
+          "line": 43
+        }
+      ],
+      "sha256": "ec5106d018aaf24c1fe82b37bc803e1b2bbbbf2dc04855ce3b0743875e4c9db9"
+    },
+    {
+      "path": "TFB-WebShop/scripts/privacy-pages.mjs",
+      "anchors": [
+        {
+          "anchor": "export function policyPages",
+          "line": 43
+        },
+        {
+          "anchor": "export function privacyPagesPlugin",
+          "line": 71
+        }
+      ],
+      "sha256": "49ef04d16958b92ce8c24e6fe5069bdbfff682169a85de5ed38ed6ed96c8b1dd"
+    },
+    {
+      "path": "TFB-WebShop/privacy-policies.json",
+      "anchors": [
+        {
+          "anchor": "\"version\"",
+          "line": 2
+        },
+        {
+          "anchor": "\"status\"",
+          "line": 3
+        }
+      ],
+      "sha256": "4b229f608c740b67740e7dd941c25eb846fd8b618138211bff08fd1e00df2aac"
+    },
+    {
+      "path": "TFB-Api/app/Services/Privacy/WebshopAuthRetention.php",
+      "anchors": [
+        {
+          "anchor": "public function run",
+          "line": 12
+        },
+        {
+          "anchor": "INTERVAL 15 MINUTE",
+          "line": 22
+        }
+      ],
+      "sha256": "ae7a1a4adc451d199f23d1f6ff22eb66f863aa1e6bfede7564b840310ceaed6a"
+    },
+    {
+      "path": "TFB-Api/scripts/cleanup-webshop-auth-data.php",
+      "anchors": [
+        {
+          "anchor": "$execute = false",
+          "line": 7
+        },
+        {
+          "anchor": "--execute",
+          "line": 11
+        }
+      ],
+      "sha256": "a8aa4e5be78d30ecfb91e8913d4b3e42e1d41347fd3a9a9c70ad850dbd86ff4b"
+    },
+    {
+      "path": "TFB-Api/database/2026_10_28_webshop_auth_retention_indexes.sql",
+      "anchors": [
+        {
+          "anchor": "ALTER TABLE client_password_reset_token",
+          "line": 3
+        }
+      ],
+      "sha256": "2f7839258a89bd590284fb310fda75df567ee687c1d222920bd0f46675b6a0e7"
+    },
+    {
+      "path": "TFB-Api/app/Services/Privacy/WebshopAccountReview.php",
+      "anchors": [
+        {
+          "anchor": "public function batch",
+          "line": 10
+        },
+        {
+          "anchor": "review_candidate",
+          "line": 22
+        }
+      ],
+      "sha256": "8fae72d40179086e4671690a5abf4b536e779027739cb445e2e9e237fbf9f74c"
+    },
+    {
+      "path": "TFB-Api/scripts/review-webshop-accounts.php",
+      "anchors": [
+        {
+          "anchor": "--output=/private/new-file.json",
+          "line": 6
+        }
+      ],
+      "sha256": "f52b6d7927fad3172c7652672a405292b8b43061b0f85cc2e6e288a0d5869b68"
+    },
+    {
+      "path": "TFB-Api/app/Services/Panel/ShopInsightService.php",
+      "anchors": [
+        {
+          "anchor": "private const METRICS",
+          "line": 22
+        },
+        {
+          "anchor": "rankingList[]",
+          "line": 143
+        }
+      ],
+      "sha256": "57f02a6fc592a00fc4002b320a5edeb3f9c0fdeb99053c92833b9bae45e950b3"
+    },
+    {
+      "path": "TFB-WebShop/docs/privacy-published/privacy-pl.md",
+      "anchors": [
+        {
+          "anchor": "# ",
+          "line": 1
+        }
+      ],
+      "sha256": "e20b84e71201f1295f7adf7cec3058669e0dd4427415ba1c1bdcb0bf4d8989fc"
+    },
+    {
+      "path": "TFB-WebShop/docs/privacy-published/cookies-pl.md",
+      "anchors": [
+        {
+          "anchor": "# ",
+          "line": 1
+        }
+      ],
+      "sha256": "77326166a0ef6a4dfa1c087cee86b40c066838e9a0a70f70918c570884bf519d"
+    },
+    {
+      "path": "TFB-WebShop/docs/privacy-published/privacy-fr.md",
+      "anchors": [
+        {
+          "anchor": "# ",
+          "line": 1
+        }
+      ],
+      "sha256": "d8b1ce1fb5f0d2e52c4218d21ebea64ac7df8dadf1bdbf24e7c6c9a12a779cce"
+    },
+    {
+      "path": "TFB-WebShop/docs/privacy-published/cookies-fr.md",
+      "anchors": [
+        {
+          "anchor": "# ",
+          "line": 1
+        }
+      ],
+      "sha256": "8290b25f312ef27b408381e2165a23f52f292233f69c2b3bc56b292d9e3df9da"
+    },
+    {
+      "path": "TFB-WebShop/docs/privacy-published/privacy-nl.md",
+      "anchors": [
+        {
+          "anchor": "# ",
+          "line": 1
+        }
+      ],
+      "sha256": "858df637ab023814ae9ff7ac038659a60d7fed9e118d6abf19e580c4e6321134"
+    },
+    {
+      "path": "TFB-WebShop/docs/privacy-published/cookies-nl.md",
+      "anchors": [
+        {
+          "anchor": "# ",
+          "line": 1
+        }
+      ],
+      "sha256": "f4d14a25ba647d823944d830f8dca726c73bdbd467c59a34d4086c40cbd95503"
+    },
+    {
+      "path": "TFB-WebShop/webshop-policy-links.jsx",
+      "anchors": [
+        {
+          "anchor": "export function PolicyLinks",
+          "line": 3
+        }
+      ],
+      "sha256": "0707b288d5da842047019feab93e6c15eb18d5f40c34c56894a6e88f2d4570c4"
+    },
+    {
+      "path": "TFB-WebShop/public/policy-links.js",
+      "anchors": [
+        {
+          "anchor": "function render",
+          "line": 4
+        }
+      ],
+      "sha256": "b5dae8b535142cc40e39cc32c814a6640b3194dbe0f93708d6c96d15f1b19bd8"
+    },
+    {
+      "path": "TFB-WebShop/webshop-policy-links.js",
+      "anchors": [
+        {
+          "anchor": "export function policyLinks",
+          "line": 1
+        }
+      ],
+      "sha256": "b90d1f1efe35ce27fccb5352b86c6c7569097b466d212e863d999b376caf2cd8"
+    }
+  ],
+  "version": "atelierby-2026-10-28"
+}

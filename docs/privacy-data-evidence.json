@@ -1,0 +1,97 @@
+{
+  "date": "2026-10-28",
+  "webshop_head": "95949ac86b0c1d3b4827560a24de5cf25517c526",
+  "api_head": "1226d79248c36f7a89f9e9469edb570521da8a86",
+  "uncommitted": true,
+  "source_attachment_sha256": "2f2065786016d402a644cea960ab9e4a6fd48acc71f999f1c4aab49f3ca60fbc",
+  "files": [
+    {
+      "path": "TFB-Api/app/Repositories/SystemMailer/SystemEmailLogRepository.php",
+      "sha256": "b29028e374635e630dc8b0294eaf326d7800926919b7ae8ff33399952d01c586"
+    },
+    {
+      "path": "TFB-Api/app/Services/Auth/ClientAuthService.php",
+      "sha256": "84db2ea87fd053012894fb79e73ed961c885539f541e6a2d5d146150b3854e44"
+    },
+    {
+      "path": "TFB-Api/app/Services/Auth/SmsApiClient.php",
+      "sha256": "47387ba1dd56544cf89dceb20b44e4b219b8a2754cf334bc54e19b71f09cbcf9"
+    },
+    {
+      "path": "TFB-Api/app/Services/Client/ClientService.php",
+      "sha256": "0fec7fb41b974108a22adc9c9413dc673d51f8d59c78d67180996910257f2e97"
+    },
+    {
+      "path": "TFB-Api/app/Services/Client/OfficeGeoService.php",
+      "sha256": "e44fe1646fdaae9300347255c347607c9e6e225f6d98b57016c82a2be4b0f905"
+    },
+    {
+      "path": "TFB-Api/app/Services/Shop/ShopService.php",
+      "sha256": "74945757b55a6b88c7f9e8fc5d32286272a12eff86de0dd188ef0177a6d3d6d0"
+    },
+    {
+      "path": "TFB-Api/app/Services/Webshop/Stripe/WebshopCheckoutGateway.php",
+      "sha256": "d377277ef9639c669830185ebfc24f4787698dc01e62d3a1d0899558830cc112"
+    },
+    {
+      "path": "TFB-Api/app/Services/Webshop/Stripe/WebshopCheckoutService.php",
+      "sha256": "dd9e7855d4e25d0f51eff93741684c2a7450e0ef3853839dbaf23d16fcace23f"
+    },
+    {
+      "path": "TFB-Api/app/Services/Webshop/WebshopOrderEmailOutboxService.php",
+      "sha256": "d67078eaddf8d1a23cd1cd138fee73d9bac1cab6be31b66338e43224c637a407"
+    },
+    {
+      "path": "TFB-Api/app/Services/Webshop/WebshopPrivacyConfig.php",
+      "sha256": "2ebf4ec525a2d6b0c6b96f5e300c90c1e9efbb5c5f2c6bdecb1ecfae771940b4"
+    },
+    {
+      "path": "TFB-Api/app/Services/Webshop/WebshopShopMailer.php",
+      "sha256": "349b7ffa7aa3b174d061503170b0bc072fa85ade42caee268af5ea357e1bbc1f"
+    },
+    {
+      "path": "TFB-Api/tests/contract/FranchiseAllRoutesAccessTest.php",
+      "sha256": "a4b1f0ec98d34ce1e4b0ce6a0806915afffd002940c782d46fb251c89a868f03"
+    },
+    {
+      "path": "TFB-Api/v1/Routes/Webshop/webshopLocaleRoutes.php",
+      "sha256": "7db3512f45d05952dc51753693840fe5e461598239f15da400323310cf3de4c3"
+    },
+    {
+      "path": "TFB-WebShop/api-config.js",
+      "sha256": "a93fea79b36d482a4cf5ffc619fb6b432f36110156477a4f5bea3d8fe600dc92"
+    },
+    {
+      "path": "TFB-WebShop/backend/schema/seed-shops.sql",
+      "sha256": "07846e98cc41109bc8514f0a40e9401ad713e769f6e448db52ba2d8f20189fd4"
+    },
+    {
+      "path": "TFB-WebShop/landing/b2b/evenements-b2b.html",
+      "sha256": "56f0f9e3660cc60d8da55220bf3669310d70805c4e0e3ea84864842ca5499a4d"
+    },
+    {
+      "path": "TFB-WebShop/public/cookie-consent.js",
+      "sha256": "e5ade1adcfd9d4b106eefa3c7c2bd1feabbb52fe9ff2d6220c8aad9c804ad417"
+    },
+    {
+      "path": "TFB-WebShop/public/locales/fr.json",
+      "sha256": "c6697f6934730a8a69d4def90cfb4df0686da3097341614e02d678deca71eea2"
+    },
+    {
+      "path": "TFB-WebShop/public/session-storage.js",
+      "sha256": "ec5106d018aaf24c1fe82b37bc803e1b2bbbbf2dc04855ce3b0743875e4c9db9"
+    },
+    {
+      "path": "TFB-WebShop/scripts/privacy-pages.mjs",
+      "sha256": "de3eaeb63f9e2655eebac9823857c1344cb529f6dcb84f57e1c7382002f75a81"
+    },
+    {
+      "path": "TFB-WebShop/webshop-auth-api.jsx",
+      "sha256": "34c94ecc558e4ecbc64b45760f74932b49263697cee17a86e46066f903cf82ab"
+    },
+    {
+      "path": "TFB-WebShop/webshop-cookie-consent.jsx",
+      "sha256": "be8981e9451684977c9a77c9f06be837d1b3e33c46bc4699d771f9e7b01a7a84"
+    }
+  ]
+}

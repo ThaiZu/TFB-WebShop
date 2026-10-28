@@ -7,7 +7,7 @@
  */
 const WS_PWA_LATER_KEY = 'ws.pwa.install.laterAt';
 const WS_PWA_INSTALLED_KEY = 'ws.pwa.install.installed';
-const WS_PWA_DELAY_MS = 7 * 24 * 60 * 60 * 1000;
+const WS_PWA_DELAY_MS = 12 * 60 * 60 * 1000;
 
 const pwaInstallListeners = new Set();
 let pwaDeferredPrompt = null;
@@ -45,11 +45,11 @@ function pwaIsIosSafari() {
 }
 
 function pwaRead(key) {
-  try { return localStorage.getItem(key); } catch (_) { return null; }
+  try { return window.WSSessionStorage.getItem(key); } catch (_) { return null; }
 }
 
 function pwaWrite(key, value) {
-  try { localStorage.setItem(key, value); } catch (_) {}
+  try { window.WSSessionStorage.setItem(key, value); } catch (_) {}
 }
 
 function pwaDeferredRecently() {
@@ -63,7 +63,7 @@ function pwaMarkLater() {
 
 function pwaMarkInstalled() {
   pwaWrite(WS_PWA_INSTALLED_KEY, '1');
-  try { localStorage.removeItem(WS_PWA_LATER_KEY); } catch (_) {}
+  try { window.WSSessionStorage.removeItem(WS_PWA_LATER_KEY); } catch (_) {}
 }
 
 function pwaKnownInstalled() {
