@@ -30,7 +30,6 @@ import '../webshop-availability-api.jsx';
 import '../webshop-slots-api.jsx';
 import '../webshop-delivery-fees-api.jsx';
 import '../webshop-catalog-api.jsx';
-import '../webshop-brand-api.jsx';
 import '../webshop-auth-api.jsx';
 import '../webshop-quote-api.jsx';
 import '../webshop-tours-api.jsx';

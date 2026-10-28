@@ -23,11 +23,11 @@
   if (window.WSCompanies)    window.WSCompanies.setEndpoint(BASE_URL + '/companies');
   if (window.WSPayments)     window.WSPayments.endpoint     = BASE_URL + '/webshop/payment-methods';
   if (window.WSAuth)         window.WSAuth.endpoint         = BASE_URL + '/clients/auth';
+  if (window.WSAuth)         window.WSAuth.configEndpoint   = BASE_URL + '/webshop/config';
   if (window.WSQuote)        window.WSQuote.endpoint        = BASE_URL + '/webshop/cart/quote';
   if (window.WSAvailability) window.WSAvailability.endpoint = BASE_URL + '/availability';
   if (window.WSSlots)        window.WSSlots.endpoint        = BASE_URL + '/slots';
   if (window.WSCalendar)     window.WSCalendar.endpoint     = BASE_URL + '/calendar';
-  if (window.WSBrand)        window.WSBrand.endpoint        = BASE_URL + '/brand';
   // Interface translations are local assets. The API only picks the initial
   // language from the visitor's IP before the storefront is mounted.
   if (window.WSI18n) window.WSI18n.setLocaleEndpoint(BASE_URL + '/webshop/locale');
