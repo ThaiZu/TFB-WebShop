@@ -1,3 +1,4 @@
+import { analyticsPurchase } from './webshop-analytics.js';
 import { OrderSummary } from './webshop-order-confirmation.jsx';
 import { useEffect, useState } from 'react';
 import { StripeEmbeddedPayment } from './webshop-stripe-embedded.jsx';
@@ -69,6 +70,8 @@ export function StripePaymentStatus({ orderRef, onUpdated }) {
         if (!alive) return;
         setPayment(status); setOrder(result); setBusy(false);
         onUpdated?.(result);
+        if (status.status === 'paid') analyticsPurchase({ ...result, payment: { method: 'stripe', status: 'paid' } },
+          Number.isSafeInteger(status.amountMinor) ? status.amountMinor / 100 : undefined);
         try {
           sessionStorage.setItem('ws.lastPay', orderRef);
           if (status.status === 'paid' && JSON.parse(sessionStorage.getItem('ws.pendingPay') || 'null')?.orderRef === orderRef) sessionStorage.removeItem('ws.pendingPay');

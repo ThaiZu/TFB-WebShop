@@ -21,10 +21,10 @@
   /* ---------- persistance ------------------------------------------ */
   const LS_LANG = 'ws.lang';
   const LS_CUSTOMER = 'ws.customer';
-  function readLS(k)  { try { return localStorage.getItem(k); } catch { return null; } }
-  function writeLS(k, v) { try { localStorage.setItem(k, v); } catch {} }
-  function readJSON(k)  { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch { return null; } }
-  function writeJSON(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+  function readLS(k)  { try { return window.WSSessionStorage.getItem(k); } catch { return null; } }
+  function writeLS(k, v) { try { window.WSSessionStorage.setItem(k, v); } catch {} }
+  function readJSON(k)  { try { const v = window.WSSessionStorage.getItem(k); return v ? JSON.parse(v) : null; } catch { return null; } }
+  function writeJSON(k, v) { try { window.WSSessionStorage.setItem(k, JSON.stringify(v)); } catch {} }
 
   function hasExplicitChoice() {
     const stored = readLS(LS_LANG);
@@ -364,7 +364,7 @@
     if (!SUPPORTED.includes(readLS(LS_LANG)) && profile && profile.preferredLang && SUPPORTED.includes(profile.preferredLang))
       setLang(profile.preferredLang);
   }
-  function signOut() { try { localStorage.removeItem(LS_CUSTOMER); } catch {} }
+  function signOut() { window.WSSessionStorage.clearCustomer?.(); }
 
   /* ---------- export ----------------------------------------------- */
   document.documentElement.setAttribute('lang', currentLang);

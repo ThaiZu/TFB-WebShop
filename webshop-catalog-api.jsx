@@ -25,7 +25,7 @@ import { adaptShopCatalogue } from './webshop-catalog-adapter.js';
     // Le jeton client accompagne le catalogue : c'est lui qui dit au serveur
     // si le client est rattaché à un bureau à assortiment réduit (0113).
     let hdr = {};
-    try { const t = localStorage.getItem('ws_auth_token'); if (t) hdr = { 'Authorization': 'Bearer ' + t }; } catch (_) {}
+    try { const t = window.WSSessionStorage.getItem('ws_auth_token'); if (t) hdr = { 'Authorization': 'Bearer ' + t }; } catch (_) {}
     const r = await window.WSAuth.authenticatedFetch(url, { credentials: 'include', headers: hdr });
     if (!r.ok) throw new Error(label + ' unavailable (HTTP ' + r.status + ').');
     return await r.json();
@@ -56,7 +56,7 @@ import { adaptShopCatalogue } from './webshop-catalog-adapter.js';
       if (date) query.set('date', toIso(date));
       const url = `${api.shopsEndpoint}/${encodeURIComponent(shopId)}/products/available?${query}`;
       let token = '';
-      try { token = localStorage.getItem('ws_auth_token') || ''; } catch (_) {}
+      try { token = window.WSSessionStorage.getItem('ws_auth_token') || ''; } catch (_) {}
       const key = url + '\n' + token;
       if (!pendingCatalogues.has(key)) {
         const pending = getJson(url, 'Catalogue').finally(() => pendingCatalogues.delete(key));

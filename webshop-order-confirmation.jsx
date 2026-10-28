@@ -1,3 +1,4 @@
+import { analyticsPurchase } from './webshop-analytics.js';
 import { useEffect, useState, useRef } from 'react';
 import './webshop-order-confirmation.css';
 
@@ -47,7 +48,7 @@ export function OrderConfirmation({ orderRef, total, shop, onClose }) {
     setError(false);
     Promise.resolve().then(() => window.WSOrders.get(orderRef)).then(result => {
       if (!result || !Array.isArray(result.items)) throw new Error('Order details unavailable');
-      if(alive)setOrder(result);
+      if(alive){setOrder(result);analyticsPurchase(result, total);}
     }).catch(() => {if(alive)setError(true);});
     return () => {alive=false;};
   },[orderRef,revision]);

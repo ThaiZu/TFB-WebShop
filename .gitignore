@@ -17,3 +17,6 @@ dist.nobody-*/
 
 # Metadane plików pobranych w Windows
 *:Zone.Identifier
+
+# Local verification builds and browser artifacts
+/work/

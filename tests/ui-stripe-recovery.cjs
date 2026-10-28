@@ -1,7 +1,7 @@
 const {chromium}=require('playwright');const assert=require('node:assert/strict');
 (async()=>{const browser=await chromium.launch({headless:true,args:['--no-sandbox','--host-resolver-rules=MAP webshop.tfbuddy.local 127.0.0.1']});try{
 const context=await browser.newContext({ignoreHTTPSErrors:true,viewport:{width:1440,height:1000}});
-await context.addInitScript(()=>{localStorage.setItem('ws_auth_token','test');localStorage.setItem('ws.lang','pl');});
+await context.addInitScript(()=>{sessionStorage.setItem('ws.session.v1:' + 'ws_auth_token', ((createdAt)=>JSON.stringify({value:'test', createdAt, expiresAt:createdAt+43200000}))(Date.now()));sessionStorage.setItem('ws.session.v1:' + 'ws.lang', ((createdAt)=>JSON.stringify({value:'pl', createdAt, expiresAt:createdAt+43200000}))(Date.now()));});
 let orderWrites=0,checkoutCalls=0,statusCalls=0,paymentStatus='not_started',statusError=false,closedPickupDate=null;const errors=[];
 await context.route('**/*',async route=>{const req=route.request(),u=new URL(req.url());if(!['webshop.tfbuddy.local','tfb.tfbuddy.local'].includes(u.hostname))return route.abort();if(!u.pathname.includes('/api/v1/'))return route.continue();let data=[];
 if(u.pathname.endsWith('/shops'))data=[{id:2,name:'Test shop',default_lang:'pl',languages:'pl,fr,nl',collect_enabled:1}];

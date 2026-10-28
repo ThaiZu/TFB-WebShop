@@ -13,7 +13,8 @@ const context={atob:value=>Buffer.from(value,'base64').toString(),document:{visi
   const ok=options.headers.Authorization==='Bearer new';
   return {ok,status:ok?200:401};
 }};
-vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'../webshop-auth-api.jsx'),'utf8'),context);
+context.window.WSSessionStorage = context.localStorage;
+ vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'../webshop-auth-api.jsx'),'utf8'),context);
 const auth=context.window.WSAuth;auth.endpoint='/auth';
 (async()=>{
  const results=await Promise.all(Array.from({length:5},()=>auth.authenticatedFetch('/catalog')));

@@ -4,7 +4,7 @@ const assert=require('node:assert/strict');
  const browser=await chromium.launch({headless:true,args:['--no-sandbox','--host-resolver-rules=MAP webshop.tfbuddy.local 127.0.0.1']});
  try { for(const mode of ['login','register','existing-session','no-invite','invalid']) {
   const context=await browser.newContext({ignoreHTTPSErrors:true});
-  await context.addInitScript(mode=>{localStorage.setItem('ws.lang','pl');if(['existing-session','no-invite'].includes(mode)){localStorage.setItem('ws_auth_token','access');localStorage.setItem('ws_auth_refresh_token','refresh');}},mode);
+  await context.addInitScript(mode=>{sessionStorage.setItem('ws.session.v1:' + 'ws.lang', ((createdAt)=>JSON.stringify({value:'pl', createdAt, expiresAt:createdAt+43200000}))(Date.now()));if(['existing-session','no-invite'].includes(mode)){sessionStorage.setItem('ws.session.v1:' + 'ws_auth_token', ((createdAt)=>JSON.stringify({value:'access', createdAt, expiresAt:createdAt+43200000}))(Date.now()));sessionStorage.setItem('ws.session.v1:' + 'ws_auth_refresh_token', ((createdAt)=>JSON.stringify({value:'refresh', createdAt, expiresAt:createdAt+43200000}))(Date.now()));}},mode);
   let accepted=0,registered=0;const errors=[];
   await context.route('**/*',async route=>{
    const req=route.request(),u=new URL(req.url());
