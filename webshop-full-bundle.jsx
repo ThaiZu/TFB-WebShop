@@ -5254,9 +5254,6 @@ function ShopFrame({ variant }) {
   React.useEffect(() => {
     // Persist the active shop so cart/checkout/login stay scoped to it.
     if (window.WSShopRouter) window.WSShopRouter.setActive(shopId);
-    if (window.WSBrand && typeof window.WSBrand.apply === 'function') {
-      window.WSBrand.apply(shopId);
-    }
     /* LA BOUTIQUE ACTIVE S'ÉCRIT DANS L'URL. Elle n'y était pas : ?shop= était
        LU au chargement puis rangé dans localStorage, et jamais réaffiché. Trois
        conséquences, toutes constatées :
@@ -5412,25 +5409,17 @@ function ShopFrame({ variant }) {
   }, [quoteResult]);
   const [switcherOpen, setSwitcherOpen] = useState(false);
 
-  // Delivery cutoff: no same-day delivery after 10:00. Re-evaluated every minute.
-  const [nowHour, setNowHour] = React.useState(() => new Date().getHours() * 60 + new Date().getMinutes());
+  // Refresh cutoff presentation in the shop's timezone every minute.
+  const [cutoffNow, setCutoffNow] = React.useState(() => new Date());
   React.useEffect(() => {
-    const id = setInterval(() => setNowHour(new Date().getHours() * 60 + new Date().getMinutes()), 60000);
+    const id = setInterval(() => setCutoffNow(new Date()), 60000);
     return () => clearInterval(id);
   }, []);
-  const todayMidnight = React.useMemo(() => { const t = new Date(); t.setHours(0,0,0,0); return t; }, []);
-  const isToday = (d) => d && d.toDateString() === todayMidnight.toDateString();
-  // Cutoff times loaded from API per shop, defaults until API responds.
-  /* Cut-offs : null tant que le serveur n'a pas répondu, JAMAIS une valeur
-     inventée. Les anciens défauts 11h00/16h00 gouvernaient l'écran (blocage
-     « Fermé · commandez pour demain », tooltips) avec des horaires que la
-     boutique n'avait pas fixés, dès que l'appel échouait ou tardait. Tant que
-     le cut-off est inconnu, on ne bloque pas et on n'affiche pas d'heure. */
-  const [deliveryCutoffMinutes, setDeliveryCutoffMinutes] = React.useState(null);
-  const [collectCutoffMinutes,  setCollectCutoffMinutes]  = React.useState(null);
-  // Per-product notes are a toggleable feature (enabled/disabled via API/DB).
-  // Default off until the shop settings confirm it's on.
-  const [lineNotesEnabled, setLineNotesEnabled] = React.useState(false);
+  const [availabilitySettings, setAvailabilitySettings] = React.useState(null);
+  const availabilityShopId = shopId == null ? '' : String(shopId);
+  // No settings from another shop may affect this render.
+  const activeSettings = availabilitySettings?.shopKey === availabilityShopId ? availabilitySettings.value : null;
+  const lineNotesEnabled = false; // No backend configuration for line notes yet.
   // ── DELIVERY SLOTS (midi / soir) ────────────────────────────────────
   // The slot is an ATTRIBUTE of the order, resolved server-side from the
   // route that serves the office. Front only renders /slots + /next-slot.
@@ -5644,36 +5633,29 @@ function ShopFrame({ variant }) {
   }
   React.useEffect(() => {
     let alive = true;
-    const cfgApi = [window.WSCatalog, window.WSBrand, window.WSAvailability, window.WSCalendar]
-      .find((a) => a && (a.getSettings || a.getShopSettings));
-    const getter = cfgApi && (cfgApi.getSettings || cfgApi.getShopSettings);
-    if (!getter) return;
-    Promise.resolve(getter.call(cfgApi, { shopId }))
-      .then((s) => {
-        if (!alive || !s) return;
-        // Accept a few likely field names from the settings payload.
-        const flag = s.line_notes_enabled ?? s.product_notes_enabled ?? s.allow_line_notes ?? (s.features && s.features.lineNotes);
-        if (typeof flag === 'boolean') setLineNotesEnabled(flag);
-      })
+    setAvailabilitySettings(null);
+    if (!availabilityShopId || !window.WSAvailability) return;
+    window.WSAvailability.getShopSettings({ shopId: availabilityShopId })
+      .then(value => { if (alive) setAvailabilitySettings({ shopKey: availabilityShopId, value }); })
       .catch(() => {});
     return () => { alive = false; };
-  }, [shopId]);
-  React.useEffect(() => {
-    const calApi = window.WSAvailability || window.WSCalendar;
-    if (!calApi) return;
-    // Delivery cutoff
-    (calApi.getCutoff || (() => calApi.getShopSettings({ shopId }).then((s) => s.delivery_cutoff)))
-      .call(calApi, { shopId, mode: 'delivery' })
-      .then((r) => { if (r && typeof r.hour === 'number') setDeliveryCutoffMinutes(r.hour * 60 + (r.minutes || 0)); })
-      .catch(() => {});
-    // Collect cutoff
-    (calApi.getCutoff || (() => calApi.getShopSettings({ shopId }).then((s) => s.collect_cutoff)))
-      .call(calApi, { shopId, mode: 'collect' })
-      .then((r) => { if (r && typeof r.hour === 'number') setCollectCutoffMinutes(r.hour * 60 + (r.minutes || 0)); })
-      .catch(() => {});
-  }, [shopId]);
-  const deliveryCutoffPassed = isToday(date) && deliveryCutoffMinutes !== null && nowHour >= deliveryCutoffMinutes;
-  const collectCutoffPassed  = isToday(date) && collectCutoffMinutes !== null && nowHour >= collectCutoffMinutes;
+  }, [availabilityShopId]);
+  const cutoffMinutes = (cutoff) => cutoff && Number.isInteger(cutoff.hour)
+    ? cutoff.hour * 60 + (cutoff.minutes || 0) : null;
+  const deliveryCutoffMinutes = cutoffMinutes(activeSettings?.delivery_cutoff);
+  const collectCutoffMinutes = cutoffMinutes(activeSettings?.collect_cutoff);
+  let nowHour = null;
+  let selectedDateIsShopToday = false;
+  if (activeSettings?.timezone) {
+    const parts = Object.fromEntries(new Intl.DateTimeFormat('en-GB', {
+      timeZone: activeSettings.timezone, year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    }).formatToParts(cutoffNow).map(part => [part.type, part.value]));
+    nowHour = Number(parts.hour) * 60 + Number(parts.minute);
+    selectedDateIsShopToday = window.WSAvailability.isoOf(date) === `${parts.year}-${parts.month}-${parts.day}`;
+  }
+  const deliveryCutoffPassed = selectedDateIsShopToday && deliveryCutoffMinutes !== null && nowHour >= deliveryCutoffMinutes;
+  const collectCutoffPassed = selectedDateIsShopToday && collectCutoffMinutes !== null && nowHour >= collectCutoffMinutes;
   // Human-readable cutoff labels for tooltips (e.g. "11h00", "16h00")
   function fmtCutoff(mins) {
     if (mins === null || mins === undefined) return '';
@@ -5722,7 +5704,7 @@ function ShopFrame({ variant }) {
   React.useEffect(() => {
     if (!shops || !shops.length) return;
     const m = shops.find((s) => String(s.id) === String(shopId) || s.slug === shopId);
-    if (m) { if (m.id !== shopId) setShopId(m.id); }
+    if (m) { if (String(m.id) !== String(shopId)) setShopId(m.id); }
     else {
       /* AUCUN REPLI. On ne choisit PAS de boutique à la place du visiteur.
          Le code prenait shops[0] : et /shops trie PAR NOM, donc ce n'était même

@@ -58,6 +58,7 @@
 
   const api = {
     endpoint: null,
+    configEndpoint: null,
 
     /* En-têtes d'authentification, PARTAGÉS. L'authentification est par jeton
        Bearer, jamais par cookie : un module qui appelle un endpoint protégé
@@ -299,9 +300,8 @@
        l'UI applique ses propres règles d'absence, aucune option n'est
        inventée. ── */
     async config() {
-      if (!api.endpoint) throw new Error('API configuration non disponible.');
-      const base = api.endpoint.replace(/\/auth\/?$/, '');
-      const r = await fetch(`${base}/config`, { credentials: 'include' });
+      if (!api.configEndpoint) throw new Error('API configuration non disponible.');
+      const r = await fetch(api.configEndpoint, { credentials: 'include' });
       if (!r.ok) throw new Error('Configuration indisponible (HTTP ' + r.status + ').');
       return await r.json();
     },
