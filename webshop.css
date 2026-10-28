@@ -4559,28 +4559,41 @@
   .pdm-gifts__prices { max-width: 76px; gap: 4px; }
 }
 
-/* Read-only promotion calendar inside the product sheet. */
-.pdm-promotion--upcoming .pdm-promotion__head { flex-wrap: wrap; }
+/* Compact upcoming offers: name and availability only. */
+.pdm-promotion__card--upcoming { display: block; padding: 12px 14px; }
 .pdm-promotion__card--upcoming .pdm-promotion__body { gap: 5px; }
-.pdm-promotion__card--upcoming .pdm-promotion__body > strong { font-size: 14px; line-height: 1.4; }
-.pdm-promotion__card--upcoming .pdm-promotion__composition { font-size: 12px; line-height: 1.45; }
-.pdm-promotion__schedule {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin-top: 7px; padding: 12px;
-  background: var(--color-surface); border: 1px solid var(--color-border-tertiary); border-radius: 8px;
-  color: var(--color-text); font-size: 12px; line-height: 1.5;
-}
-.pdm-promotion__weekdays { display: flex; flex-wrap: wrap; gap: 4px; }
+.pdm-promotion__card--upcoming .pdm-promotion__body > strong { font-size: 13px; line-height: 1.4; }
+.pdm-promotion__schedule { display: grid; gap: 3px; color: var(--color-text-muted); font-size: 12px; line-height: 1.45; }
+.pdm-promotion__availability { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.pdm-promotion__hours { flex-shrink: 0; white-space: nowrap; font-size: 11px; font-variant-numeric: tabular-nums; }
+
+.pdm-promotion__weekdays { display: flex; flex-shrink: 0; gap: 3px; margin: 2px 0; }
 .pdm-promotion__day {
-  display: grid; place-items: center; width: 26px; height: 26px; border-radius: 6px;
-  background: var(--color-background-secondary, var(--color-bg)); color: var(--color-text-muted); font-size: 11px; font-weight: 700;
+  display: grid; place-items: center; width: 20px; height: 22px; border-radius: 5px;
+  background: var(--color-surface); color: var(--color-text-muted); font-size: 11px; font-weight: 600;
 }
 .pdm-promotion__day.is-active { background: var(--color-secondary); color: var(--color-on-abricot); }
-.pdm-promotion__hours, .pdm-promotion__validity { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.pdm-promotion__hours > span { display: grid; gap: 3px; }
-.pdm-promotion__schedule svg { flex: 0 0 15px; width: 15px; height: 15px; fill: none; stroke: var(--color-on-abricot); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-.pdm-promotion__validity { flex-basis: 100%; padding-top: 10px; border-top: 1px solid var(--color-border-tertiary); }
+.pdm-promotion[aria-busy="true"] .pdm-promotion__card:disabled { cursor: wait; }
+
+.pdm-promotion__validity { flex-shrink: 0; white-space: nowrap; font-size: 10px; font-variant-numeric: tabular-nums; }
 @media (max-width: 480px) {
-  .pdm-promotion__card--upcoming { padding: 12px; column-gap: 8px; grid-template-columns: 14px minmax(0, 1fr); }
-  .pdm-promotion__card--upcoming .pdm-promotion__price { grid-column: 2; justify-self: end; }
-  .pdm-promotion__schedule { padding: 9px; }
+  .pdm-promotion__availability { gap: 5px; }
+  .pdm-promotion__weekdays { gap: 2px; }
+  .pdm-promotion__day { width: 16px; height: 21px; font-size: 10px; }
+  .pdm-promotion__hours, .pdm-promotion__validity { font-size: 10px; }
 }
+@media (max-width: 360px) {
+  .pdm-promotion__availability { gap: 4px; }
+  .pdm-promotion__weekdays { gap: 1px; }
+  .pdm-promotion__day { width: 13px; font-size: 9px; }
+  .pdm-promotion__hours, .pdm-promotion__validity { font-size: 9.5px; }
+}
+
+/* Keep the start date beside the weekdays, emphasized only by its weight. */
+.pdm-promotion__availability { flex-wrap: wrap; }
+.pdm-promotion__days-date { display: inline-flex; align-items: center; gap: 7px; min-width: 0; flex: 1 1 auto; }
+.pdm-promotion__days-date > .pdm-promotion__validity {
+  margin: 0; padding: 0; border: 0; background: transparent; color: inherit;
+  font-size: 12px; font-weight: 700; line-height: 1.4; white-space: normal; min-width: 0; flex: 1 1 auto;
+}
+.pdm-promotion__schedule > .pdm-promotion__validity-end { font-size: 11px; color: var(--color-text-muted); white-space: normal; }

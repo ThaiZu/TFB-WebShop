@@ -857,3 +857,25 @@
   font-size: 11px; font-weight: 700; color: #fff; background: var(--color-primary);
 }
 .pdm-bcard__strike { font-weight: 400; color: var(--color-text-muted); text-decoration: line-through; margin-right: 6px; }
+
+/* Quick choices span the footer above the counter and add-to-cart action. */
+.pdm-quick-qty { flex-basis: 100%; display: grid; gap: 6px; }
+.pdm-quick-qty__title { color: var(--color-text-muted); font-size: 11px; font-weight: 600; }
+.pdm-quick-qty__buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
+.pdm-quick-qty__buttons button {
+  min-height: 36px; padding: 6px; border: 1px solid var(--color-border-secondary); border-radius: 8px;
+  background: var(--color-surface); color: var(--color-text); font: inherit; font-weight: 600; cursor: pointer;
+}
+.pdm-quick-qty__buttons button:hover:not(:disabled) { border-color: var(--pdm-accent); color: var(--pdm-accent); }
+.pdm-quick-qty__buttons button:focus-visible { outline: 2px solid var(--pdm-accent); outline-offset: 2px; }
+.pdm-quick-qty__buttons button:disabled { opacity: .4; cursor: not-allowed; }
+@media (pointer: coarse) { .pdm-quick-qty__buttons button { min-height: 44px; } }
+
+.pdm-qty-stack { display: grid; gap: 5px; flex-shrink: 0; }
+.pdm-qty-subtract { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.pdm-qty-subtract button {
+  min-height: 30px; padding: 4px; border: 1px solid var(--color-border-tertiary); border-radius: 7px;
+  background: var(--color-surface); color: var(--color-text-muted); font: inherit; font-size: 11px; cursor: pointer;
+}
+.pdm-qty-subtract button:focus-visible { outline: 2px solid var(--pdm-accent); outline-offset: 2px; }
+.pdm-qty-subtract button:disabled { opacity: .4; cursor: not-allowed; }

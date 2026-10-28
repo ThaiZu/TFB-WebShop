@@ -57,9 +57,34 @@ const assert = require('node:assert/strict');
       assert.equal(await section.locator('.pdm-promotion__card').count(), 1, 'only this product gets an upcoming card');
       assert.equal(await section.locator('.pdm-promotion__day').count(), 7);
       assert.equal(await section.locator('.pdm-promotion__day.is-active').count(), 2);
-      assert.match(await section.innerText(), /7 prochains jours/);
-      assert.match(await section.innerText(), /Le week-end, de 06:00 à 18:00/);
-      assert.match(await section.innerText(), /19 octobre 2026 au 18 octobre 2027/);
+      assert.equal(await section.locator('.pdm-promotion__price, .pdm-promotion__composition').count(), 0);
+      assert.doesNotMatch(await section.innerText(), /Achetez|gratuitement|20[,.]00|4[,.]50/);
+      assert.match(await section.innerText(), /06:00–18:00/);
+      assert.doesNotMatch(await section.innerText(), /Le week-end|tous les jours/);
+      const rowBounds = await section.locator('.pdm-promotion__availability').evaluate(row => {
+        const days = row.querySelector('.pdm-promotion__weekdays').getBoundingClientRect();
+        const hours = row.querySelector('.pdm-promotion__hours').getBoundingClientRect();
+        return { sameLine: Math.abs((days.top + days.height / 2) - (hours.top + hours.height / 2)) < 2,
+          fits: row.scrollWidth <= row.clientWidth + 1 };
+      });
+      // Longer translated availability captions may move hours to the next line.
+      assert.equal(rowBounds.fits, true, 'the compact row fits the card');
+      const validity = section.locator('.pdm-promotion__validity');
+      assert.equal(await validity.innerText(), 'Disponible à partir du 19 octobre 2026');
+      assert.match(await section.locator('.pdm-promotion__validity-end').innerText(), /18 octobre 2027/);
+      const presentation = await validity.evaluate(element => {
+        const date = element.getBoundingClientRect();
+        const days = element.parentElement.querySelector('.pdm-promotion__weekdays').getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return { sameLine: Math.abs((date.top + date.height / 2) - (days.top + days.height / 2)) < 2,
+          size: parseFloat(style.fontSize), weight: Number(style.fontWeight),
+          background: style.backgroundColor, border: parseFloat(style.borderLeftWidth), padding: parseFloat(style.paddingLeft) };
+      });
+      assert.equal(presentation.sameLine, true, 'the start date shares the weekdays line');
+      assert.ok(presentation.size >= 12 && presentation.weight >= 700);
+      assert.equal(presentation.background, 'rgba(0, 0, 0, 0)');
+      assert.equal(presentation.border, 0);
+      assert.equal(presentation.padding, 0);
       assert.equal(await section.locator('button, input, [tabindex]').count(), 0);
       assert.equal(await section.locator('.pdm-promotion__card').getAttribute('aria-disabled'), 'true');
       const ctaBefore = await page.locator('.pdm-cta').innerText();

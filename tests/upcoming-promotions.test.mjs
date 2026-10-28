@@ -16,7 +16,7 @@ const context = { React, wsCurrency: value => `${Number(value).toFixed(2)} €` 
 vm.runInNewContext(transformSync([
   'wsPromotionItemsSummary', 'wsFractionalPromotionRule', 'FractionalPromotionRule',
   'wsPromotionBenefit', 'wsPromotionDateLabel', 'wsPromotionWeekday',
-  'wsUpcomingPromotionSchedule', 'wsUpcomingPromotionValidity',
+  'wsUpcomingPromotionValidity',
   'UpcomingPromotionSchedule', 'UpcomingPromotionCard',
 ].map(extract).join('\n'), { loader: 'jsx' }).code, context);
 
@@ -41,21 +41,24 @@ export function renderOffer(offer = promotion, lang = 'fr') {
   }));
 }
 
-test('future offer has seven weekday badges and highlights only Saturday and Sunday', () => {
+test('future offer contains only its name and availability', () => {
   const html = renderOffer();
+  assert.match(html, /Pistolekes en Sandwichke van de weekend/);
+  assert.doesNotMatch(html, /pdm-promotion__radio|pdm-promotion__composition|pdm-promotion__price/);
+  assert.match(html, /06:00–18:00/);
+  assert.doesNotMatch(html, /Le week-end/);
   assert.equal((html.match(/class="pdm-promotion__day(?: is-active)?"/g) || []).length, 7);
   assert.equal((html.match(/class="pdm-promotion__day is-active"/g) || []).length, 2);
-  assert.match(html, /Le week-end, de 06:00 à 18:00/);
   assert.match(html, /19 octobre 2026/);
   assert.match(html, /18 octobre 2027/);
-  assert.match(html, /−4.50 €/);
+  assert.doesNotMatch(html, /4.50|Achetez|gratuitement/);
 });
 
 test('future offers have no selection controls, even when their receipt minimum is met', () => {
   for (const is_available of [true, false]) {
     const html = renderOffer({ ...promotion, is_available, minimum_receipt_gross: '20.00' });
     assert.match(html, /aria-disabled="true"/);
-    assert.match(html, /20.00 €/);
+    assert.doesNotMatch(html, /20.00|TTC|remises/);
     assert.doesNotMatch(html, /<button|<input|tabindex|aria-pressed/);
   }
 });
@@ -66,14 +69,14 @@ test('different hours and multiple windows on one day are preserved', () => {
     { day_of_week: 1, time_from: '14:00', time_to: '18:00' },
     { day_of_week: 6, time_from: '08:00', time_to: '12:00' },
   ] });
-  for (const hours of ['06:00 à 10:00', '14:00 à 18:00', '08:00 à 12:00']) assert.ok(html.includes(hours));
-  assert.equal((html.match(/class="pdm-promotion__day is-active"/g) || []).length, 2);
+  for (const hours of ['06:00–10:00', '14:00–18:00', '08:00–12:00']) assert.ok(html.includes(hours));
+  assert.equal((html.match(/class="pdm-promotion__day is-active"/g) || []).length, 3);
 });
 
-test('unrestricted schedule highlights every day without inventing hours or date bounds', () => {
+test('unrestricted schedule shows all weekday badges without an every-day caption', () => {
   const html = renderOffer({ ...promotion, availability_schedule: [], availability_valid_from: null, availability_valid_to: null });
   assert.equal((html.match(/class="pdm-promotion__day is-active"/g) || []).length, 7);
-  assert.match(html, /tous les jours/);
+  assert.doesNotMatch(html, /tous les jours|pdm-promotion__hours/);
   assert.doesNotMatch(html, /pdm-promotion__validity|06:00|Invalid Date/);
 });
 
@@ -88,4 +91,20 @@ test('the calendar is translated in every storefront language', () => {
     assert.doesNotMatch(html, /promotion\.inline\./);
     assert.match(html, /06:00/);
   }
+});
+
+test('the full start date is emphasized separately from the end date', () => {
+  const html = renderOffer();
+  assert.match(html, /<strong class="pdm-promotion__validity"[^>]*>Disponible à partir du 19 octobre 2026<\/strong>/);
+  assert.match(html, /<small class="pdm-promotion__validity-end">Jusqu’au 18 octobre 2027<\/small>/);
+  assert.doesNotMatch(html, /19\/10\/26/);
+});
+
+test('one-sided date bounds remain informative without an empty date label', () => {
+  const start = renderOffer({ ...promotion, availability_valid_to: null });
+  assert.match(start, /<strong class="pdm-promotion__validity"[^>]*>Disponible à partir du 19 octobre 2026<\/strong>/);
+  assert.doesNotMatch(start, /<small>/);
+  const end = renderOffer({ ...promotion, availability_valid_from: null });
+  assert.match(end, /<strong class="pdm-promotion__validity"[^>]*>Jusqu’au 18 octobre 2027<\/strong>/);
+  assert.doesNotMatch(end, /À partir du|<small>/);
 });
