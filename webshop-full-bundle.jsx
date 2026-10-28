@@ -844,13 +844,13 @@ function wsPromotionBenefit(promotion) {
     : (promotion.bundle_price != null ? wsCurrency(Number(promotion.bundle_price)) : '');
 }
 
-function wsPromotionDateLabel(value, lang, timezone) {
+function wsPromotionDateLabel(value, lang, timezone, compact = false) {
   if (!value) return '';
   try {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return '';
     return new Intl.DateTimeFormat(lang || 'fr', {
-      day: 'numeric', month: 'long', year: 'numeric', ...(timezone ? { timeZone: timezone } : {}),
+      day: compact ? '2-digit' : 'numeric', month: compact ? '2-digit' : 'long', year: compact ? '2-digit' : 'numeric', ...(timezone ? { timeZone: timezone } : {}),
     }).format(date);
   } catch (_) {
     return '';
@@ -868,15 +868,10 @@ function wsPromotionWeekday(day, lang) {
   }
 }
 
-function wsUpcomingPromotionSchedule(promotion, lang, t) {
-  const schedule = Array.isArray(promotion.availability_schedule) ? promotion.availability_schedule : [];
-  if (!schedule.length) return t('promotion.inline.everyDay');
-  return schedule.map((entry) => `${wsPromotionWeekday(entry.day_of_week, lang)} ${entry.time_from}–${entry.time_to}`).join(' · ');
-}
-
-function wsUpcomingPromotionValidity(promotion, lang, t) {
-  const from = wsPromotionDateLabel(promotion.availability_valid_from, lang, promotion.timezone);
-  const to = wsPromotionDateLabel(promotion.availability_valid_to, lang, promotion.timezone);
+function wsUpcomingPromotionValidity(promotion, lang, t, compact = false) {
+  const from = wsPromotionDateLabel(promotion.availability_valid_from, lang, promotion.timezone, compact);
+  const to = wsPromotionDateLabel(promotion.availability_valid_to, lang, promotion.timezone, compact);
+  if (compact && (from || to)) return `${from || '…'}–${to || '…'}`;
   if (from && to) return t('promotion.inline.validBetween', { from, to });
   if (from) return t('promotion.inline.validFrom', { from });
   if (to) return t('promotion.inline.validUntil', { to });
@@ -895,50 +890,75 @@ function UpcomingPromotionSchedule({ promotion, lang, t }) {
     if (!group) { group = { from, to, days: [] }; groups.push(group); }
     if (!group.days.includes(day)) group.days.push(day);
   });
-  const activeDays = new Set(groups.flatMap((group) => group.days));
-  const validity = wsUpcomingPromotionValidity(promotion, lang, t);
+  const from = wsPromotionDateLabel(promotion.availability_valid_from, lang, promotion.timezone);
+  const to = wsPromotionDateLabel(promotion.availability_valid_to, lang, promotion.timezone);
+  const rows = groups.length ? groups : [{ days: [1, 2, 3, 4, 5, 6, 7], from: '', to: '' }];
   return <span className="pdm-promotion__schedule">
-    <span className="pdm-promotion__weekdays" role="img" aria-label={t('promotion.inline.availableDays', { schedule: wsUpcomingPromotionSchedule(promotion, lang, t) })}>
-      {[1, 2, 3, 4, 5, 6, 7].map((day) => {
-        const label = wsPromotionWeekday(day, lang);
-        return <span key={day} className={`pdm-promotion__day${!schedule.length || activeDays.has(day) ? ' is-active' : ''}`} title={label} aria-hidden="true">{label.slice(0, 1).toLocaleUpperCase(lang || 'fr')}</span>;
-      })}
-    </span>
-    <span className="pdm-promotion__hours">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
-      <span>{groups.length ? groups.map((group) => {
-        const days = group.days.sort((a, b) => a - b);
-        const label = days.length === 7 ? t('promotion.inline.everyDay')
-          : days.length === 2 && days[0] === 6 && days[1] === 7 ? t('promotion.inline.weekend')
-          : days.map((day) => wsPromotionWeekday(day, lang)).join(', ');
-        return <span key={`${group.from}-${group.to}`}>{label}, {t('promotion.inline.timeRange', { from: group.from, to: group.to })}</span>;
-      }) : t('promotion.inline.everyDay')}</span>
-    </span>
-    {validity && <span className="pdm-promotion__validity">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14.5" rx="2.5"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></svg>
-      <span>{validity}</span>
-    </span>}
+    {rows.map((group, index) => <span className="pdm-promotion__availability" key={`${group.from}-${group.to}`}>
+      <span className="pdm-promotion__days-date">
+      <span className="pdm-promotion__weekdays" role="img" aria-label={t('promotion.inline.availableDays', {
+        schedule: [...group.days].sort((a, b) => a - b).map(day => wsPromotionWeekday(day, lang)).join(', '),
+      })}>
+        {[1, 2, 3, 4, 5, 6, 7].map(day => {
+          const label = wsPromotionWeekday(day, lang);
+          return <span key={day} className={`pdm-promotion__day${group.days.includes(day) ? ' is-active' : ''}`}
+            title={label} aria-hidden="true">{label.slice(0, 1).toLocaleUpperCase(lang || 'fr')}</span>;
+        })}
+      </span>
+      {index === 0 && (from || to) && <strong className="pdm-promotion__validity" title={from ? t('promotion.inline.availableFrom', { from }) : t('promotion.inline.validUntil', { to })}>{from ? t('promotion.inline.availableFrom', { from }) : t('promotion.inline.validUntil', { to })}</strong>}
+      </span>
+      {group.from && group.to && <span className="pdm-promotion__hours">{group.from}–{group.to}</span>}
+    </span>)}
+    {from && to && <small className="pdm-promotion__validity-end">{t('promotion.inline.validUntil', { to })}</small>}
   </span>;
 }
 
-function UpcomingPromotionCard({ promotion, product, lang, t }) {
-  const items = wsPromotionItemsSummary(promotion, product, t);
-  const type = t(`promotion.inline.type.${promotion.promotion_type}`);
-  const benefit = wsPromotionBenefit(promotion);
+function UpcomingPromotionCard({ promotion, lang, t }) {
   return <div className="pdm-promotion__card pdm-promotion__card--upcoming" aria-disabled="true">
-    <span className="pdm-promotion__radio pdm-promotion__radio--upcoming" aria-hidden="true"/>
     <span className="pdm-promotion__body">
       <strong>{promotion.name}</strong>
-      <FractionalPromotionRule promotion={promotion} product={product} t={t}/>
-      <small className="pdm-promotion__composition">{type} · {items}</small>
-      {Number(promotion.minimum_receipt_gross || 0) > 0 && <small className="pdm-promotion__period">{t('promotion.inline.minimumReceipt', { amount: wsCurrency(Number(promotion.minimum_receipt_gross)) })}</small>}
       <UpcomingPromotionSchedule promotion={promotion} lang={lang} t={t}/>
     </span>
-    {benefit && <span className="pdm-promotion__price">{benefit}</span>}
   </div>;
 }
 
-function ProductDetail({ open, product, mode, onClose, onAdd, onPromotionPreview, promotionSuggestions = [], upcomingPromotionSuggestions = [], promotionLocked = false, optionsLoading = false, promotionProducts = [], stock, basketUnits = 0 }) {
+function ProductQuantityControl({ quantity, stockLimit, onChange, t }) {
+  const [lastPreset, setLastPreset] = React.useState(null);
+  const maximum = stockLimit ?? 99;
+  return <>
+    <div className="pdm-quick-qty" role="group" aria-label={t('qty.quickTitle')}>
+      <span className="pdm-quick-qty__title">{t('qty.quickTitle')}</span>
+      <div className="pdm-quick-qty__buttons">
+        {[1, 5, 10, 25].map(value => {
+          const repeat = lastPreset === value;
+          const label = t(repeat ? 'qty.add' : 'qty.set', { count: value });
+          return <button key={value} type="button" title={label} aria-label={label}
+            disabled={value > maximum || (repeat && quantity >= maximum)}
+            {...wsTap(() => {
+              onChange(q => repeat ? Math.min(q + value, maximum) : value);
+              setLastPreset(value);
+            })}>{value}</button>;
+        })}
+      </div>
+    </div>
+    <div className="pdm-qty-stack">
+      <div className="pdm-qty">
+        <button type="button" className="pdm-qty__btn" {...wsTap(() => onChange(q => Math.max(1, q - 1)))}
+          disabled={quantity <= 1} aria-label={t('qty.dec')}>−</button>
+        <span className="pdm-qty__val" aria-live="polite" aria-atomic="true">{quantity}</span>
+        <button type="button" className="pdm-qty__btn" {...wsTap(() => onChange(q => Math.min(q + 1, maximum)))}
+          disabled={quantity >= maximum} aria-label={t('qty.inc')}>+</button>
+      </div>
+      <div className="pdm-qty-subtract" role="group" aria-label={t('qty.dec')}>
+        {[1, 5, 10].map(value => <button key={value} type="button" disabled={quantity <= 1}
+          aria-label={t('qty.subtract', { count: value })}
+          {...wsTap(() => onChange(q => Math.max(1, q - value)))}>−{value}</button>)}
+      </div>
+    </div>
+  </>;
+}
+
+function ProductDetail({ open, product, mode, onClose, onAdd, onPromotionPreview, promotionSuggestions = [], upcomingPromotionSuggestions = [], promotionLocked = false, promotionPreviewPending = false, optionsLoading = false, promotionProducts = [], stock, basketUnits = 0 }) {
   const { t, lang } = wsUseT();
   // ── Hooks (must run unconditionally; never gate behind early-return) ──
   const initSelections = React.useMemo(() => {
@@ -1121,7 +1141,7 @@ function ProductDetail({ open, product, mode, onClose, onAdd, onPromotionPreview
 
   React.useEffect(() => {
     if (!open || !product || product.is_weighted || offerPicked || activeBundle) return;
-    onPromotionPreview?.({
+    return onPromotionPreview?.({
       productId: product.id,
       quantity: qty,
       id_product_portion: portOpt?.id_product_portion ?? null,
@@ -1243,7 +1263,7 @@ function ProductDetail({ open, product, mode, onClose, onAdd, onPromotionPreview
   }
 
   async function handleConfirm() {
-    if (adding) return;
+    if (adding || (selectedPromotion && promotionPreviewPending)) return;
     if (!valid || product.is_weighted || deliveryBlocked || uninitialized || (deliveryStockLeft !== null && qty > deliveryStockLeft)) return;
     const optionLabels = (product.options || [])
       .map((o) => { const c = o.choices.find((x) => x.id === sel[o.id]); return c ? c.label : null; })
@@ -1601,7 +1621,7 @@ function ProductDetail({ open, product, mode, onClose, onAdd, onPromotionPreview
             {activeBundle?.menu_id && <p className="pdm-opt__hint">{t('menu.noDiscount')}</p>}
             {product?.menu_load_error && <p role="alert">{t('menu.loadError')}</p>}
             {!offerPicked && !activeBundle && promotionSuggestions.length > 0 && (
-              <section className="pdm-promotion" aria-label={t('promotion.inline.title')}>
+              <section className="pdm-promotion" aria-busy={promotionPreviewPending} aria-label={t('promotion.inline.title')}>
                 <div className="pdm-promotion__head">
                   <span>{t('promotion.inline.title')}</span>
                   <small>{promotionLocked ? t('promotion.inline.locked') : t('promotion.inline.choose')}</small>
@@ -1612,10 +1632,11 @@ function ProductDetail({ open, product, mode, onClose, onAdd, onPromotionPreview
                     const selected = Number(promotion.id_promotion) === Number(selectedPromotionId);
                     const items = wsPromotionItemsSummary(promotion, product, t, selected ? rewardChoice?.additional_cost_gross : null);
                     const type = t(`promotion.inline.type.${promotion.promotion_type}`);
-                    const blocked = promotionLocked || promotion.is_available === false;
-                    const benefit = blocked ? null : wsPromotionBenefit(promotion);
+                    const unavailable = promotionLocked || promotion.is_available === false;
+                    const blocked = unavailable || promotionPreviewPending;
+                    const benefit = unavailable ? null : wsPromotionBenefit(promotion);
                     return <div key={promotion.id_promotion} className={`pdm-promotion__offer${selected && rewardOptions.length ? ' has-gifts' : ''}`}><button type="button"
-                      className={`pdm-promotion__card${selected ? ' is-selected' : ''}${blocked ? ' is-locked' : ''}`}
+                      className={`pdm-promotion__card${selected ? ' is-selected' : ''}${unavailable ? ' is-locked' : ''}`}
                       aria-pressed={selected} aria-disabled={blocked} disabled={blocked}
                       {...wsTap(() => {
                         if (blocked) return;
@@ -1638,15 +1659,14 @@ function ProductDetail({ open, product, mode, onClose, onAdd, onPromotionPreview
               </section>
             )}
             {!offerPicked && !activeBundle && upcomingPromotionSuggestions.length > 0 && (
-              <section className="pdm-promotion pdm-promotion--upcoming" aria-label={t('promotion.inline.upcomingTitle')}>
+              <section className="pdm-promotion pdm-promotion--upcoming" aria-busy={promotionPreviewPending} aria-label={t('promotion.inline.upcomingTitle')}>
                 <div className="pdm-promotion__head">
                   <span>{t('promotion.inline.upcomingTitle')}</span>
-                  <small>{t('promotion.inline.upcomingHint')}</small>
                 </div>
                 <div className="pdm-promotion__list">
                   {upcomingPromotionSuggestions.map((promotion) => <UpcomingPromotionCard
                     key={`upcoming-${promotion.id_promotion}-${promotion.available_from}`}
-                    promotion={promotion} product={product} lang={lang} t={t}/>)}
+                    promotion={promotion} lang={lang} t={t}/>)}
                 </div>
               </section>
             )}
@@ -1698,12 +1718,9 @@ function ProductDetail({ open, product, mode, onClose, onAdd, onPromotionPreview
               <div className="pdm-delivery-notice" role="status">{t('stock.quantityChanged')}</div>}
             {addError && <div className="pdm-delivery-notice" role="alert">{addError}</div>}
             {selectedPromotion && !rewardChoice && <div className="pdm-delivery-notice">{t('promotion.inline.oneSet')}</div>}
-            <div className="pdm-qty" style={selectedPromotion || product.is_weighted ? { display: 'none' } : undefined}>
-              <button className="pdm-qty__btn" {...wsTap(() => changeQuantity((q) => Math.max(1, q - 1)))} disabled={qty <= 1} aria-label={t('qty.dec')}>−</button>
-              <span className="pdm-qty__val">{qty}</span>
-              <button className="pdm-qty__btn" {...wsTap(() => changeQuantity((q) => Math.min(q + 1, deliveryStockLeft ?? 99)))} aria-label={t('qty.inc')} disabled={deliveryStockLeft !== null && qty >= deliveryStockLeft}>+</button>
-            </div>
-            <button className="pdm-cta" aria-busy={adding} disabled={adding || product.is_weighted || !valid || deliveryBlocked || (deliveryStockLeft !== null && qty > deliveryStockLeft)} {...wsTap(handleConfirm, { shield: true })}>
+            {!selectedPromotion && !product.is_weighted && <ProductQuantityControl key={product.id}
+              quantity={qty} stockLimit={deliveryStockLeft} onChange={changeQuantity} t={t}/>}
+            <button className="pdm-cta" aria-busy={adding} disabled={adding || (selectedPromotion && promotionPreviewPending) || product.is_weighted || !valid || deliveryBlocked || (deliveryStockLeft !== null && qty > deliveryStockLeft)} {...wsTap(handleConfirm, { shield: true })}>
               <span>{deliveryBlocked ? t('pd.notForDelivery') : (uninitialized ? t('stock.checkAvailability') : deliveryStockLeft === 0 ? t('pd.outOfStock') : (valid ? (selectedPromotion || offerPicked ? t('pd.offerAdd') : t('pd.addToCart')) : t('pd.chooseOptions')))}</span>
               <span className="pdm-cta__total" key={pulse}>
                 <span className="pdm-cta__total-anim">€{wsNumber(product.is_weighted ? product.price : displayedTotal)}{product.is_weighted ? ' / kg' : ''}</span>
@@ -2101,114 +2118,8 @@ function PromotionReceiptProgress({ promotion, t }) {
   </span>;
 }
 
-function CartRewardModal({ promotion, options, onSelect, onClose, t, titleKey = 'cart.reward.choose', explanationKey = 'cart.reward.cheapest', showCost = true, productCards = false }) {
-  const panel = React.useRef(null);
-  React.useEffect(() => {
-    const previousFocus = document.activeElement;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    panel.current?.querySelector('button')?.focus();
-    const onKey = (event) => {
-      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); onClose(); }
-      if (event.key !== 'Tab') return;
-      const buttons = panel.current?.querySelectorAll('button:not([disabled]), [href], input, select, textarea, [tabindex="0"]');
-      if (!buttons?.length) return;
-      const first = buttons[0], last = buttons[buttons.length - 1];
-      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
-    };
-    document.addEventListener('keydown', onKey, true);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener('keydown', onKey, true);
-      if (previousFocus?.isConnected) previousFocus.focus();
-    };
-  }, []);
-  return createPortal(<div className="ws-reward-overlay" onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-    <section className="ws-reward-modal" ref={panel} role="dialog" aria-modal="true" aria-label={t(titleKey)}>
-      <header><h2>{t(titleKey)}</h2><button type="button" onClick={onClose} aria-label={t('common.close2')}>×</button></header>
-      <p>{promotion.name}</p>
-      <p className="ws-reward-modal__explanation">{t(explanationKey)}</p>
-      <div className={`ws-cart-reward__options${productCards ? ' ws-cart-reward__options--products' : ''}`}>
-        {options.map((item) => <button type="button" key={`${item.id_product}-${item.id_product_portion || 0}`} onClick={() => onSelect(item)}>
-          {productCards && <img className="ws-promotion-product__image" src={item.image_src} alt="" width="52" height="52"
-            loading="lazy" decoding="async" draggable={false} onError={event => {
-              const image = event.currentTarget;
-              if (image.dataset.imgFallback === '1') return;
-              image.dataset.imgFallback = '1';
-              image.src = item.image_fallback;
-            }}/>}
-          <span className="ws-promotion-product__body">
-            <span>{wsPromotionItemsSummary({ items: [item] }, {}, t)}</span>
-            {showCost && <strong>{Number(item.additional_cost_gross || 0) > 0
-              ? t('cart.reward.extraCost', { amount: wsCurrency(Number(item.additional_cost_gross)) })
-              : t('cart.reward.noExtraCost')}</strong>}
-          </span>
-        </button>)}
-      </div>
-    </section>
-  </div>, document.body);
-}
-
-function CartPromotionRewards({ quoteState, onAddReward, products = [], selectedPromotionId = null }) {
-  const { t } = wsUseT();
-  const [choosing, setChoosing] = useState(null);
-  if (quoteState.status !== 'ready' || typeof onAddReward !== 'function') return null;
-  return <div className="ws-cart-rewards" aria-live="polite">
-    {(quoteState.quote?.promotion_rewards || []).filter(promotion => Number(promotion.id_promotion) !== Number(selectedPromotionId)).map((promotion) => {
-      const applied = promotion.status === 'APPLIED';
-      const options = (promotion.options || []).flatMap(item => {
-        const product = products.find(product => Number(product.id) === Number(item.id_product) && !product.has_personalization
-          && (item.id_product_portion == null || (product.portionOptions || []).some(portion => Number(portion.id_product_portion) === Number(item.id_product_portion))));
-        return product ? [{ ...item, product_name: product.name || item.product_name,
-          image_src: product.img || getPlaceholder(product), image_fallback: getPlaceholder(product) }] : [];
-      });
-      if (!applied && !options.length) return null;
-      return <section className="ws-cart-reward" key={promotion.id_promotion}>
-        {Number(promotion.minimum_receipt_gross || 0) > 0 && <><strong>{t('cart.unlocked.title')}</strong>
-          <p>{t('cart.unlocked.reached', { amount: wsCurrency(Number(promotion.minimum_receipt_gross)) })}</p></>}
-        <strong>{t(applied ? 'cart.reward.added' : 'cart.reward.available')}</strong>
-        <span>{promotion.name}</span>
-        {!applied && <button type="button" className="ws-cart-reward__choose" onClick={() => setChoosing(choosing === promotion.id_promotion ? null : promotion.id_promotion)}>{t('cart.reward.choose')}</button>}
-        {!applied && choosing === promotion.id_promotion && <CartRewardModal promotion={promotion} options={options} t={t} productCards
-          onClose={() => setChoosing(null)} onSelect={(item) => { onAddReward(promotion, item); setChoosing(null); }}/>}
-      </section>;
-    })}
-  </div>;
-}
-
-function CartUnlockedPromotions({ quoteState, onBrowsePromotion, products = [], locked = false }) {
-  const { t } = wsUseT();
-  const [choosing, setChoosing] = useState(null);
-  React.useEffect(() => { setChoosing(null); }, [quoteState.status, quoteState.quote, locked]);
-  if (quoteState.status !== 'ready' || typeof onBrowsePromotion !== 'function' || locked) return null;
-  const rewardIds = new Set((quoteState.quote?.promotion_rewards || []).map(item => Number(item.id_promotion)));
-  return <div className="ws-cart-rewards ws-cart-unlocked" aria-live="polite">
-    {(quoteState.quote?.unlocked_promotions || []).filter(item => item.status !== 'APPLIED' && !rewardIds.has(Number(item.id_promotion))).map(promotion => {
-      const options = (promotion.options || []).flatMap(item => {
-        const product = products.find(product => Number(product.id) === Number(item.id_product) && !product.has_personalization
-          && portionOptionList(product).some(portion => (portion.id_product_portion == null ? null : Number(portion.id_product_portion)) === (item.id_product_portion == null ? null : Number(item.id_product_portion))));
-        return product ? [{ ...item, product_name: product.name || item.product_name,
-          image_src: product.img || getPlaceholder(product), image_fallback: getPlaceholder(product) }] : [];
-      });
-      const applied = promotion.status === 'APPLIED';
-      if (!applied && !options.length) return null;
-      return <section className="ws-cart-reward" key={promotion.id_promotion}>
-        <strong>{t('cart.unlocked.title')}</strong>
-        <p>{t('cart.unlocked.reached', { amount: wsCurrency(Number(promotion.minimum_receipt_gross)) })}</p>
-        <span>{promotion.name}</span>
-        {applied && <p>{t('cart.unlocked.applied')}</p>}
-        {!applied && <button type="button" className="ws-cart-reward__choose" onClick={() => setChoosing(promotion.id_promotion)}>{t('cart.unlocked.browse')}</button>}
-        {!applied && choosing === promotion.id_promotion && <CartRewardModal promotion={promotion} options={options} t={t}
-          titleKey="cart.unlocked.browse" explanationKey="cart.unlocked.chooseProduct" showCost={false} productCards
-          onClose={() => setChoosing(null)} onSelect={item => { setChoosing(null); onBrowsePromotion(promotion, item); }}/>}
-      </section>;
-    })}
-  </div>;
-}
-
 function Basket({ hidePrices, contextLabel, officeName, shop, mode, basket, quoteState, onClose, onCheckout, onRemove, onNote, notesEnabled, deliveryFeeResult,
-                  date, slotTime, onCrossAdd, onAddReward, onBrowsePromotion, rewardProducts }) {
+                  date, slotTime, onCrossAdd }) {
   // Display the authoritative API quote for this cart.
   const { t } = wsUseT();
   const deliveryFee = (mode === 'delivery' && deliveryFeeResult) ? (deliveryFeeResult.fee_amount || 0) : 0;
@@ -2294,8 +2205,6 @@ function Basket({ hidePrices, contextLabel, officeName, shop, mode, basket, quot
         )}
       </div>
 
-      <CartPromotionRewards selectedPromotionId={wsSelectedAutomaticPromotionId(basket)} quoteState={quoteState} onAddReward={onAddReward} products={rewardProducts}/>
-      <CartUnlockedPromotions quoteState={quoteState} onBrowsePromotion={onBrowsePromotion} products={rewardProducts} locked={wsHasPromotionSelection(basket)}/>
       {hidePrices ? (
         <div className="ws-basket__office">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v16M15 9h3a1 1 0 0 1 1 1v11"/></svg>
@@ -5421,44 +5330,57 @@ function ShopFrame({ variant }) {
   const previewPromotionsForDetail = React.useCallback(({ productId, quantity, id_product_portion }) => {
     const requestId = ++detailPromotionRequest.current;
     const context = normaliseShoppingContext(browseContext);
-    const key = JSON.stringify([shopId, basket, date, context, productId, quantity, id_product_portion]);
+    const contextKey = JSON.stringify([shopId, mode, basket, date, context, productId, id_product_portion, user?.id]);
+    const key = JSON.stringify([contextKey, quantity]);
+    const empty = { key, contextKey, productId: Number(productId), suggestions: [], upcomingSuggestions: [] };
     const standardCart = basket.length === 0 || (cartContext.mode === 'standard' && Number(cartShopId) === Number(shopId));
     if (!shopId || context.mode !== 'standard' || voucherApplied?.ok || !standardCart || !window.WSQuote || typeof window.WSQuote.quote !== 'function') {
-      setDetailPromotionPreview({ key, productId: Number(productId), suggestions: [], upcomingSuggestions: [] });
+      setDetailPromotionPreview({ ...empty, status: 'ready' });
       markDetailOptionReady(productId, 'promotionsReady');
       return;
     }
-    const previewLine = {
-      line: `promotion-preview-${productId}-${id_product_portion ?? 0}`,
-      productId: Number(productId),
-      qty: Number(quantity),
-      id_product_portion: id_product_portion ?? null,
-      shopping_context: context,
-    };
-    setDetailPromotionPreview({ key, productId: Number(productId), suggestions: [], upcomingSuggestions: [] });
-    window.WSQuote.quote({ shopId, mode, basket: [...basket, previewLine], promotionPreviewLineKey: previewLine.line, shoppingContext: context, deliveryDate: date })
-      .then((quote) => {
-        if (requestId !== detailPromotionRequest.current) return;
-        const targetPortion = id_product_portion == null ? null : Number(id_product_portion);
-        const forProduct = (suggestions) => (Array.isArray(suggestions) ? suggestions : []).filter((suggestion) => (suggestion.items || []).some((item) =>
-          Number(item.id_product) === Number(productId)
-          && (item.id_product_portion == null ? null : Number(item.id_product_portion)) === targetPortion
-        ));
-        setDetailPromotionPreview({
-          key,
-          productId: Number(productId),
-          suggestions: forProduct(quote?.promotion_suggestions || quote?.bundle_suggestions),
-          upcomingSuggestions: forProduct(quote?.upcoming_promotion_suggestions),
-        });
-        markDetailOptionReady(productId, 'promotionsReady');
-      })
-      .catch(() => {
-        if (requestId === detailPromotionRequest.current) {
-          setDetailPromotionPreview({ key, productId: Number(productId), suggestions: [], upcomingSuggestions: [] });
+    // Quantity changes keep the same cards mounted. Different products, portions
+    // and shopping contexts must never reuse the preceding eligibility results.
+    setDetailPromotionPreview(current => ({
+      ...empty, status: 'loading',
+      suggestions: current.contextKey === contextKey ? current.suggestions : [],
+      upcomingSuggestions: current.contextKey === contextKey ? current.upcomingSuggestions : [],
+    }));
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      const previewLine = {
+        line: `promotion-preview-${productId}-${id_product_portion ?? 0}`,
+        productId: Number(productId), qty: Number(quantity),
+        id_product_portion: id_product_portion ?? null, shopping_context: context,
+      };
+      window.WSQuote.quote({ shopId, mode, basket: [...basket, previewLine], promotionPreviewLineKey: previewLine.line,
+        shoppingContext: context, deliveryDate: date, signal: controller.signal })
+        .then(quote => {
+          if (requestId !== detailPromotionRequest.current) return;
+          const targetPortion = id_product_portion == null ? null : Number(id_product_portion);
+          const forProduct = suggestions => (Array.isArray(suggestions) ? suggestions : []).filter(suggestion => (suggestion.items || []).some(item =>
+            Number(item.id_product) === Number(productId)
+            && (item.id_product_portion == null ? null : Number(item.id_product_portion)) === targetPortion
+          ));
+          setDetailPromotionPreview({
+            ...empty, status: 'ready',
+            suggestions: forProduct(quote?.promotion_suggestions || quote?.bundle_suggestions),
+            upcomingSuggestions: forProduct(quote?.upcoming_promotion_suggestions),
+          });
           markDetailOptionReady(productId, 'promotionsReady');
-        }
-      });
-  }, [shopId, basket, date, browseContext, cartContext.mode, cartShopId, voucherApplied?.ok, markDetailOptionReady]);
+        })
+        .catch(() => {
+          if (requestId !== detailPromotionRequest.current) return;
+          setDetailPromotionPreview({ ...empty, status: 'error' });
+          markDetailOptionReady(productId, 'promotionsReady');
+        });
+    }, 250);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+      if (requestId === detailPromotionRequest.current) ++detailPromotionRequest.current;
+    };
+  }, [shopId, mode, basket, date, browseContext, cartContext.mode, cartShopId, user?.id, voucherApplied?.ok, markDetailOptionReady]);
   React.useEffect(() => {
     if (!basket.length) { setQuoteState({ status: 'idle', quote: null, error: '' }); setVoucherApplied(null); setVoucherInput(''); return; }
     if (!shopId || !window.WSQuote || typeof window.WSQuote.quote !== 'function') {
@@ -6249,16 +6171,6 @@ function ShopFrame({ variant }) {
     }
   }, [shop?.id, date, lang, mode, browseContext.mode, basket, cartContext.mode, cartShopId, shopId, voucherApplied?.ok, markDetailOptionReady]);
 
-  function handleBrowseUnlockedPromotion(promotion, item) {
-    if (quoteState.status !== 'ready' || wsHasPromotionSelection(basket)) return;
-    const current = quoteState.quote?.unlocked_promotions?.find(entry => entry.id_promotion === promotion.id_promotion && entry.status === 'UNLOCKED');
-    if (!current?.options?.some(option => option.id_product === item.id_product && option.id_product_portion === item.id_product_portion)) return;
-    const product = allProducts.find(entry => Number(entry.id) === Number(item.id_product));
-    if (!product) return;
-    setCartDrawerOpen(false);
-    openProductDetail({ ...product, initial_promotion_portion_id: item.id_product_portion ?? null, initial_promotion_id: promotion.id_promotion });
-  }
-
   function promotionAdditionLines(suggestion, createdAt, promotionGroup, promotionDisplay) {
     return (suggestion?.items || []).flatMap((item, index) => {
       // A selected offer is a full, dedicated composition. Never complete it
@@ -6341,24 +6253,6 @@ function ShopFrame({ variant }) {
     const m = String((hit && hit.label) || '').match(/([01]\d|2[0-3]):[0-5]\d/);
     return m ? m[0] : null;
   }, [officeSlots, selectedSlot]);
-
-  function handleAddPromotionReward(promotion, item) {
-    if (quoteState.status !== 'ready' || !quoteState.quote?.promotion_rewards?.some((entry) =>
-      entry.id_promotion === promotion.id_promotion && entry.status === 'AVAILABLE' && entry.options.some((option) =>
-        option.id_product === item.id_product && option.id_product_portion === item.id_product_portion))) return;
-    if (Number(cartShopId) !== Number(shopId) || cartContext.mode !== 'standard' || browseContext.mode !== 'standard') return;
-    const product = allProducts.find((entry) => Number(entry.id) === Number(item.id_product));
-    if (!product) return;
-    const option = portionOptionList(product).find((entry) => (entry.id_product_portion == null ? null : Number(entry.id_product_portion)) === item.id_product_portion);
-    if (!option || !canAddProduct(product.id, Number(item.quantity), option.v)) return;
-    appendContextLine({
-      line: `reward-${Date.now()}-${promotion.id_promotion}`, productId: product.id,
-      id_product_portion: item.id_product_portion, name: product.name, qty: Number(item.quantity),
-      price: option.price, options: option.v === 'entier' ? [] : [{ label: option.name }], portion: option.v,
-      cat: product.cat, lead_time: product.lead_time || 0, no_delivery: !!product.no_delivery,
-      available_slots: Array.isArray(product.available_slots) ? product.available_slots : null,
-    });
-  }
 
   // Cross-sell uses the same availability check as ordinary additions.
   function handleCrossAdd(it) {
@@ -6667,7 +6561,7 @@ function ShopFrame({ variant }) {
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>
         </button>
 
-        <Basket hidePrices={hidePrices} contextLabel={basket.length ? contextLabel : null} officeName={userOffice?.name || ''} shop={cartShop} mode={mode} basket={basket} quoteState={quoteState} onAddReward={Number(cartShopId) === Number(shopId) && cartContext.mode === 'standard' && browseContext.mode === 'standard' ? handleAddPromotionReward : undefined} onBrowsePromotion={Number(cartShopId) === Number(shopId) && cartContext.mode === 'standard' && browseContext.mode === 'standard' ? handleBrowseUnlockedPromotion : undefined} rewardProducts={allProducts} onCheckout={handleCheckout} onRemove={handleRemove} onNote={handleNote} notesEnabled={lineNotesEnabled} deliveryFeeResult={deliveryFeeResult} date={date} slotTime={crossSlotTime} onCrossAdd={Number(cartShopId) === Number(shopId) && cartContext.mode === 'standard' && browseContext.mode === 'standard' ? handleCrossAdd : undefined}/>
+        <Basket hidePrices={hidePrices} contextLabel={basket.length ? contextLabel : null} officeName={userOffice?.name || ''} shop={cartShop} mode={mode} basket={basket} quoteState={quoteState} onCheckout={handleCheckout} onRemove={handleRemove} onNote={handleNote} notesEnabled={lineNotesEnabled} deliveryFeeResult={deliveryFeeResult} date={date} slotTime={crossSlotTime} onCrossAdd={Number(cartShopId) === Number(shopId) && cartContext.mode === 'standard' && browseContext.mode === 'standard' ? handleCrossAdd : undefined}/>
       </div>
 
       {/* Mobile bottom tab bar : 2 buttons, 50/50 split */}
@@ -6701,7 +6595,7 @@ function ShopFrame({ variant }) {
           <div className="ws-drawer__panel">
             <button className="ws-drawer__close" onClick={() => setCartDrawerOpen(false)} aria-label={t('common.close2')}>×</button>
             <div className="ws-drawer__handle" aria-hidden="true"/>
-            <Basket hidePrices={hidePrices} contextLabel={basket.length ? contextLabel : null} officeName={userOffice?.name || ''} shop={cartShop} mode={mode} basket={basket} quoteState={quoteState} onAddReward={Number(cartShopId) === Number(shopId) && cartContext.mode === 'standard' && browseContext.mode === 'standard' ? handleAddPromotionReward : undefined} onBrowsePromotion={Number(cartShopId) === Number(shopId) && cartContext.mode === 'standard' && browseContext.mode === 'standard' ? handleBrowseUnlockedPromotion : undefined} rewardProducts={allProducts} onCheckout={handleCheckout} onRemove={handleRemove} onNote={handleNote} notesEnabled={lineNotesEnabled} date={date} slotTime={crossSlotTime} onCrossAdd={Number(cartShopId) === Number(shopId) && cartContext.mode === 'standard' && browseContext.mode === 'standard' ? handleCrossAdd : undefined}/>
+            <Basket hidePrices={hidePrices} contextLabel={basket.length ? contextLabel : null} officeName={userOffice?.name || ''} shop={cartShop} mode={mode} basket={basket} quoteState={quoteState} onCheckout={handleCheckout} onRemove={handleRemove} onNote={handleNote} notesEnabled={lineNotesEnabled} date={date} slotTime={crossSlotTime} onCrossAdd={Number(cartShopId) === Number(shopId) && cartContext.mode === 'standard' && browseContext.mode === 'standard' ? handleCrossAdd : undefined}/>
           </div>
         </div>
       )}
@@ -6775,6 +6669,7 @@ function ShopFrame({ variant }) {
         onPromotionPreview={previewPromotionsForDetail} promotionSuggestions={Number(detailPromotionPreview.productId) === Number(detailProduct?.id) ? detailPromotionPreview.suggestions : []}
         upcomingPromotionSuggestions={Number(detailPromotionPreview.productId) === Number(detailProduct?.id) ? detailPromotionPreview.upcomingSuggestions : []}
         promotionProducts={allProducts} promotionLocked={cartHasPromotionSelection}
+        promotionPreviewPending={Number(detailPromotionPreview.productId) === Number(detailProduct?.id) && detailPromotionPreview.status === 'loading'}
         optionsLoading={Number(detailOptionsState.productId) === Number(detailProduct?.id) && (!detailOptionsState.menuReady || !detailOptionsState.promotionsReady || detailOptionsState.personalizationReady===false)}
         stock={detailProduct ? allProducts.find(p => p.id === detailProduct.id)?.availability : null} basketUnits={detailProduct && Number(cartShopId) === Number(shopId) && sameShoppingContext(cartContext, browseContext) ? basketProductUnits(basket, detailProduct.id) : 0}/>
       {window.AllergensModal && <window.AllergensModal open={allergensOpen} onClose={() => setAllergensOpen(false)}/>}

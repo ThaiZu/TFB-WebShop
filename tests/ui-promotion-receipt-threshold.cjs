@@ -1,11 +1,12 @@
 /* Real storefront UI, controlled API. Does not create orders or payments. */
 const {chromium}=require('playwright');const assert=require('node:assert/strict');
+const base=process.env.WS_UI_URL||'https://webshop.tfbuddy.local/';
 (async()=>{const browser=await chromium.launch({headless:true,args:['--no-sandbox','--host-resolver-rules=MAP webshop.tfbuddy.local 127.0.0.1']});try{
 for(const width of [1440,390]){
  const context=await browser.newContext({ignoreHTTPSErrors:true,viewport:{width,height:1000}});
  await context.addInitScript(()=>localStorage.setItem('ws.lang','pl'));
  const errors=[],quotes=[]; let rejectPromotion=false;await context.route('**/*',async route=>{
-  const req=route.request(),url=new URL(req.url());if(!['webshop.tfbuddy.local','tfb.tfbuddy.local'].includes(url.hostname))return route.abort();
+  const req=route.request(),url=new URL(req.url());if(!['webshop.tfbuddy.local','tfb.tfbuddy.local',new URL(base).hostname].includes(url.hostname))return route.abort();
   if(url.pathname==='/promotion-product-fixture.svg')return route.fulfill({contentType:'image/svg+xml',headers:{'Cache-Control':'public, max-age=3600'},body:'<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="#f5ce92"/></svg>'});
   if(!url.pathname.includes('/api/v1/'))return route.continue();let body=[];
   if(url.pathname.endsWith('/shops'))body=[{id:2,name:'Test shop',default_lang:'pl',languages:'pl,fr,nl',collect_enabled:1,delivery_enabled:1}];
@@ -43,7 +44,7 @@ for(const width of [1440,390]){
   else if(url.pathname.endsWith('/payment-methods'))body=[{method:'stripe',family:'stripe',label:'Online'}];
   return route.fulfill({json:body});
  });
- const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto('https://webshop.tfbuddy.local/?shop=2&category=category%3A14100');
+ const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto(base+'?shop=2&category=category%3A14100');
  await page.locator('.ws-card .ws-add').first().click();
  const card=page.locator('.pdm-promotion__card');
  await page.locator('.pdm-qty__btn').last().click();
@@ -72,57 +73,12 @@ for(const width of [1440,390]){
  if(width<600)await page.locator('.ws-tabbar__btn--cart').click();
  const basket=width<600?page.locator('.ws-drawer .ws-basket'):page.locator('.ws-basket').first();
  const unlocked=basket.locator('.ws-cart-unlocked .ws-cart-reward');
- await unlocked.getByText('Odblokowane promocje',{exact:true}).waitFor();
- assert.match(await unlocked.innerText(),/Próg .*50[,.]00.*osiągnięty/);
- assert.doesNotMatch(await unlocked.innerText(),/Rabat wymaga|Zasady promocji|przed rabatami|bez dostawy/);
- assert.equal(await unlocked.locator('details').count(),0);
- assert.equal(await page.locator('.ws-promotion-product__image').count(),0,'picker images are mounted only after opening');
- const quotesBeforeOpening=quotes.length;
- await unlocked.getByRole('button',{name:'Zobacz produkty',exact:true}).click();
- const chooser=page.getByRole('dialog',{name:'Zobacz produkty',exact:true});
- await chooser.waitFor();
- assert.equal(quotes.length,quotesBeforeOpening,'opening product choices does not issue another quote request');
- assert.equal(await chooser.locator('.ws-cart-reward__options button').count(),2);
- const images=chooser.locator('.ws-promotion-product__image');
- assert.equal(await images.count(),2);
- const sources=await images.evaluateAll(elements=>elements.map(image=>image.getAttribute('src')));
- assert.deepEqual(sources,['/promotion-product-fixture.svg','/promotion-product-fixture.svg']);
- assert.equal(await images.first().getAttribute('loading'),'lazy');
- assert.equal(await images.first().getAttribute('decoding'),'async');
- const presentation=await chooser.locator('.ws-cart-reward__options button').first().evaluate(element=>{
-   const styles=getComputedStyle(element);
-   const gridCard=document.querySelector('.ws-card');
-   return {background:styles.backgroundColor,surface:getComputedStyle(gridCard).backgroundColor,radius:parseFloat(styles.borderRadius)};
- });
- assert.equal(presentation.background,presentation.surface,'picker matches the light catalogue card surface');
- assert.ok(presentation.radius>=14);
- const deliveryBackground=await chooser.locator('.ws-cart-reward__options button').first().evaluate(element=>{
-   const previouslyDelivery=document.body.classList.contains('ws-mode-delivery');
-   document.body.classList.add('ws-mode-delivery');
-   const background=getComputedStyle(element).backgroundColor;
-   if(!previouslyDelivery)document.body.classList.remove('ws-mode-delivery');
-   return background;
- });
- assert.equal(deliveryBackground,presentation.surface,'product choices also keep the light surface in mobile delivery mode');
-
- const productPictureRequests=()=>page.evaluate(()=>performance.getEntriesByType('resource').filter(entry=>entry.name.endsWith('/promotion-product-fixture.svg')).length);
- assert.ok(await productPictureRequests()<=1,'one cached picture is shared by the grid and both portion choices');
- // A missing photograph switches to the existing placeholder without retrying the failed URL.
- await images.first().evaluate(image=>image.dispatchEvent(new Event('error')));
- assert.notEqual(await images.first().getAttribute('src'),'/promotion-product-fixture.svg');
-
- assert.doesNotMatch(await chooser.innerText(),/Bez dopłaty/);
- await page.keyboard.press('Escape');
- // Removing the additional ordinary tart relocks the offer without leaving a stale modal.
- await basket.locator('.ws-line__remove').last().click();
- await page.waitForFunction(()=>!document.querySelector('.ws-cart-unlocked .ws-cart-reward'));
+ assert.equal(await unlocked.count(),0,'cart no longer shows unlocked promotion banners');
  if(width<600)await page.locator('.ws-drawer__close').click();
  await page.locator('.ws-card .ws-add').first().click();
- await page.locator('.pdm-cta').click();
- await page.waitForFunction(()=>!document.querySelector('.pdm-cta'));
- if(width<600)await page.locator('.ws-tabbar__btn--cart').click();
- await unlocked.getByRole('button',{name:'Zobacz produkty',exact:true}).click();
- await chooser.locator('.ws-cart-reward__options button').filter({hasText:'1/4'}).click();
+ await page.locator('.pdm-seg--portions').getByRole('radio',{name:/1\/4/}).click();
+ await page.waitForFunction(()=>document.querySelector('.pdm-promotion__card')?.disabled===false);
+ await card.click();
  await page.locator('.pdm-seg--portions').getByRole('radio',{name:/1\/4/}).waitFor();
  assert.equal(await page.locator('.pdm-seg--portions').getByRole('radio',{name:/1\/4/}).getAttribute('aria-checked'),'true');
  await card.waitFor();
@@ -173,6 +129,6 @@ for(const width of [1440,390]){
  }
  assert.deepEqual(errors,[]);
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'no horizontal page overflow');
- await context.close();console.log('PASS exclusive unlock, hide, relock, modal product choice and atomic retry at width '+width);
+ await context.close();console.log('PASS receipt threshold, no cart banner, inline reward choice and atomic retry at width '+width);
 }
 }finally{await browser.close();}})().catch(e=>{console.error(e);process.exit(1);});
