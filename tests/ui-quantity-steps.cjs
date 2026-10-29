@@ -21,7 +21,7 @@ const assert = require('node:assert/strict');
         if (url.pathname.endsWith('/shops')) {
           body = [{ id: 2, name: 'Test shop', default_lang: 'fr', languages: 'pl,fr,nl', collect_enabled: 1, delivery_enabled: 1 }];
         } else if (url.pathname.endsWith('/products/available')) {
-          body = [{ id: 10, name: 'Sandwich', id_category: 70, is_active: 1, webshop_active: 1,
+          body = [{ id: 10, name: 'Sandwich', id_category: 70, is_active: 1, webshop_active: 1, webshop_bulk_quantity_enabled: 1,
             click_and_collect: 1, is_divisible: 0, is_piece_based: 1,
             category: { id: 70, name: 'Sandwich', groups: [] },
             webshop: { price_gross: '0.90', allergen_codes: [] }, portions: [], availability_periods: [],

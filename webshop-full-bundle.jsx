@@ -912,14 +912,14 @@ function UpcomingPromotionCard({ promotion, lang, t }) {
   </div>;
 }
 
-function ProductQuantityControl({ quantity, stockLimit, onChange, t }) {
+function ProductQuantityControl({ quantity, stockLimit, onChange, t, bulkQuantityEnabled = false }) {
   const [lastPreset, setLastPreset] = React.useState(null);
   const maximum = stockLimit ?? 99;
   return <>
     <div className="pdm-quick-qty" role="group" aria-label={t('qty.quickTitle')}>
       <span className="pdm-quick-qty__title">{t('qty.quickTitle')}</span>
       <div className="pdm-quick-qty__buttons">
-        {[1, 5, 10, 25].map(value => {
+        {(bulkQuantityEnabled ? [1, 5, 10, 25] : [1]).map(value => {
           const repeat = lastPreset === value;
           const label = t(repeat ? 'qty.add' : 'qty.set', { count: value });
           return <button key={value} type="button" title={label} aria-label={label}
@@ -1709,7 +1709,8 @@ function ProductDetail({ open, product, mode, onClose, onAdd, onPromotionPreview
             {addError && <div className="pdm-delivery-notice" role="alert">{addError}</div>}
             {selectedPromotion && !rewardChoice && <div className="pdm-delivery-notice">{t('promotion.inline.oneSet')}</div>}
             {!selectedPromotion && !product.is_weighted && <ProductQuantityControl key={product.id}
-              quantity={qty} stockLimit={deliveryStockLeft} onChange={changeQuantity} t={t}/>}
+              quantity={qty} stockLimit={deliveryStockLeft} onChange={changeQuantity} t={t}
+              bulkQuantityEnabled={product.webshop_bulk_quantity_enabled}/>}
             <button className="pdm-cta" aria-busy={adding} disabled={adding || (selectedPromotion && promotionPreviewPending) || product.is_weighted || !valid || deliveryBlocked || (deliveryStockLeft !== null && qty > deliveryStockLeft)} {...wsTap(handleConfirm, { shield: true })}>
               <span>{deliveryBlocked ? t('pd.notForDelivery') : (uninitialized ? t('stock.checkAvailability') : deliveryStockLeft === 0 ? t('pd.outOfStock') : (valid ? (selectedPromotion || offerPicked ? t('pd.offerAdd') : t('pd.addToCart')) : t('pd.chooseOptions')))}</span>
               <span className="pdm-cta__total" key={pulse}>
