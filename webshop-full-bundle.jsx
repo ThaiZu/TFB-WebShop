@@ -1553,7 +1553,12 @@ function ProductDetail({ open, product, mode, onClose, onAdd, onPromotionPreview
             <div className="pdm-qty" style={product.is_weighted ? { display: 'none' } : undefined}>
               <button className="pdm-qty__btn" {...wsTap(() => changeQuantity((q) => Math.max(1, q - 1)))} disabled={qty <= 1} aria-label={t('qty.dec')}>−</button>
               <span className="pdm-qty__val">{qty}</span>
-              <button className="pdm-qty__btn" {...wsTap(() => changeQuantity((q) => Math.min(q + 1, deliveryStockLeft ?? 99)))} aria-label={t('qty.inc')} disabled={deliveryStockLeft !== null && qty >= deliveryStockLeft}>+</button>
+              {(product.webshop_bulk_quantity_enabled ? [1, 5, 10, 25] : [1]).map((increment) => (
+                <button key={increment} className="pdm-qty__btn"
+                  {...wsTap(() => changeQuantity((q) => Math.min(q + increment, deliveryStockLeft ?? 99)))}
+                  aria-label={t('qty.inc') + ' +' + increment}
+                  disabled={qty + increment > (deliveryStockLeft ?? 99)}>+{increment}</button>
+              ))}
             </div>
             <button className="pdm-cta" disabled={product.is_weighted || !valid || deliveryBlocked || (deliveryStockLeft !== null && qty > deliveryStockLeft)} {...wsTap(handleConfirm, { shield: true })}>
               <span>{deliveryBlocked ? t('pd.notForDelivery') : (uninitialized ? t('stock.checkAvailability') : deliveryStockLeft === 0 ? t('pd.outOfStock') : (valid ? (offerPicked ? t('pd.offerAdd') : t('pd.addToCart')) : t('pd.chooseOptions')))}</span>

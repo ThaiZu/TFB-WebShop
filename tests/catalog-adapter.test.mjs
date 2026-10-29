@@ -67,3 +67,12 @@ test('uninitialized stock stays visible with a blocked availability state, inclu
   assert.equal(item.availability.status, 'uninitialized');
   assert.equal(item.availability.quantity_available, null);
 });
+
+test('bulk quantity shortcuts require explicit opt in from the catalogue', () => {
+  for (const value of [undefined, null, false, 0, '0', 'false']) {
+    assert.equal(adaptShopCatalogue([product({webshop_bulk_quantity_enabled:value})]).products[0].webshop_bulk_quantity_enabled, false);
+  }
+  for (const value of [true, 1, '1']) {
+    assert.equal(adaptShopCatalogue([product({webshop_bulk_quantity_enabled:value})]).products[0].webshop_bulk_quantity_enabled, true);
+  }
+});
