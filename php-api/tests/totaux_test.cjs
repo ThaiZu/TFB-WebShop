@@ -1,107 +1,108 @@
-/* L'aperçu du webshop doit donner EXACTEMENT le total que le serveur facture.
+/* The basket displays the authoritative /cart/quote amounts. The old local
+ * wsTotaux/wsRemiseBoutique pricing functions were removed when pricing moved
+ * to the server. Test the shipped quote adapter, not a second pricing engine.
  *
- * Ce test ne relit pas les deux calculs : il les FAIT TOURNER l'un contre
- * l'autre sur des centaines de paniers tirés au sort. Le calcul de référence
- * ci-dessous est la transcription littérale du bloc PHP de POST /orders
- * (php-api/index.php, sections « 1. Lignes + sous-total » à « $total = … ») ;
- * les fonctions testées sont extraites du bundle tel qu'il est livré.
- *
- * Un écart d'un centime ici, c'est un client qui lit sur sa confirmation un
- * montant que personne n'a débité.
- *
- * Usage :  node php-api/tests/totaux_test.cjs
+ * Run: node php-api/tests/totaux_test.cjs (no npm dependencies required).
  */
-const fs = require('fs');
-const path = require('path');
-
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
 const src = fs.readFileSync(path.join(__dirname, '../../webshop-full-bundle.jsx'), 'utf8');
 
-/* Extraction des trois fonctions à tester — du JS pur, sans JSX. */
 function extraire(nom) {
-  const i = src.indexOf('function ' + nom + '(');
-  if (i < 0) throw new Error('fonction introuvable : ' + nom);
-  // Le corps commence après la parenthèse fermante des paramètres : une liste
-  // déstructurée ({ basket, shop, … }) porte elle-même des accolades, et les
-  // compter depuis la première tronquerait la fonction en silence.
-  let par = 0, k = src.indexOf('(', i);
+  const start = src.indexOf('function ' + nom + '(');
+  assert.notEqual(start, -1, 'Missing production function: ' + nom);
+  let par = 0, k = src.indexOf('(', start);
   for (; k < src.length; k++) {
     if (src[k] === '(') par++;
     else if (src[k] === ')' && --par === 0) break;
   }
-  let prof = 0, debut = src.indexOf('{', k);
-  for (let j = debut; j < src.length; j++) {
-    if (src[j] === '{') prof++;
-    else if (src[j] === '}' && --prof === 0) return src.slice(i, j + 1);
+  let depth = 0;
+  for (let j = src.indexOf('{', k); j < src.length; j++) {
+    if (src[j] === '{') depth++;
+    else if (src[j] === '}' && --depth === 0) return src.slice(start, j + 1);
   }
-  throw new Error('fin de fonction introuvable : ' + nom);
+  throw new Error('Unterminated production function: ' + nom);
 }
-const code = ['wsArrondi', 'wsRemiseBoutique', 'wsTotaux', 'computeCrossPortionOffer']
-  .map(extraire).join('\n');
-const sandbox = {};
-new Function('exports', code + '\nexports.wsTotaux=wsTotaux;exports.computeCrossPortionOffer=computeCrossPortionOffer;')(sandbox);
-
-/* ── Le calcul du SERVEUR, transcrit ─────────────────────────────────────── */
-function serveur({ lignes, regle, remiseType, remiseVal, bon, frais }) {
-  const sousTotal = lignes.reduce((t, l) => t + l.price * l.qty, 0);
-
-  let promo = 0;                                   // 2. promo croisée X+Y
-  if (regle && regle.x > 0) {
-    const units = [];
-    for (const l of lignes) if (l.crossPortion) for (let k = 0; k < l.qty; k++) units.push(l.price);
-    if (units.length >= regle.threshold) {
-      units.sort((a, b) => a - b);
-      const freeCount = Math.floor(units.length / regle.x) * regle.y;
-      for (let k = 0; k < freeCount && k < units.length; k++) promo += units[k];
-    }
-  }
-
-  let remise = 0;                                  // 2bis. remise boutique
-  if (remiseVal > 0) {
-    const base = sousTotal - promo;
-    remise = remiseType === 'fixed' ? Math.min(base, remiseVal) : Math.round(base * remiseVal) / 100;
-  }
-  remise = Math.round(remise * 100) / 100;
-
-  const total = Math.max(0, Math.round((sousTotal - promo - remise - bon + frais) * 100) / 100);
-  return { sousTotal, promo, remise, total };
+const context = vm.createContext({});
+vm.runInContext(['wsArrondi', 'wsMoney', 'wsQuoteTotals'].map(extraire).join('\n'), context);
+const totals = context.wsQuoteTotals;
+let assertions = 0;
+function equal(actual, expected, message) {
+  assert.equal(actual, expected, message);
+  assertions++;
 }
+const quote = (voucher = null) => ({
+  totals: { gross_before_discount: '50.00', discount: '12.55', gross_after_discount: '37.45' },
+  voucher,
+});
 
-/* ── Tirage ──────────────────────────────────────────────────────────────── */
-let graine = 20260813;
-const rnd = () => (graine = (graine * 1103515245 + 12345) % 2147483648) / 2147483648;
-const prix = () => Math.round((1 + rnd() * 40) * 100) / 100;
+equal(totals(null, 0), null, 'No local price is invented while the server quote is missing');
+equal(totals({}, 0), null, 'A response without totals is not a quote');
+let result = totals(quote(), '2.55');
+equal(result.total, 40, 'Delivery is added once to the already-discounted server amount');
+equal(result.sousTotal, 50, 'Original gross amount is displayed');
+equal(result.productsTotal, 37.45, 'Authoritative product total is retained');
+equal(result.remise, 12.55, 'Automatic discount is displayed, not subtracted twice');
+equal(result.bon, 0, 'No voucher discount is invented');
+equal(result.frais, 2.55, 'String-valued delivery amount is accepted');
+equal(result.croise, 0, 'Removed local cross-portion rules are not recalculated');
 
-let ko = 0, n = 0;
-for (let essai = 0; essai < 400; essai++) {
-  const lignes = [];
-  const nb = 1 + Math.floor(rnd() * 6);
-  for (let i = 0; i < nb; i++)
-    lignes.push({ name: 'P' + i, price: prix(), qty: 1 + Math.floor(rnd() * 4),
-                  crossPortion: rnd() < 0.6, portion: 'quart', basePrice: prix() });
-  const regle = rnd() < 0.75
-    ? { x: 2 + Math.floor(rnd() * 4), y: 1 + Math.floor(rnd() * 2), threshold: Math.floor(rnd() * 5) }
-    : null;
-  const r = rnd();
-  const remiseType = r < 0.4 ? 'percent' : (r < 0.6 ? 'fixed' : null);
-  const remiseVal  = remiseType ? (remiseType === 'percent' ? 1 + Math.floor(rnd() * 15)
-                                                            : Math.round(rnd() * 20 * 100) / 100) : 0;
-  const bon   = rnd() < 0.3 ? Math.round(rnd() * 10 * 100) / 100 : 0;
-  const frais = rnd() < 0.4 ? Math.round(rnd() * 8 * 100) / 100 : 0;
-
-  const shop = { webshop_discount_type: remiseType, webshop_discount_value: remiseVal };
-  const croise = sandbox.computeCrossPortionOffer(lignes, regle);
-  const front  = sandbox.wsTotaux({ basket: lignes, shop, crossSavings: croise ? croise.savings : 0,
-                                    voucherDiscount: bon, deliveryFee: frais });
-  const back   = serveur({ lignes, regle, remiseType, remiseVal, bon, frais });
-
-  n++;
-  const ecart = Math.abs(front.total - back.total);
-  if (ecart > 0.005) {
-    ko++;
-    if (ko <= 5) console.log(`KO  essai ${essai} : aperçu ${front.total.toFixed(2)} € ≠ facturé ${back.total.toFixed(2)} €`,
-      `(offre ${front.croise.toFixed(2)}/${back.promo.toFixed(2)} · remise ${front.remise.toFixed(2)}/${back.remise.toFixed(2)})`);
-  }
+result = totals(quote({ code: 'SAVE', valid: true, matches_cart: true }), 0);
+equal(result.bon, 12.55, 'A valid, matching voucher uses the server discount');
+equal(result.remise, 0, 'Voucher is not also displayed as an automatic discount');
+equal(result.total, 37.45, 'Voucher does not reduce the final quote again');
+for (const voucher of [
+  { code: 'SAVE', valid: false, matches_cart: true },
+  { code: 'SAVE', valid: true, matches_cart: false },
+  { valid: true, matches_cart: true },
+]) {
+  result = totals(quote(voucher), 0);
+  equal(result.bon, 0, 'An invalid, mismatching or unidentified voucher is not applied');
+  equal(result.remise, 12.55, 'Server discount remains visible');
+  equal(result.total, 37.45, 'Voucher metadata cannot override the server total');
 }
 
-console.log(`\n${n - ko} panier(s) sur ${n} : aperçu = montant facturé.`);
-if (ko) { console.log(`${ko} écart(s) — le client verrait un montant qu'il ne paiera pas.`); process.exit(1); }
+result = totals({ ...quote(), weekday_discount: { discount_total: '5.00', percent: '10', minimum_cart_gross: '40', amount_remaining: '0', threshold_met: true } }, 0);
+equal(result.weekday, 5, 'Weekday discount is displayed separately');
+equal(Math.round(result.remise * 100), 755, 'Remaining automatic discount is preserved in cents');
+equal(result.weekdayPercent, 10, 'Weekday rate is passed through');
+equal(result.weekdayMinimum, 40, 'Minimum basket amount is passed through');
+equal(result.weekdayThresholdMet, true, 'Reached threshold is passed through');
+equal(result.total, 37.45, 'Weekday discount is not subtracted twice');
+result = totals({ ...quote(), weekday_discount: { percent: '10', minimum_cart_gross: '60', amount_remaining: '10', threshold_met: false } }, 0);
+equal(result.weekday, 0, 'Below-threshold weekday discount is zero');
+equal(result.weekdayRemaining, 10, 'Remaining amount is displayed');
+equal(result.weekdayThresholdMet, false, 'Unmet threshold remains false');
+equal(result.total, 37.45, 'Threshold metadata does not change the quoted total');
+
+for (const fee of [undefined, null, '', 'not money', Infinity, NaN]) {
+  equal(totals(quote(), fee).total, 37.45, 'Missing/invalid delivery fee does not make the total NaN');
+}
+equal(totals({ totals: { gross_before_discount: '0.30', discount: '0.20', gross_after_discount: '0.10' } }, '0.20').total, 0.30, 'Amounts are rounded to cents');
+equal(totals({ totals: { gross_before_discount: '10.00', discount: '10.00', gross_after_discount: '0.00' } }, 0).total, 0, 'Fully discounted basket remains free');
+
+// Deterministic, cent-based fixtures avoid duplicating production float logic.
+// A quote is an input contract: subtotal - discount + delivery is the expected
+// customer amount, irrespective of the server rules which produced the discount.
+let seed = 20260813;
+const rnd = max => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed % max; };
+const money = cents => (cents / 100).toFixed(2);
+for (let i = 0; i < 400; i++) {
+  const subtotal = 1 + rnd(100000);
+  const discount = rnd(subtotal + 1);
+  const delivery = rnd(1501);
+  const voucher = i % 3 === 0;
+  const weekday = voucher ? 0 : rnd(discount + 1);
+  const actual = totals({
+    totals: { gross_before_discount: money(subtotal), discount: money(discount), gross_after_discount: money(subtotal - discount) },
+    voucher: voucher ? { code: 'SAVE', valid: true, matches_cart: true } : null,
+    weekday_discount: { discount_total: money(weekday) },
+  }, money(delivery));
+  equal(Math.round(actual.total * 100), subtotal - discount + delivery, 'Quote amount + delivery, fixture ' + i);
+  equal(Math.round(actual.productsTotal * 100), subtotal - discount, 'Quoted product amount, fixture ' + i);
+  equal(Math.round((actual.remise + actual.bon + actual.weekday) * 100), discount, 'Discount displayed exactly once, fixture ' + i);
+  equal(Math.round(actual.sousTotal * 100), subtotal, 'Subtotal, fixture ' + i);
+}
+console.log(`PASS: ${assertions} assertions, including 400 server-quote baskets.`);

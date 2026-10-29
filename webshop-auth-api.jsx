@@ -15,18 +15,18 @@
 
    Session: the storefront and API may live on different domains, so
    auth is by BEARER TOKEN (not cookies). The access and rotating refresh
-   tokens are stored locally and the access token is sent as
+   tokens are stored in a bounded tab session and the access token is sent as
    `Authorization: Bearer …` on authenticated calls.
    ===================================================================== */
 (function () {
   const TOKEN_KEY = 'ws_auth_token';
   const REFRESH_TOKEN_KEY = 'ws_auth_refresh_token';
   let refreshPending = null;
-  const getToken = () => { try { return localStorage.getItem(TOKEN_KEY); } catch (_) { return null; } };
-  const getRefreshToken = () => { try { return localStorage.getItem(REFRESH_TOKEN_KEY); } catch (_) { return null; } };
-  const setToken = (t) => { try { t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY); } catch (_) {} };
-  const setRefreshToken = (t) => { try { t ? localStorage.setItem(REFRESH_TOKEN_KEY, t) : localStorage.removeItem(REFRESH_TOKEN_KEY); } catch (_) {} };
-  const clearSession = () => { setToken(null); setRefreshToken(null); };
+  const getToken = () => { try { return window.WSSessionStorage.getItem(TOKEN_KEY); } catch (_) { return null; } };
+  const getRefreshToken = () => { try { return window.WSSessionStorage.getItem(REFRESH_TOKEN_KEY); } catch (_) { return null; } };
+  const setToken = (t) => { try { t ? window.WSSessionStorage.setItem(TOKEN_KEY, t) : window.WSSessionStorage.removeItem(TOKEN_KEY); } catch (_) {} };
+  const setRefreshToken = (t) => { try { t ? window.WSSessionStorage.setItem(REFRESH_TOKEN_KEY, t) : window.WSSessionStorage.removeItem(REFRESH_TOKEN_KEY); } catch (_) {} };
+  const clearSession = () => { setToken(null); setRefreshToken(null); window.WSSessionStorage.clearCustomer?.(); };
   const setSession = (session) => {
     const accessToken = session && (session.access_token || session.accessToken);
     const refreshToken = session && (session.refresh_token || session.refreshToken);
@@ -53,11 +53,12 @@
     return callingCode + (callingCode === '+39' ? digits : digits.replace(/^0+/, ''));
   };
   const currentLocale = () => {
-    try { return window.WSI18n?.getLang() || localStorage.getItem('ws.lang') || navigator.language || 'en'; } catch (_) { return 'en'; }
+    try { return window.WSI18n?.getLang() || window.WSSessionStorage.getItem('ws.lang') || navigator.language || 'en'; } catch (_) { return 'en'; }
   };
 
   const api = {
     endpoint: null,
+    configEndpoint: null,
 
     /* En-têtes d'authentification, PARTAGÉS. L'authentification est par jeton
        Bearer, jamais par cookie : un module qui appelle un endpoint protégé
@@ -299,9 +300,8 @@
        l'UI applique ses propres règles d'absence, aucune option n'est
        inventée. ── */
     async config() {
-      if (!api.endpoint) throw new Error('API configuration non disponible.');
-      const base = api.endpoint.replace(/\/auth\/?$/, '');
-      const r = await fetch(`${base}/config`, { credentials: 'include' });
+      if (!api.configEndpoint) throw new Error('API configuration non disponible.');
+      const r = await fetch(api.configEndpoint, { credentials: 'include' });
       if (!r.ok) throw new Error('Configuration indisponible (HTTP ' + r.status + ').');
       return await r.json();
     },

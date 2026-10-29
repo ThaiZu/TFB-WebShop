@@ -5,7 +5,8 @@ import vm from 'node:vm';
 const deferred = () => { let resolve; const promise = new Promise(r => resolve = r); return {promise, resolve}; };
 function fixture(fetch) {
  const storage=new Map([['ws_auth_token','access'],['ws_auth_refresh_token','refresh']]);
- const context={window:{},console,fetch,localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)}};
+ const context={window:{setInterval(){},addEventListener(){},dispatchEvent(){}},document:{addEventListener(){}},Event,console,fetch,localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)}};
+ context.window.WSSessionStorage = context.localStorage;
  vm.runInNewContext(fs.readFileSync(new URL('../webshop-auth-api.jsx',import.meta.url),'utf8'),context);
  const api=context.window.WSAuth;api.endpoint='/auth';return {api,storage};
 }

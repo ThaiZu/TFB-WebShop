@@ -30,7 +30,6 @@ import '../webshop-availability-api.jsx';
 import '../webshop-slots-api.jsx';
 import '../webshop-delivery-fees-api.jsx';
 import '../webshop-catalog-api.jsx';
-import '../webshop-brand-api.jsx';
 import '../webshop-auth-api.jsx';
 import '../webshop-quote-api.jsx';
 import '../webshop-tours-api.jsx';
@@ -46,3 +45,10 @@ import '../api-config.js';
 import '../webshop-i18n-react.jsx';
 import '../webshop-allergens.jsx';
 import '../webshop-full-bundle.jsx';
+
+import { createGa4Adapter } from '../webshop-ga4.js';
+window.WSConsent?.register('ga4', createGa4Adapter());
+
+// Independent of catalogue/checkout boot; failures keep integrations disabled.
+import { loadPrivacyConfiguration } from '../webshop-privacy-api.js';
+void loadPrivacyConfiguration(__WS_API_BASE_URL__ + '/webshop/privacy-config');

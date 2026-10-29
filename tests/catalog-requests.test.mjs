@@ -9,6 +9,7 @@ test('concurrent catalogue reads share a request, but refreshes and identities s
   let count=0, token='', release;
   const context={window:{WSI18n:{getLang:()=> 'fr'}},localStorage:{getItem:()=>token},URLSearchParams,adaptShopCatalogue,normaliseShoppingContext,
     fetch:()=>{count++;return new Promise(resolve=>{release=()=>resolve({ok:true,json:async()=>[]});});}};
+  context.window.WSSessionStorage=context.localStorage;
   context.window.WSAuth={authenticatedFetch:(...args)=>context.fetch(...args)};
   const source=fs.readFileSync(new URL('../webshop-catalog-api.jsx',import.meta.url),'utf8').replace(/^import .*\n/gm,'');
   vm.runInNewContext(source,context);
@@ -26,6 +27,7 @@ test('availability uses the catalogue endpoint and no cart reservation API is ex
   const urls=[];
   const context={window:{WSI18n:{getLang:()=> 'pl'}}, localStorage:{getItem:()=>null}, URLSearchParams, adaptShopCatalogue,normaliseShoppingContext,
     fetch:async(url)=>{ urls.push(new URL(url)); return {ok:true,json:async()=>[]}; }};
+  context.window.WSSessionStorage=context.localStorage;
   context.window.WSAuth={authenticatedFetch:(...args)=>context.fetch(...args)};
   const source=fs.readFileSync(new URL('../webshop-catalog-api.jsx',import.meta.url),'utf8').replace(/^import .*\n/gm,'');
   vm.runInNewContext(source,context);

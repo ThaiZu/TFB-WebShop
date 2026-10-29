@@ -130,7 +130,7 @@ test('product sheet previews every automatic promotion type before the item is a
   assert.match(source, /className="pdm-promotion"/);
   assert.match(source, /promotion_suggestions \|\| quote\?\.bundle_suggestions/);
   assert.match(source, /promotion\.promotion_type/);
-  assert.match(source, /disabled=\{promotionLocked\}/);
+  assert.match(source, /disabled=\{blocked\}/);
   assert.match(source, /promotion\.inline\.locked/);
   assert.match(source, /onAdd\(\{[\s\S]*?\}, selectedPromotion\)/);
   assert.match(source, /promotionAdditionLines\(selectedPromotion, lineId, promotionGroup, promotionDisplay\)/);
@@ -218,4 +218,186 @@ test('removing legacy vouchers preserves navigation deep links without accepting
     shopId:'2',mode:'collect',voucher:'SAVE',cat:'bread',sub:'roll',productId:'10',openProduct:'10',
   });
   assert.equal(window.WSVouchers, undefined);
+});
+
+const promotionSummaryContext = {};
+vm.runInNewContext(extract('wsPromotionItemsSummary'), promotionSummaryContext);
+const plMessages = JSON.parse(fs.readFileSync(new URL('../public/locales/pl.json', import.meta.url), 'utf8'));
+const promotionTranslate = (key, params) => Object.entries(params || {}).reduce((text, [name, value]) => text.replace(`{${name}}`, value), plMessages[key]);
+
+test('fractional offer distinguishes four paid quarters from the free quarter', () => {
+  const summary = promotionSummaryContext.wsPromotionItemsSummary({
+    promotion_type: 'BUY_X_GET_Y', reward: { type: 'FREE' },
+    items: [{ product_name: 'Quiche', product_portion_type: 'ONE_QUARTER', quantity: 5,
+      role: 'trigger_and_reward', trigger_quantity: 4, reward_quantity: 1 }],
+  }, {}, promotionTranslate);
+  assert.equal(summary, 'Kup 4 × 1/4 Quiche + odbierz 1 × 1/4 Quiche gratis');
+});
+
+test('reduced-price reward is described without promising a free product', () => {
+  const summary = promotionSummaryContext.wsPromotionItemsSummary({
+    promotion_type: 'BUY_X_GET_Y', reward: { type: 'FIXED_PRICE' },
+    items: [{ product_name: 'Quiche', quantity: 2,
+      role: 'trigger_and_reward', trigger_quantity: 1, reward_quantity: 1 }],
+  }, {}, promotionTranslate);
+  assert.equal(summary, 'Kup 1 × 1/1 Quiche + odbierz 1 × 1/1 Quiche w cenie promocyjnej');
+});
+
+test('different trigger and reward products retain their separate portions', () => {
+  const summary = promotionSummaryContext.wsPromotionItemsSummary({
+    promotion_type: 'BUY_X_GET_Y', reward: { type: 'FREE' },
+    items: [{ product_name: 'Quiche', product_portion_type: 'ONE_HALF', quantity: 2, role: 'trigger' },
+      { product_name: 'Tarta', product_portion_type: 'ONE_QUARTER', quantity: 1, role: 'reward' }],
+  }, {}, promotionTranslate);
+  assert.equal(summary, 'Kup 2 × 1/2 Quiche · odbierz 1 × 1/4 Tarta gratis');
+});
+
+test('older offer responses still show their total composition', () => {
+  assert.equal(promotionSummaryContext.wsPromotionItemsSummary({ promotion_type: 'BUY_X_GET_Y',
+    items: [{ product_name: 'Quiche', quantity: 2, role: 'trigger_and_reward' }],
+  }, {}, promotionTranslate), '2 × 1/1 Quiche');
+});
+
+vm.runInNewContext(transformSync(['wsFractionalPromotionRule', 'FractionalPromotionRule'].map(extract).join('\n'), { loader: 'jsx' }).code, Object.assign(promotionSummaryContext, { React }));
+const fractionalOffer = {
+  promotion_type: 'BUY_X_GET_Y', trigger: { quantity: 1, quantity_unit: 'PIECE_FRACTION', any_portion: true },
+  reward: { type: 'FREE' }, items: [
+    { product_name: 'Quiche', quantity: 1, role: 'trigger' },
+    { product_name: 'Quiche', product_portion_type: 'ONE_QUARTER', quantity: 1, role: 'reward' },
+  ],
+};
+const fractionalProduct = { portionOptions: [{ v: 'entier' }, { v: 'demi' }, { v: 'quart' }] };
+
+test('fractional rule explains combinations independently of the selected portion', () => {
+  const rule = promotionSummaryContext.wsFractionalPromotionRule(fractionalOffer, fractionalProduct, promotionTranslate);
+  assert.match(rule.description, /dowolnej konfiguracji/);
+  assert.match(rule.examples, /1 × 1\/1/);
+  assert.match(rule.examples, /2 × 1\/2/);
+  assert.match(rule.examples, /4 × 1\/4/);
+  assert.match(rule.examples, /1 × 1\/2 \+ 2 × 1\/4/);
+  assert.equal(rule.reward, 'odbierz 1 × 1/4 Quiche gratis');
+});
+
+test('examples omit portions absent from the product catalogue', () => {
+  const rule = promotionSummaryContext.wsFractionalPromotionRule(fractionalOffer, { portionOptions: [{ v: 'quart' }] }, promotionTranslate);
+  assert.match(rule.examples, /4 × 1\/4/);
+  assert.doesNotMatch(rule.examples, /1\/2|1\/1|1\/8/);
+});
+
+test('restricted trigger portions do not claim the example combinations qualify', () => {
+  const rule = promotionSummaryContext.wsFractionalPromotionRule({ ...fractionalOffer, trigger: { ...fractionalOffer.trigger, any_portion: false } }, fractionalProduct, promotionTranslate);
+  assert.equal(rule.examples, '');
+  assert.match(rule.description, /kwalifikujące/);
+});
+
+test('rendered explanation includes the exact reward and excludes it from paid quantity', () => {
+  const html = renderToStaticMarkup(React.createElement(promotionSummaryContext.FractionalPromotionRule, { promotion: fractionalOffer, product: fractionalProduct, t: promotionTranslate }));
+  assert.match(html, /pdm-promotion__rule/);
+  assert.match(html, /1 × 1\/4 Quiche gratis/);
+  assert.match(html, /Nagroda nie wlicza się/);
+});
+
+test('item-count promotions keep their existing description', () => {
+  assert.equal(promotionSummaryContext.wsFractionalPromotionRule({ ...fractionalOffer, trigger: { quantity: 1, quantity_unit: 'ITEM' } }, fractionalProduct, promotionTranslate), null);
+});
+
+const basketContext = { ...context, ICONS: { back: null, pin: null }, wsTap: () => ({}) };
+vm.runInNewContext(transformSync(extract('Basket'), { loader: 'jsx' }).code, basketContext);
+function renderBasketPricing(status) {
+  const old = { items: [{ line_key: 'web-1', total_gross_value_after_discount: '59.60' }], totals: { gross_before_discount: '59.60', gross_after_discount: '59.60', discount: '0.00' } };
+  const current = { items: [...old.items, { line_key: 'web-2', total_gross_value_after_discount: '27.60' }], totals: { gross_before_discount: '94.10', gross_after_discount: '87.20', discount: '6.90' } };
+  return renderToStaticMarkup(React.createElement(basketContext.Basket, {
+    mode: 'collect', shop: { id: 2, address: 'Test shop' },
+    basket: [{ line: 1, productId: 1, name: 'Quiche', qty: 4, options: [] },
+      { line: 2, productId: 2, name: 'Quarters', qty: 5, options: [], promotion_group: 'offer-2' }],
+    quoteState: { status, quote: status === 'ready' ? current : old, error: 'Pricing failed' },
+  }));
+}
+
+test('a failed or pending basket quote shows unavailable prices instead of zero or stale totals', () => {
+  for (const status of ['error', 'loading']) {
+    const html = renderBasketPricing(status);
+    assert.doesNotMatch(html, /€0.00|€59.60/);
+    assert.match(html, /class="ws-line__price">—/);
+    assert.match(html, /class="ws-basket__total-amount">—/);
+    assert.match(html, /disabled=""/);
+  }
+});
+
+test('a successful quote displays ordinary purchases and the additional discounted group price', () => {
+  const html = renderBasketPricing('ready');
+  assert.match(html, /€59.60/);
+  assert.match(html, /€27.60/);
+  assert.match(html, /€87.20/);
+});
+
+
+test('product preview identifies its synthetic line without marking ordinary cart quotes', async () => {
+  const { api, calls } = apiFixture(quote(null));
+  const basket = [{ line: 1, productId: 10, qty: 2 }];
+  await api.quote({ shopId: 2, basket, promotionPreviewLineKey: 1 });
+  const preview = JSON.parse(calls[0].request.body);
+  assert.equal(preview.promotion_preview_line_key, preview.products[0].line_key);
+  await api.quote({ shopId: 2, basket });
+  assert.equal(JSON.parse(calls[1].request.body).promotion_preview_line_key, undefined);
+});
+
+
+const progressContext = { React, wsCurrency: value => `€${Number(value).toFixed(2)}` };
+vm.runInNewContext(transformSync(extract('PromotionReceiptProgress'), { loader: 'jsx' }).code, progressContext);
+test('locked promotion shows the server missing amount and accessible basket progress', () => {
+  const html = renderToStaticMarkup(React.createElement(progressContext.PromotionReceiptProgress, {
+    promotion: { minimum_receipt_gross: '20.00', minimum_receipt_missing: '7.00', is_available: false }, t: promotionTranslate,
+  }));
+  assert.match(html, /Brakuje Ci jeszcze €7.00/);
+  assert.match(html, /<progress max="20" value="13" aria-label=/);
+});
+test('unlocked promotions and offers without a receipt minimum have no locked progress', () => {
+  for (const promotion of [{ minimum_receipt_gross: '20.00', is_available: true }, { is_available: false }]) {
+    assert.equal(renderToStaticMarkup(React.createElement(progressContext.PromotionReceiptProgress, { promotion, t: promotionTranslate })), '');
+  }
+});
+
+const cartRewardOffer = { id_promotion: 17, name: 'Quiche offer', status: 'AVAILABLE',
+  trigger: { quantity: 1, quantity_unit: 'PIECE_FRACTION' }, reward_quantity: 1,
+  trigger_items: [{ id_product: 10, product_name: 'Quiche', product_portion_type: 'ONE_QUARTER', quantity: 4 }],
+  options: [{ id_product: 10, id_product_portion: 3, product_name: 'Quiche', product_portion_type: 'ONE_QUARTER', quantity: 1 }],
+};
+
+const inlineRewardContext = { React, wsCurrency: value => `€${Number(value).toFixed(2)}`, wsPromotionItemsSummary: promotionSummaryContext.wsPromotionItemsSummary };
+vm.runInNewContext(transformSync(extract('PromotionRewardChoices'), { loader: 'jsx' }).code, inlineRewardContext);
+test('inline gift choices expose selection, catalogue pictures and honest free or discounted prices', () => {
+  const html = renderToStaticMarkup(React.createElement(inlineRewardContext.PromotionRewardChoices, {
+    options: [{ ...cartRewardOffer.options[0], image_src: '/photos/quiche.webp', regular_price: 6.30, additional_cost_gross: '0.00' },
+      { ...cartRewardOffer.options[0], id_product: 20, product_name: 'Apricot', regular_price: 8.90, additional_cost_gross: '2.00' }],
+    selectedKey: '20-3', onSelect() {}, t: promotionTranslate,
+  }));
+  assert.match(html, /role="radiogroup"/);
+  assert.equal((html.match(/role="radio"/g) || []).length, 2);
+  assert.equal((html.match(/aria-checked="true"/g) || []).length, 1);
+  assert.match(html, /src="\/photos\/quiche.webp"/);
+  assert.match(html, /<del>€6.30<\/del>/);
+  assert.match(html, /Gratis/);
+  assert.match(html, /€2.00/);
+  assert.doesNotMatch(html, /role="dialog"/);
+});
+
+test('a reward option with an actual surcharge is not described as free', () => {
+  const text = promotionSummaryContext.wsPromotionItemsSummary({ ...cartRewardOffer, promotion_type: 'BUY_X_GET_Y', reward: { type: 'FREE' }, items: [{ ...cartRewardOffer.options[0], role: 'reward' }] }, {}, promotionTranslate, '2.00');
+  assert.doesNotMatch(text, /gratis/);
+  assert.match(text, /w cenie promocyjnej/);
+});
+
+test('basket omits availability banners even when the API returns unlocked offers and rewards', () => {
+  const html = renderToStaticMarkup(React.createElement(basketContext.Basket, {
+    mode: 'collect', shop: { id: 2 }, basket: [{ line: 1, productId: 10, name: 'Sandwich', qty: 1, options: [] }],
+    quoteState: { status: 'ready', quote: {
+      items: [{ line_key: 'web-1', total_gross_value_after_discount: '0.90' }],
+      totals: { gross_before_discount: '0.90', gross_after_discount: '0.90', discount: '0.00' },
+      unlocked_promotions: [{ id_promotion: 2, name: 'Unlocked offer', status: 'UNLOCKED' }],
+      promotion_rewards: [{ id_promotion: 3, name: 'Available gift', status: 'AVAILABLE' }],
+    } },
+  }));
+  assert.doesNotMatch(html, /ws-cart-reward|Unlocked offer|Available gift|cart\.unlocked|cart\.reward/);
+  assert.match(html, /Sandwich/);
 });

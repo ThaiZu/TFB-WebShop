@@ -1,0 +1,42 @@
+/* Real storefront UI, controlled API. Does not create orders or payments. */
+const {chromium}=require('playwright');const assert=require('node:assert/strict');
+const suggestions={"WHOLE":{"id_promotion":17,"name":"Kup całość i odbierz ćwiartkę","description":null,"promotion_type":"BUY_X_GET_Y","bundle_price":null,"total_gross_after_discount":"13.90","promotion_total_gross_after_discount":"13.90","discount_total":"12.00","trigger":{"quantity":"1.000","quantity_unit":"PIECE_FRACTION","any_portion":true},"reward":{"type":"FREE","quantity":1,"value":null},"items":[{"id_product":1410018,"id_product_portion":null,"product_name":"Quiche","product_portion_label":null,"product_portion_type":null,"quantity":"1","role":"trigger","missing_quantity":"0"},{"id_product":1410018,"id_product_portion":3,"product_name":"Quiche","product_portion_label":null,"product_portion_type":"ONE_QUARTER","quantity":"1","role":"reward","missing_quantity":"1.00000000"}]},"ONE_HALF":{"id_promotion":17,"name":"Kup całość i odbierz ćwiartkę","description":null,"promotion_type":"BUY_X_GET_Y","bundle_price":null,"total_gross_after_discount":"20.00","promotion_total_gross_after_discount":"20.00","discount_total":"12.00","trigger":{"quantity":"1.000","quantity_unit":"PIECE_FRACTION","any_portion":true},"reward":{"type":"FREE","quantity":1,"value":null},"items":[{"id_product":1410018,"id_product_portion":2,"product_name":"Quiche","product_portion_label":null,"product_portion_type":"ONE_HALF","quantity":"2","role":"trigger","missing_quantity":"1.00000000"},{"id_product":1410018,"id_product_portion":3,"product_name":"Quiche","product_portion_label":null,"product_portion_type":"ONE_QUARTER","quantity":"1","role":"reward","missing_quantity":"1.00000000"}]},"ONE_QUARTER":{"id_promotion":17,"name":"Kup całość i odbierz ćwiartkę","description":null,"promotion_type":"BUY_X_GET_Y","bundle_price":null,"total_gross_after_discount":"48.00","promotion_total_gross_after_discount":"48.00","discount_total":"12.00","trigger":{"quantity":"1.000","quantity_unit":"PIECE_FRACTION","any_portion":true},"reward":{"type":"FREE","quantity":1,"value":null},"items":[{"id_product":1410018,"id_product_portion":3,"product_name":"Quiche","product_portion_label":null,"product_portion_type":"ONE_QUARTER","quantity":"5.00000000","role":"trigger_and_reward","trigger_quantity":"4","reward_quantity":"1","missing_quantity":"4.00000000"}]}};
+(async()=>{const browser=await chromium.launch({headless:true,args:['--no-sandbox','--host-resolver-rules=MAP webshop.tfbuddy.local 127.0.0.1']});try{
+for(const width of [1440,390]){
+ const context=await browser.newContext({ignoreHTTPSErrors:true,viewport:{width,height:1000}});
+ await context.addInitScript(()=>sessionStorage.setItem('ws.session.v1:' + 'ws.lang', ((createdAt)=>JSON.stringify({value:'pl', createdAt, expiresAt:createdAt+43200000}))(Date.now())));
+ const errors=[],quotes=[];await context.route('**/*',async route=>{
+  const req=route.request(),url=new URL(req.url());if(!['webshop.tfbuddy.local','tfb.tfbuddy.local'].includes(url.hostname))return route.abort();
+  if(!url.pathname.includes('/api/v1/'))return route.continue();let body=[];
+  if(url.pathname.endsWith('/shops'))body=[{id:2,name:'Test shop',default_lang:'pl',languages:'pl,fr,nl',collect_enabled:1,delivery_enabled:1}];
+  else if(url.pathname.endsWith('/products/available'))body=[{id:1410018,name:'Quiche',id_category:14100,is_active:1,webshop_active:1,click_and_collect:1,office_delivery:1,is_divisible:0,is_piece_based:1,category:{id:14100,name:'Quiche',groups:[]},webshop:{price_gross:'13.90',allergen_codes:[]},portions:[{id:2,portion_type:'ONE_HALF',is_active:1,is_ready_for_sale:1,shop_price_gross:'10.00'},{id:3,portion_type:'ONE_QUARTER',is_active:1,is_ready_for_sale:1,shop_price_gross:'12.00'}],availability_periods:[],webshop_availability:{status:'not_enforced',inventory_enforced:false,quantity_available:null}}];
+  else if(url.pathname.endsWith('/products/10/menus'))body=[{id:2,base_portion_id:60,menu_id:1,version:3,menu_name:'Lunch',name:'Food and drink',base_total:9,price_modifier:1,slots:[{id:3,label:'Drink',required:true,kind:'single',min_select:1,max_select:1,choices:[{id:4,product_id:20,label:'Cola',delta:0,img:null}]}]}];
+  else if(url.pathname.endsWith('/cart/quote')){const p=req.postDataJSON();quotes.push(p);const last=p.products.at(-1);const offer=suggestions[last.id_product_portion===2?'ONE_HALF':last.id_product_portion===3?'ONE_QUARTER':'WHOLE'];body={items:p.products.map(l=>({...l,unit_gross_price:'13.90',total_gross_value_after_discount:'13.90'})),totals:{gross_before_discount:'13.90',gross_after_discount:'13.90',discount:'0.00'},applied_promotions:[],promotion_suggestions:[offer]};}
+  else if(url.pathname.endsWith('/config')||url.pathname.endsWith('/brand'))body={};
+  else if(url.pathname.endsWith('/availability/slots'))body=[{id:1,label:'12:00 – 14:00',start:'12:00',end:'14:00',available:true}];
+  else if(url.pathname.endsWith('/payment-methods'))body=[{method:'stripe',family:'stripe',label:'Online'}];
+  return route.fulfill({json:body});
+ });
+ const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto('https://webshop.tfbuddy.local/?shop=2&category=category%3A14100');
+ await page.locator('.ws-card .ws-add').first().click();
+ const card=page.locator('.pdm-promotion__card');
+ await card.locator('.pdm-promotion__rule').waitFor();
+ for(const [name,quantity,fraction] of [['Całość',1,'1/1'],['1/2',2,'1/2'],['1/4',4,'1/4']]){
+  await page.locator('.pdm-seg--portions').getByRole('radio',{name,exact:false}).click();
+  await card.locator('.pdm-promotion__composition').filter({hasText:`Kup ${quantity} ×${fraction?' '+fraction:''} Quiche`}).waitFor();
+  const text=await card.innerText();
+  assert.match(text,/1 × 1\/2 \+ 2 × 1\/4/);
+  assert.match(text,/odbierz 1 × 1\/4 Quiche.*gratis/);
+ }
+ await page.locator('.pdm-seg--portions').getByRole('radio',{name:/1\/2/}).click();
+ await card.locator('.pdm-promotion__composition').filter({hasText:'Kup 2 × 1/2'}).waitFor();
+ await card.click();await page.locator('.pdm-cta').click();
+ await page.waitForFunction(()=>!document.querySelector('.pdm-cta'));
+ await page.waitForTimeout(300);
+ const selected=quotes.find(q=>q.products.some(l=>Number(l.quantity)===2&&l.id_product_portion===2)&&q.products.some(l=>Number(l.quantity)===1&&l.id_product_portion===3));
+ assert.ok(selected,'two paid halves and a quarter reward reached the cart quote');
+ assert.deepEqual(errors,[]);
+ assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'no horizontal page overflow');
+ await context.close();console.log('PASS fractional promotion explanation and selection at width '+width);
+}
+}finally{await browser.close();}})().catch(e=>{console.error(e);process.exit(1);});

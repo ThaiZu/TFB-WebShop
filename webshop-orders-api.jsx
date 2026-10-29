@@ -30,7 +30,7 @@
      « vous n'avez aucune commande ». */
   const authHeaders = () => {
     if (window.WSAuth && typeof window.WSAuth.authHeaders === 'function') return window.WSAuth.authHeaders();
-    try { const t = localStorage.getItem('ws_auth_token'); return t ? { 'Authorization': 'Bearer ' + t } : {}; }
+    try { const t = window.WSSessionStorage.getItem('ws_auth_token'); return t ? { 'Authorization': 'Bearer ' + t } : {}; }
     catch (_) { return {}; }
   };
 

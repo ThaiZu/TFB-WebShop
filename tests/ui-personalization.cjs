@@ -5,7 +5,7 @@ const build=process.env.PERSONALIZATION_BUILD||'/tmp/tfbuddy-personalization-bui
 (async()=>{const browser=await chromium.launch({headless:true,args:['--no-sandbox']});try{
 for(const width of [1440,390]){
  const context=await browser.newContext({ignoreHTTPSErrors:true,viewport:{width,height:1000}});
- await context.addInitScript(()=>localStorage.setItem('ws.lang','pl'));
+ await context.addInitScript(()=>sessionStorage.setItem('ws.session.v1:' + 'ws.lang', ((createdAt)=>JSON.stringify({value:'pl', createdAt, expiresAt:createdAt+43200000}))(Date.now())));
  const errors=[],quotes=[];
  await context.route('**/*',async route=>{
   const req=route.request(),url=new URL(req.url());

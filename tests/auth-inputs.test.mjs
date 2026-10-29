@@ -25,8 +25,9 @@ test('postal codes accept Belgium, Poland, Netherlands and UK without allowing m
 });
 test('registration sends the same canonical phone for equivalent input formats', async () => {
   const requests = [];
-  const ctx = { window: {}, localStorage: {getItem: () => null}, navigator: {language: 'pl'},
+  const ctx = { window: {setInterval(){},addEventListener(){}}, document:{addEventListener(){}}, localStorage: {getItem: () => null}, navigator: {language: 'pl'},
     fetch: async (url, options) => {requests.push(JSON.parse(options.body)); return {ok: false, status: 409, json: async () => ({message: 'Already exists'})};} };
+  ctx.window.WSSessionStorage = ctx.localStorage;
   vm.runInNewContext(fs.readFileSync(new URL('../webshop-auth-api.jsx', import.meta.url), 'utf8'), ctx);
   ctx.window.WSAuth.endpoint = '/clients/auth';
   for (const phone of ['0470 123 456', '+32470123456', '0032470123456']) {

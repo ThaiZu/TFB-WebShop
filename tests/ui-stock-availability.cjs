@@ -13,7 +13,7 @@ const product=(id,name,status,amount,initialized=true)=>({
  try {
  for(const loggedIn of [false,true]) {
   const context=await browser.newContext({ignoreHTTPSErrors:true,viewport:{width:1440,height:1000}});
-  if(loggedIn) await context.addInitScript(()=>{localStorage.setItem('ws_auth_token','test-access');localStorage.setItem('ws_auth_refresh_token','test-refresh');});
+  if(loggedIn) await context.addInitScript(()=>{sessionStorage.setItem('ws.session.v1:' + 'ws_auth_token', ((createdAt)=>JSON.stringify({value:'test-access', createdAt, expiresAt:createdAt+43200000}))(Date.now()));sessionStorage.setItem('ws.session.v1:' + 'ws_auth_refresh_token', ((createdAt)=>JSON.stringify({value:'test-refresh', createdAt, expiresAt:createdAt+43200000}))(Date.now()));});
   const requests=[],errors=[];let refreshStatus='available';
   await context.route('**/*',async route=>{
    const request=route.request(),url=new URL(request.url());

@@ -33,7 +33,7 @@
   <FilesMatch "\.(html|webmanifest)$">
     Header set Cache-Control "no-cache, must-revalidate, max-age=0"
   </FilesMatch>
-  <FilesMatch "^(sw|registerSW)\.js$">
+  <FilesMatch "^(sw|registerSW|cookie-consent|session-storage|privacy-runtime|policy-links|i18n-runtime|i18n-page|privacy-sw-cleanup)\.js$">
     Header set Cache-Control "no-cache, must-revalidate, max-age=0"
   </FilesMatch>
 

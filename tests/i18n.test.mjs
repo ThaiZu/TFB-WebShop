@@ -19,7 +19,8 @@ test('Polish loads on demand and persists across shop and page changes',async()=
   const context={window:{},navigator:{language:'fr'},document:{documentElement:{setAttribute:(key,value)=>{documentLanguage=value;}}},
     localStorage:{getItem:key=>storage.get(key)||null,setItem:(key,value)=>storage.set(key,value)},
     fetch:async(url)=>{requests.push(url);return {ok:true,json:async()=>dictionaries[url.split('/').pop().split('.')[0]]};}};
-  vm.runInNewContext(fs.readFileSync(new URL('webshop-i18n.jsx',root),'utf8').replace('import.meta.env.BASE_URL',JSON.stringify('/')),context);
+  context.window.WSSessionStorage = context.localStorage;
+ vm.runInNewContext(fs.readFileSync(new URL('webshop-i18n.jsx',root),'utf8').replace('import.meta.env.BASE_URL',JSON.stringify('/')),context);
   return context.window.WSI18n;
  }
  const i=create();await i.load();assert.ok(!requests.includes('/locales/pl.json'));
@@ -35,7 +36,8 @@ test('IP locale is used before render, falls back to French and never replaces a
   const context={window:{},navigator:{language:'fr'},document:{documentElement:{setAttribute:()=>{}}},
     localStorage:{getItem:key=>storage.get(key)||null,setItem:(key,value)=>storage.set(key,value)},
     fetch:async(url)=>{requests.push(url);if(url==='/webshop/locale')return {ok:true,json:async()=>({language:'pl'})};return {ok:true,json:async()=>dictionaries[url.split('/').pop().split('.')[0]]};}};
-  vm.runInNewContext(fs.readFileSync(new URL('webshop-i18n.jsx',root),'utf8').replace('import.meta.env.BASE_URL',JSON.stringify('/')),context);
+  context.window.WSSessionStorage = context.localStorage;
+ vm.runInNewContext(fs.readFileSync(new URL('webshop-i18n.jsx',root),'utf8').replace('import.meta.env.BASE_URL',JSON.stringify('/')),context);
   return context.window.WSI18n;
  }
  const first=create();first.setLocaleEndpoint('/webshop/locale');await first.detectFromIp();await first.load();
@@ -66,6 +68,7 @@ test('language changes wait for the dictionary and translate already visible API
    if(lang==='pl')await new Promise(resolve=>{release=resolve});
    return {ok:!fail,status:503,json:async()=>dictionaries[lang]};
  }};
+ context.window.WSSessionStorage = context.localStorage;
  vm.runInNewContext(fs.readFileSync(new URL('webshop-i18n.jsx',root),'utf8').replace('import.meta.env.BASE_URL',JSON.stringify('/')),context);
  const i=context.window.WSI18n;await i.load();
  const saved=i.t('ui.cutoffReached',{time:'12:30'}),pending=i.setLang('pl');

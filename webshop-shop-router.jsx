@@ -4,7 +4,7 @@
 // are all served by our own API (php-api/), filtered by shopId. This module is
 // the single source of truth for which shop is currently active:
 //   • deep-link (?shop=…) wins
-//   • else the last remembered shop (localStorage)
+//   • else the last remembered shop (bounded tab session)
 //   • else the caller's default
 //
 // It layers on top of window.WSShops (the shop directory).
@@ -21,7 +21,7 @@
 
   // Active shop resolution order: direct link wins, else last remembered.
   let activeShopId = deepLinkShop() || (function () {
-    try { return window.localStorage.getItem(KEY) || null; } catch { return null; }
+    try { return window.WSSessionStorage.getItem(KEY) || null; } catch { return null; }
   })();
 
   function current() { return activeShopId; }
@@ -29,7 +29,7 @@
   function setActive(id) {
     if (!id) return;
     activeShopId = id;
-    try { window.localStorage.setItem(KEY, id); } catch { /* private mode */ }
+    try { window.WSSessionStorage.setItem(KEY, id); } catch { /* private mode */ }
   }
 
   window.WSShopRouter = { current, setActive };

@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { defineConfig, loadEnv } from 'vite';
+import { privacyPagesPlugin } from './scripts/privacy-pages.mjs';
 import { VitePWA } from 'vite-plugin-pwa';
 
 // PWA + build de production. Le JSX est pré-compilé (plus de Babel navigateur),
@@ -17,6 +18,8 @@ export default defineConfig(({ command, mode }) => {
   if (!['http:', 'https:'].includes(apiUrl.protocol) || apiUrl.username || apiUrl.password || apiUrl.search || apiUrl.hash || apiUrl.pathname !== '/api/v1') {
     throw new Error('VITE_API_BASE_URL must be an HTTP(S) URL ending in /api/v1, without credentials, query or fragment.');
   }
+  const policyManifest = JSON.parse(readFileSync(new URL('./privacy-policies.json',import.meta.url),'utf8'));
+  const policyPreview = process.env.PRIVACY_POLICY_PREVIEW === '1';
   const isDevelopment = command === 'serve';
   // Chromium treats a request from webshop.tfbuddy.local to a second local
   // hostname as access to another application/device. The browser must only
@@ -76,12 +79,13 @@ export default defineConfig(({ command, mode }) => {
   },
   // Tampon de build : affiché par ?tapdebug=1 et window.__WS_BUILD pour
   // savoir QUELLE version un téléphone sert réellement (cache SW vs code).
-  define: { __WS_LOCAL_IMAGES__: JSON.stringify(catalogueImages), __WS_IMAGE_BASE__: JSON.stringify(base), __WS_API_BASE_URL__: JSON.stringify(browserApiBase), __WS_BUILD__: JSON.stringify(new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC') },
+  define: { __WS_POLICY_CONTROLLER__: JSON.stringify(policyManifest.status === 'approved' ? policyManifest.controllerNotice : {}), __WS_PUBLIC_POLICIES__: JSON.stringify(policyManifest.status === 'approved'), __WS_POLICY_PREVIEW__: JSON.stringify(policyPreview), __WS_LOCAL_IMAGES__: JSON.stringify(catalogueImages), __WS_IMAGE_BASE__: JSON.stringify(base), __WS_API_BASE_URL__: JSON.stringify(browserApiBase), __WS_BUILD__: JSON.stringify(new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC') },
   esbuild: {
     jsx: 'transform', // classic runtime → React.createElement (React injecté ci-dessous)
     jsxInject: "import React from 'react';import * as ReactDOM from 'react-dom/client';",
   },
   plugins: [
+    privacyPagesPlugin({root: new URL('./', import.meta.url), base, preview: policyPreview}),
     {
       name: 'webshop-local-catalogue-images',
       generateBundle() {
@@ -151,8 +155,9 @@ export default defineConfig(({ command, mode }) => {
       //     donc un déploiement est visible au rechargement suivant.
       // L'API (/api/…) n'est jamais mise en cache : les données restent vraies.
       workbox: {
-        globPatterns: ['**/*.{js,css,html,png,svg,woff2}'],
-        globIgnores: ['assets/product_pictures/**', 'assets/category_icons/**', 'assets/season_icons/**'],
+        globPatterns: ['**/*.{js,css,html,png,svg,woff2}', 'locales/*.json'],
+        globIgnores: ['privacy-preview/**', 'privacy/**', 'assets/product_pictures/**', 'assets/category_icons/**', 'assets/season_icons/**'],
+        importScripts: ['privacy-sw-cleanup.js'],
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,
@@ -165,9 +170,13 @@ export default defineConfig(({ command, mode }) => {
         navigateFallbackDenylist: [/^\/api\//, /\/api\//],
         runtimeCaching: [
           {
-            urlPattern: ({ request }) => request.mode === 'navigate',
+            urlPattern: ({ request, url }) => {
+              const scope = new URL(self.registration.scope);
+              return request.mode === 'navigate' && url.origin === scope.origin && !url.search
+                && (url.pathname === scope.pathname || url.pathname === scope.pathname + 'index.html');
+            },
             handler: 'NetworkFirst',
-            options: { cacheName: 'ws-html', networkTimeoutSeconds: 5 },
+            options: { cacheName: 'ws-html-consent-v1', networkTimeoutSeconds: 5, expiration: { maxEntries: 2, maxAgeSeconds: 43200 } },
           },
         ],
       },

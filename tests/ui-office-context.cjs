@@ -9,7 +9,7 @@ const browser=await chromium.launch({headless:true,args:['--no-sandbox','--host-
 try{
 for(const width of [1440,390]){
 const context=await browser.newContext({ignoreHTTPSErrors:true,viewport:{width,height:1000}});
-await context.addInitScript(width=>{if(width===1440){localStorage.setItem('ws_auth_token','test-office');localStorage.setItem('ws_auth_refresh_token','test-refresh');}localStorage.setItem('ws.lang','pl');},width);
+await context.addInitScript(width=>{if(width===1440){sessionStorage.setItem('ws.session.v1:' + 'ws_auth_token', ((createdAt)=>JSON.stringify({value:'test-office', createdAt, expiresAt:createdAt+43200000}))(Date.now()));sessionStorage.setItem('ws.session.v1:' + 'ws_auth_refresh_token', ((createdAt)=>JSON.stringify({value:'test-refresh', createdAt, expiresAt:createdAt+43200000}))(Date.now()));}sessionStorage.setItem('ws.session.v1:' + 'ws.lang', ((createdAt)=>JSON.stringify({value:'pl', createdAt, expiresAt:createdAt+43200000}))(Date.now()));},width);
 let joined=false,changedPrice=false,latestQuote=null,slotReads=0;const calls=[],errors=[];
 await context.route('**/*',async route=>{
  const req=route.request(),url=new URL(req.url());

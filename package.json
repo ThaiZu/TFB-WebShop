@@ -5,13 +5,20 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview --port 4173"
+    "preview": "vite preview --port 4173",
+    "test:unit": "node --test tests/*.test.mjs",
+    "test:consent:browser": "node tests/ui-cookie-consent.cjs",
+    "test:consent:stripe": "node tests/ui-consent-stripe.cjs",
+    "test:consent:pwa": "node tests/ui-consent-pwa.cjs",
+    "test:storage:browser": "node tests/ui-session-storage.cjs",
+    "test:policies:browser": "node tests/ui-policy-pages.cjs"
   },
   "dependencies": {
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "playwright": "1.57.0",
     "vite": "^5.4.10",
     "vite-plugin-pwa": "^0.20.5"
   }

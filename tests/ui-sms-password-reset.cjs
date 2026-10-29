@@ -6,7 +6,7 @@ const assert = require('node:assert/strict');
  try {
   const context=await browser.newContext({ignoreHTTPSErrors:true,viewport:{width:360,height:780}});
   const errors=[]; let sends=0, confirms=0;
-  await context.addInitScript(()=>localStorage.setItem('ws.lang','pl'));
+  await context.addInitScript(()=>sessionStorage.setItem('ws.session.v1:' + 'ws.lang', ((createdAt)=>JSON.stringify({value:'pl', createdAt, expiresAt:createdAt+43200000}))(Date.now())));
   await context.route('**/*',async route=>{
    const req=route.request(),url=new URL(req.url());
    if(!['webshop.tfbuddy.local','tfb.tfbuddy.local'].includes(url.hostname)) return route.abort();

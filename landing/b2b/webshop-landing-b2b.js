@@ -64,10 +64,12 @@
     }
 
     componentDidMount() {
+      try { localStorage.removeItem('la_lang'); } catch (e) {}
       try {
-        var l = localStorage.getItem('la_lang');
-        if (l === 'fr' || l === 'nl') this.setState({ lang: l });
-      } catch (e) {}
+        var saved = JSON.parse(sessionStorage.getItem('la_lang') || 'null');
+        if (saved && (saved.value === 'fr' || saved.value === 'nl') && saved.createdAt <= Date.now() && Date.now() < saved.createdAt + 43200000) this.setState({ lang: saved.value });
+        else sessionStorage.removeItem('la_lang');
+      } catch (e) { try { sessionStorage.removeItem('la_lang'); } catch (_) {} }
       // Lien direct vers le volet bureau (tuile accueil, anciennes pages
       // /landing/office redirigées) : ?tab=bureau.
       try {
@@ -117,7 +119,7 @@
     t(fr, nl) { return this.state.lang === 'nl' ? nl : fr; }
 
     setLang(l) {
-      try { localStorage.setItem('la_lang', l); } catch (e) {}
+      try { sessionStorage.setItem('la_lang', JSON.stringify({value: l, createdAt: Date.now()})); } catch (e) {}
       this.setState({ lang: l });
     }
 

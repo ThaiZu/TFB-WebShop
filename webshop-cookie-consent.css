@@ -1,0 +1,16 @@
+.ws-cookie-panel,.ws-cookie-settings,.ws-cookie-storage{font:14px/1.5 var(--font-ui,system-ui,sans-serif);color:#231b1b;background:#fff;box-sizing:border-box}
+.ws-cookie-panel{position:fixed;z-index:12000;bottom:max(16px,env(safe-area-inset-bottom));left:16px;width:min(620px,calc(100vw - 32px));max-height:80dvh;overflow:auto;padding:20px;border:1px solid #665757;border-radius:12px;box-shadow:0 4px 24px #0003}
+.ws-cookie-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.ws-cookie-heading h2{font-size:18px;margin:0}.ws-cookie-heading button{background:white;border:1px solid #665757;border-radius:6px;min-width:44px;min-height:44px;font-size:24px;cursor:pointer}
+.ws-cookie-panel p{margin:12px 0}.ws-cookie-details label{display:flex;align-items:flex-start;gap:10px;margin:14px 0}.ws-cookie-details input{width:20px;height:20px;flex:none;accent-color:#712032}
+.ws-cookie-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.ws-cookie-actions button{font:inherit;background:#fff;color:#51202c;border:2px solid #712032;border-radius:7px;padding:10px;min-height:48px;cursor:pointer;overflow-wrap:anywhere}
+.ws-cookie-panel a{color:#51202c;text-decoration:underline}.ws-cookie-panel button:focus-visible,.ws-cookie-panel input:focus-visible,.ws-cookie-panel a:focus-visible,.ws-cookie-settings:focus-visible{outline:3px solid #145bba;outline-offset:3px}
+.ws-cookie-settings{position:fixed;left:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:70;border:1px solid #665757;border-radius:8px;padding:10px;min-height:44px;cursor:pointer}
+.ws-cookie-storage{position:fixed;bottom:64px;left:12px;max-width:320px;padding:8px;border:1px solid #665757;z-index:11000}
+@media(max-width:480px){.ws-cookie-panel{left:8px;width:calc(100vw - 16px);padding:14px}.ws-cookie-actions{grid-template-columns:1fr}.ws-cookie-actions button{padding:8px}}
+
+/* Keep the persistent control above the mobile navigation, without covering it. */
+@media(max-width:1024px){.ws-cookie-settings{bottom:calc(82px + env(safe-area-inset-bottom))}.ws-cookie-storage{bottom:calc(136px + env(safe-area-inset-bottom))}}
+
+.ws-policy-footer{padding:16px 16px 100px;text-align:center;font:13px/1.6 system-ui,sans-serif}.ws-policy-links a{color:#51202c;text-decoration:underline;margin-inline:6px}.ws-policy-links a:focus-visible{outline:3px solid #145bba;outline-offset:3px}.ws-registration-privacy{font-size:13px;line-height:1.5}
+
+.ws-cookie-actions[data-analytics="false"]{grid-template-columns:1fr}

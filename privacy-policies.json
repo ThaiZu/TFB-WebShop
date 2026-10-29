@@ -1,0 +1,26 @@
+{
+  "version": "atelierby-2026-10-28",
+  "status": "approved",
+  "approvedBy": "Użytkownik — zatwierdzenie biznesowe w rozmowie 28.10.2026",
+  "approvedAt": "2026-10-28",
+  "sourceDirectory": "privacy-published",
+  "documents": {
+    "pl": {
+      "privacy": "privacy-pl.md",
+      "cookies": "cookies-pl.md"
+    },
+    "fr": {
+      "privacy": "privacy-fr.md",
+      "cookies": "cookies-fr.md"
+    },
+    "nl": {
+      "privacy": "privacy-nl.md",
+      "cookies": "cookies-nl.md"
+    }
+  },
+  "controllerNotice": {
+    "pl": "ASIMA sp. z o.o. określa zasady wspólnego konta i cele pomiaru. Za zamówienie odpowiada franczyzobiorca wybranego sklepu.",
+    "fr": "ASIMA sp. z o.o. définit les règles du compte commun et les finalités de la mesure. Le franchisé du magasin choisi répond de la commande.",
+    "nl": "ASIMA sp. z o.o. bepaalt de regels van het gezamenlijke account en de meetdoelen. De franchisenemer van de gekozen winkel behandelt de bestelling."
+  }
+}

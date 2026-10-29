@@ -8,7 +8,8 @@ function setup(response, ok = true) {
   const context = { window: {setInterval:()=>0,addEventListener:()=>{}}, document:{addEventListener:()=>{}}, navigator: { language: 'pl' }, localStorage: { getItem: () => null, removeItem: k => removed.push(k) }, fetch: async (url, options) => {
     calls.push({url,body:JSON.parse(options.body)}); return {ok,json:async()=>response};
   }};
-  vm.runInNewContext(source, context); context.window.WSAuth.endpoint = '/clients/auth';
+  context.window.WSSessionStorage = context.localStorage;
+ vm.runInNewContext(source, context); context.window.WSAuth.endpoint = '/clients/auth';
   return {api:context.window.WSAuth,calls,removed};
 }
 test('SMS request uses central API and canonical phone, not legacy OTP endpoint', async () => {
