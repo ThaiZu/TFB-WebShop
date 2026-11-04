@@ -1141,5 +1141,8 @@
   "loyaltyHub.rewardNoExpiry": "{count} tampons = {reward}. La récompense n’a pas de date d’expiration.",
   "loyaltyHub.readyRewards": "Récompenses disponibles : {count}",
   "loyaltyUse.optional": "Une récompense est disponible pour votre panier. Vous pouvez l’utiliser ou continuer sans cadeau.",
-  "loyaltyUse.skip": "Ne pas utiliser de récompense"
+  "loyaltyUse.skip": "Ne pas utiliser de récompense",
+  "vouchers.activationReserved": "Ce bon est réservé pour une transaction en cours. Demandez au personnel de le libérer avant de changer votre choix.",
+  "vouchers.activationChanged": "Le choix du bon a changé. Son état actuel a été actualisé.",
+  "vouchers.activationError": "Impossible de modifier le choix du bon. Réessayez."
 }

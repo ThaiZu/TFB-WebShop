@@ -1141,5 +1141,8 @@
   "loyaltyHub.rewardNoExpiry": "{count} stempels = {reward}. De beloning heeft geen vervaldatum.",
   "loyaltyHub.readyRewards": "Beschikbare beloningen: {count}",
   "loyaltyUse.optional": "Er is een beloning beschikbaar voor je winkelmandje. Je kunt deze gebruiken of doorgaan zonder cadeau.",
-  "loyaltyUse.skip": "Geen beloning gebruiken"
+  "loyaltyUse.skip": "Geen beloning gebruiken",
+  "vouchers.activationReserved": "Deze voucher is gereserveerd voor een lopende transactie. Vraag een medewerker de voucher vrij te geven voordat u uw keuze wijzigt.",
+  "vouchers.activationChanged": "De voucherkeuze is gewijzigd. De huidige status is vernieuwd.",
+  "vouchers.activationError": "De voucherkeuze kon niet worden gewijzigd. Probeer het opnieuw."
 }
