@@ -95,7 +95,8 @@ const reward=(id,status='READY',changes={})=>({id,status,code:status==='READY' ?
      assert.equal(await shortcut.getAttribute('aria-haspopup'),'dialog');
     }
     await shortcut.focus();await page.keyboard.press('Enter');await page.locator('.ws-loyalty-wallet:modal .ws-loyalty-wallet__qr svg').waitFor();
-    assert.equal(await page.locator('.ws-loyalty-wallet code').textContent(),'FID1-1-'+'A'.repeat(32));
+    assert.equal(await page.locator('.ws-loyalty-wallet__identity code').count(),0,'QR identity stays scannable without showing the raw code');
+    assert.equal(await page.locator('.ws-loyalty-wallet__hint, .ws-loyalty-wallet header small').count(),0);
     await page.waitForFunction(()=>document.querySelector('.ws-loyalty-wallet__loading')===null);
     assert.equal(await page.locator('.ws-loyalty-wallet__program').count(),0,'Identity QR does not wait for program data');
     const qr=await page.locator('.ws-loyalty-wallet__qr').boundingBox();assert.ok(qr.y>=0&&qr.y+qr.height<=1000);

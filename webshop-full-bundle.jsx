@@ -1632,7 +1632,6 @@ function ProductDetail({ open, product, mode, activeVoucher, onClose, onAdd, onP
               <section className="pdm-promotion" aria-busy={promotionPreviewPending} aria-label={t('promotion.inline.title')}>
                 <div className="pdm-promotion__head">
                   <span>{t('promotion.inline.title')}</span>
-                  <small>{promotionLocked ? t('promotion.inline.locked') : t('promotion.inline.choose')}</small>
                 </div>
                 <div className="pdm-promotion__list">
                   {promotionSuggestions.map((basePromotion) => {
@@ -1967,15 +1966,14 @@ function wsPromotionBasketNote(application, t) {
   const snapshot = application?.promotion_snapshot || {};
   const reward = application?.reward || snapshot.reward || {};
   const promotionType = application?.promotion_type || snapshot.promotion_type;
-  const applied = t('cart.promotionApplied', { name: application?.display_name || snapshot.name || '' });
   if (promotionType === 'BUY_X_GET_Y' && reward.type === 'FIXED_PRICE'
       && Number(reward.quantity || 0) > 0 && Number(reward.value || 0) >= 0) {
-    return `${applied} · ${t('cart.promotionFixedPrice', {
+    return t('cart.promotionFixedPrice', {
       quantity: Number(reward.quantity),
       price: wsCurrency(Number(reward.value)),
-    })}`;
+    });
   }
-  return applied;
+  return null;
 }
 
 function wsPromotionDisplayTotal(promotion, fallback) {
@@ -2143,7 +2141,6 @@ function Basket({ hidePrices, contextLabel, officeName, shop, mode, basket, quot
   const total = T.total;
   return (
     <aside className="ws-basket">
-      {contextLabel && <div className="ws-office-cart-context">{t('officeAccess.basket', { name: contextLabel })}</div>}
       <div className="ws-basket__head">
         {onClose && <button className="ws-basket__back" onClick={onClose}><Pict d={ICONS.back} s={11}/> {t('cart.back')}</button>}
         <span className="ws-basket__title">{t('cart.title')}</span>
@@ -2164,15 +2161,16 @@ function Basket({ hidePrices, contextLabel, officeName, shop, mode, basket, quot
           const l = row.line;
           const groupedPromotion = row.isPromotion;
           const displayName = groupedPromotion && row.promotion ? row.promotion.display_name : l.name;
+          const promotionNote = pricesReady && row.promotion ? wsPromotionBasketNote(row.promotion, t) : null;
           return <div key={row.key} className={`ws-line${groupedPromotion ? ' ws-line--promotion' : ''}`}>
             <div className="ws-line__qty">×{groupedPromotion ? 1 : row.quantity}</div>
             <div className="ws-line__body">
               <div className="ws-line__name">{displayName}</div>
               <LoyaltyBasketIcons rows={row.lines} quoteState={quoteState}/>
               {groupedPromotion
-                ? row.lines.map((line) => <div key={line.line} className="ws-line__opt">×{line.qty} {line.portion_label || (line.options || []).map(option => option.label).join(', ')} {line.name}</div>)
+                ? row.lines.map((line) => <div key={line.line} className="ws-line__opt" hidden>×{line.qty} {line.portion_label || (line.options || []).map(option => option.label).join(', ')} {line.name}</div>)
                 : l.options.map((o, i) => (<div key={i} className="ws-line__opt">{o.label}</div>))}
-              {pricesReady && row.promotion && <div className="ws-line__offer">{wsPromotionBasketNote(row.promotion, t)}</div>}
+              {promotionNote && <div className="ws-line__offer">{promotionNote}</div>}
               {row.weekdayDiscount > 0 && (
                 <div className="ws-line__offer">
                   {t('sum.weekdayDiscount')} {row.weekdayPercent > 0 && `(${wsNumber(row.weekdayPercent)}%)`} · −€{wsNumber(row.weekdayDiscount)}
@@ -5157,13 +5155,8 @@ function ShopSwitcher({ open, currentId, onPick, onClose, shops }) {
 function OrderingShopConfirmation({ open, shop, onConfirm, onChange }) {
   if (!open || !shop) return null;
   return (
-    <div className="ws-shop-confirm" role="alertdialog" aria-modal="true" aria-labelledby="ws-shop-confirm-title" aria-describedby="ws-shop-confirm-address">
+    <div className="ws-shop-confirm" role="alertdialog" aria-modal="true" aria-label={wsShopConfirmText('shopConfirm.title')}>
       <section className="ws-shop-confirm__panel">
-        <h2 id="ws-shop-confirm-title">{wsShopConfirmText('shopConfirm.title')}</h2>
-        <div className="ws-shop-confirm__shop">
-          <strong>{shop.name}</strong>
-          <span id="ws-shop-confirm-address">{shop.address}</span>
-        </div>
         <div className="ws-shop-confirm__actions">
           <button type="button" className="ws-cta" onClick={onConfirm}>{wsShopConfirmText('shopConfirm.continue', { shop: shop.name })}</button>
           <button type="button" className="ws-btn-ghost" onClick={onChange}>{wsShopConfirmText('shopConfirm.change')}</button>
@@ -6304,8 +6297,7 @@ function ShopFrame({ variant }) {
         <div className="ws-shopselect__wash" aria-hidden="true"/>
         <header className="ws-shopselect__header">
           <div className="ws-shopselect__brand" aria-label="L'Atelier By">
-            <span className="ws-shopselect__monogram">A</span>
-            <span className="ws-shopselect__wordmark">L'Atelier <em>By</em></span>
+            <img className="ws-shopselect__logo" src={import.meta.env.BASE_URL + 'logo.png'} alt="L'Atelier By"/>
           </div>
           {window.LangChip && <window.LangChip className="ws-shopselect__language"/>}
         </header>

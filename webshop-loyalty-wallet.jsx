@@ -57,7 +57,7 @@ export function LoyaltyWallet({identity,shopId,user,onClose,onUseVoucher,activeV
     if(event.target!==dialog.current)return;const box=dialog.current.getBoundingClientRect();
     if(event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom)onClose();
   }}>
-    <header><div><small>{t('loyaltyWallet.eyebrow')}</small><h2 id="ws-wallet-title">{t('loyaltyWallet.title')}</h2></div><button type="button" className="ws-loyalty-wallet__close" onClick={onClose} aria-label={t('loyaltyWallet.close')}>×</button></header>
+    <header><div><h2 id="ws-wallet-title">{t('loyaltyWallet.title')}</h2></div><button type="button" className="ws-loyalty-wallet__close" onClick={onClose} aria-label={t('loyaltyWallet.close')}>×</button></header>
     {selected?<>
       <nav className="ws-loyalty-wallet__navigation"><button type="button" className="ws-linkbtn ws-loyalty-wallet__back" onClick={()=>navigate(null)}>← {t('loyaltyHub.back')}</button><button type="button" className="ws-loyalty-wallet__show-qr" onClick={()=>navigate(null)}>{t('loyaltyHub.showQr')}</button></nav>
       <LoyaltyProgram key={selected.id} card={selected} shopId={shopId}/>
@@ -66,9 +66,7 @@ export function LoyaltyWallet({identity,shopId,user,onClose,onUseVoucher,activeV
       <p>{user.firstName || user.name || ''}</p>
       {identity.status==='ready'&&svg?<>
         <div className="ws-loyalty-wallet__qr" role="img" aria-label={t('loyaltyWallet.qrAlt')} dangerouslySetInnerHTML={{__html:svg}}/>
-        <code>{identity.code}</code>
       </>:identity.status==='error'||(identity.status==='ready'&&!svg)?<div role="alert"><p>{t('loyaltyWallet.error')}</p><button type="button" className="ws-linkbtn" onClick={identity.retry}>{t('loyalty.retry')}</button></div>:<div className="ws-loyalty-wallet__loading" role="status">{t('loyaltyWallet.loading')}</div>}
-      <p className="ws-loyalty-wallet__hint">{t('loyaltyWallet.hint')}</p>
     </section>
     <div className="ws-loyalty-wallet__section-head">
       <button id="ws-wallet-programs" type="button" aria-pressed={view==='programs'} aria-controls="ws-wallet-content" onClick={()=>setView('programs')}>{t('loyaltyWallet.programs')}</button>

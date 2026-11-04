@@ -2206,6 +2206,7 @@
   min-height: 46px;
 }
 .ws-shopselect__brand { display: inline-flex; align-items: center; gap: 10px; color: var(--color-primary, #8d1d2c); }
+.ws-shopselect__logo { display: block; width: clamp(160px, 35vw, 260px); max-width: 100%; height: auto; }
 .ws-shopselect__monogram {
   width: 36px; height: 36px; border-radius: 50%;
   display: grid; place-items: center;
@@ -4449,7 +4450,7 @@
   font-weight: 600;
   line-height: 1.4;
 }
-.ws-shop-confirm__actions { display: grid; gap: 10px; margin-top: 20px; }
+.ws-shop-confirm__actions { display: grid; gap: 10px; margin-top: 0; }
 .ws-shop-confirm__actions .ws-btn-ghost,
 .ws-shop-confirm__actions .ws-cta { width: 100%; min-height: 44px; justify-content: center; text-align: center; }
 .ws-co-ordering-shop { margin: 0 0 18px; }

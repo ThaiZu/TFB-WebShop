@@ -131,7 +131,6 @@ test('product sheet previews every automatic promotion type before the item is a
   assert.match(source, /promotion_suggestions \|\| quote\?\.bundle_suggestions/);
   assert.match(source, /promotion\.promotion_type/);
   assert.match(source, /disabled=\{blocked\}/);
-  assert.match(source, /promotion\.inline\.locked/);
   assert.match(source, /onAdd\(\{[\s\S]*?\}, selectedPromotion\)/);
   assert.match(source, /promotionAdditionLines\(selectedPromotion, lineId, promotionGroup, promotionDisplay\)/);
 });
