@@ -11,7 +11,7 @@ test('concurrent catalogue reads share a request, but refreshes and identities s
     fetch:()=>{count++;return new Promise(resolve=>{release=()=>resolve({ok:true,json:async()=>[]});});}};
   context.window.WSSessionStorage=context.localStorage;
   context.window.WSAuth={authenticatedFetch:(...args)=>context.fetch(...args)};
-  const source=fs.readFileSync(new URL('../webshop-catalog-api.jsx',import.meta.url),'utf8').replace(/^import .*\n/gm,'');
+  const source=fs.readFileSync(new URL('../webshop-catalog-api.jsx',import.meta.url),'utf8').replace(/^import .*\r?\n/gm,'');
   vm.runInNewContext(source,context);
   const api=context.window.WSCatalog;api.shopsEndpoint='https://example.test/api/v1/shops';
   const a=api.loadCatalogue({shopId:2,mode:'collect'});
@@ -29,7 +29,7 @@ test('availability uses the catalogue endpoint and no cart reservation API is ex
     fetch:async(url)=>{ urls.push(new URL(url)); return {ok:true,json:async()=>[]}; }};
   context.window.WSSessionStorage=context.localStorage;
   context.window.WSAuth={authenticatedFetch:(...args)=>context.fetch(...args)};
-  const source=fs.readFileSync(new URL('../webshop-catalog-api.jsx',import.meta.url),'utf8').replace(/^import .*\n/gm,'');
+  const source=fs.readFileSync(new URL('../webshop-catalog-api.jsx',import.meta.url),'utf8').replace(/^import .*\r?\n/gm,'');
   vm.runInNewContext(source,context);
   const api=context.window.WSCatalog;api.shopsEndpoint='https://example.test/api/v1/shops';
   await api.loadCatalogue({shopId:2,date:'2026-09-10',mode:'collect'});
@@ -41,5 +41,8 @@ test('availability uses the catalogue endpoint and no cart reservation API is ex
   assert.ok(urls[0].searchParams.get('include').split(',').includes('webshop_availability'));
   assert.equal(urls[1].pathname,'/api/v1/shops/3/products/available');
   assert.equal(urls[1].searchParams.get('date'),'2026-09-11');
+  await api.loadCatalogue({shopId:2,includeLoyalty:true});
+  assert.ok(urls[2].searchParams.get('include').split(',').includes('loyalty'));
+  assert.ok(!urls[0].searchParams.get('include').split(',').includes('loyalty'));
   for(const method of ['getStock','reserve','release']) assert.equal(api[method],undefined);
 });

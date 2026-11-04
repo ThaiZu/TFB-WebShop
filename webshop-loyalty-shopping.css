@@ -1,0 +1,13 @@
+.ws-loyalty-icon {display:inline-flex;vertical-align:middle}
+.ws-loyalty-icon__button {display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:5px;border:1px solid currentColor;border-radius:50%;background:#fff;cursor:pointer;color:var(--color-primary)}
+.ws-loyalty-icon__button:focus-visible,.ws-loyalty-popover button:focus-visible {outline:3px solid #315a89;outline-offset:3px}
+.ws-loyalty-popover {position:fixed;z-index:10050;box-sizing:border-box;width:min(320px,calc(100vw - 24px));max-height:calc(100dvh - 120px);overflow:auto;background:white;color:#29231f;border:1px solid #ddd3ca;border-radius:14px;padding:16px;box-shadow:0 6px 28px #0003;font:14px/1.45 var(--font-ui,sans-serif)}
+.ws-loyalty-popover p {margin:10px 0}
+.ws-loyalty-popover__head {display:flex;gap:12px;align-items:center;justify-content:space-between}
+.ws-loyalty-popover button {min-height:36px;cursor:pointer;background:white;border:1px solid #b9aaa0;border-radius:8px;padding:6px 12px;color:inherit;font:inherit}
+.ws-loyalty-popover__balance {font-weight:600}
+.ws-loyalty-popover__note {font-size:12px;color:#655950}
+.ws-loyalty-popover__link {width:100%}
+.ws-loyalty-basket-status {display:block;color:#655950;font-size:11px;margin-top:4px}
+.pdm-head .ws-loyalty-icon {margin-top:8px}
+@media(max-width:599px){.ws-loyalty-popover{max-height:calc(70dvh - 72px)}}

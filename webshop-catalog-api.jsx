@@ -38,7 +38,7 @@ import { adaptShopCatalogue } from './webshop-catalog-adapter.js';
     endpoint: null,
 
     shopsEndpoint: null,
-    async loadCatalogue({ shopId, mode, date, shoppingContext } = {}) {
+    async loadCatalogue({ shopId, mode, date, shoppingContext, includeLoyalty = false } = {}) {
       if (shopId == null || shopId === '') return { products: [], categories: [], assortments: [] };
       if (!/^\d+$/.test(String(shopId))) throw new Error('A numeric shop ID is required.');
       const context = normaliseShoppingContext(shoppingContext);
@@ -51,7 +51,7 @@ import { adaptShopCatalogue } from './webshop-catalog-adapter.js';
       if (!api.shopsEndpoint) throw new Error('Shop catalogue API is not configured.');
       const query = new URLSearchParams({
         webshop_active: '1', lang_code: window.WSI18n?.getLang?.() || 'fr', alias_type: 'webshop',
-        include: 'webshop,portions,availability_periods,webshop_availability',
+        include: 'webshop,portions,availability_periods,webshop_availability' + (includeLoyalty ? ',loyalty' : ''),
       });
       if (date) query.set('date', toIso(date));
       const url = `${api.shopsEndpoint}/${encodeURIComponent(shopId)}/products/available?${query}`;

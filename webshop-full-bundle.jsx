@@ -1,3 +1,10 @@
+import {voucherProductPortions} from './webshop-voucher-targets.js';
+import {useVoucherNotifications} from './webshop-voucher-notifications.js';
+import {LoyaltyShoppingContext, LoyaltyIcon, LoyaltyBasketIcons} from './webshop-loyalty-shopping.jsx';
+import {AccountLoyalty} from './webshop-loyalty.jsx';
+import {LoyaltyWallet,LoyaltyCardIcon,useLoyaltyIdentity} from './webshop-loyalty-wallet.jsx';
+import {AccountVouchers} from './webshop-vouchers.jsx';
+import {rewardSelection} from './webshop-loyalty-reward.js';
 import {PolicyLinks} from './webshop-policy-links.jsx';
 import { analyticsEvent } from './webshop-analytics.js';
 import { CookieConsent } from './webshop-cookie-consent.jsx';
@@ -784,7 +791,7 @@ function wsPromotionItemsSummary(promotion, product, t, rewardCost = null) {
     const name = item.product_name || (Number(item.id_product) === Number(product.id) ? product.name : `#${item.id_product}`);
     return `${Number(quantity || 0)} × ${portion ? `${portion} ` : ''}${name}`;
   };
-  return (promotion.items || []).map((item) => {
+  const summary = (promotion.items || []).map((item) => {
     if (promotion.promotion_type !== 'BUY_X_GET_Y') return label(item, item.quantity);
     const rewardKey = promotion.reward?.type === 'FREE' && !(Number(rewardCost) > 0) ? 'promotion.inline.receiveFree' : 'promotion.inline.receiveReward';
     if (item.role === 'trigger_and_reward' && item.trigger_quantity != null && item.reward_quantity != null) {
@@ -794,6 +801,7 @@ function wsPromotionItemsSummary(promotion, product, t, rewardCost = null) {
     if (item.role === 'reward') return t(rewardKey, { items: label(item, item.quantity) });
     return label(item, item.quantity);
   }).join(' · ');
+  return promotion.reward?.delivery_mode === 'VOUCHER' ? `${summary} · ${t('promotion.inline.voucherReward')}` : summary;
 }
 
 function wsFractionalPromotionRule(promotion, product, t) {
@@ -948,8 +956,9 @@ function ProductQuantityControl({ quantity, stockLimit, onChange, t, bulkQuantit
   </>;
 }
 
-function ProductDetail({ open, product, mode, onClose, onAdd, onPromotionPreview, promotionSuggestions = [], upcomingPromotionSuggestions = [], promotionLocked = false, promotionPreviewPending = false, optionsLoading = false, promotionProducts = [], stock, basketUnits = 0 }) {
+function ProductDetail({ open, product, mode, activeVoucher, onClose, onAdd, onPromotionPreview, promotionSuggestions = [], upcomingPromotionSuggestions = [], promotionLocked = false, promotionPreviewPending = false, optionsLoading = false, promotionProducts = [], stock, basketUnits = 0 }) {
   const { t, lang } = wsUseT();
+  const voucherPortions=voucherProductPortions(activeVoucher,product);
   // ── Hooks (must run unconditionally; never gate behind early-return) ──
   const initSelections = React.useMemo(() => {
     const out = {};
@@ -1385,6 +1394,10 @@ function ProductDetail({ open, product, mode, onClose, onAdd, onPromotionPreview
             <div className="pdm-head">
               <p className="pdm-eyebrow">{product.cat === 'sandwiches' ? t('pd.eyebrow.sandwich') : product.cat === 'plats' ? t('pd.eyebrow.dish') : t('pd.eyebrow.selection')}</p>
               <h2 className="pdm-title">{product.name}</h2>
+              {!activeBundle && !offerPicked && !selectedPromotion && !portOpt?.id_product_portion && !product.is_weighted && <LoyaltyIcon card={product.loyaltyCard}
+                candidate={valid ? {productId:product.id,qty,
+                  ...(personalEnabled && personalChoices.length>0 ? {personalization_selection:{version:product.personalization.version,option_ids:personalChoices}} : {})} : null}/>}
+
               {product.description ? <p className="pdm-desc">{product.description}</p> : null}
               {product.ingredients ? <p className="pdm-desc"><strong>{t('pd.ingredients')}: </strong>{product.ingredients}</p> : null}
               {product.is_weighted ? <p className="pdm-desc">{t('pd.weightedUnavailable')}</p> : null}
@@ -1408,6 +1421,11 @@ function ProductDetail({ open, product, mode, onClose, onAdd, onPromotionPreview
                 />
               )}
             </div>
+
+            {voucherPortions.length>0&&<div className="pdm-voucher" role="status">
+              <span>{t(voucherPortions.some(item=>!item.label)?'vouchers.productActiveAny':'vouchers.productActive',{portion:voucherPortions.map(item=>item.label).filter(Boolean).join(' / ')})}</span>
+              {voucherPortions.filter(item=>item.value&&item.value!==portion).map(item=><button type="button" className="ws-linkbtn" key={item.value} onClick={()=>{setPortion(item.value);setBundleId(null);setBundleSlots({});}}>{t('vouchers.choosePortion',{portion:item.label})}</button>)}
+            </div>}
 
             {/* SPECIAL OFFER STRIP */}
 
@@ -1775,6 +1793,7 @@ const ProductCard = React.memo(function ProductCard({ p, onAdd, onOpen, mode, ba
       <div className="ws-card__metaStrip">
         <Allergens list={p.allergens}/>
         <div className="ws-card__icons">
+          <LoyaltyIcon card={p.is_weighted ? null : p.loyaltyCard} candidate={p.has_personalization ? null : {productId:p.id,qty:1}}/>
           <button className="ws-iconcircle" aria-label={t('pd.info')} {...wsTap(() => onOpen(p), { stop: true, open: true })}><Pict d={ICONS.info} s={11}/></button>
           <button className="ws-add" {...wsTap(() => { if (!addDisabled) onOpen(p); }, { stop: true, open: true })} aria-label={t('pd.addToCart')}
             disabled={addDisabled} title={deliveryBlocked ? wsText("ui.noDelivery") : stockExhausted ? wsText("ui.deliverySoldOut") : undefined}>
@@ -1869,6 +1888,7 @@ function wsCheckoutQuoteComparable(quote) {
       tax_after_discount: money(quote?.totals?.tax_after_discount),
     },
     billing,
+    loyaltyReward: quote?.loyalty_reward ? {id:quote.loyalty_reward.id,line:quote.loyalty_reward.line_index,discount:money(quote.loyalty_reward.discount)} : null,
     items: Array.isArray(quote?.items) ? quote.items.map(item) : [],
   };
 }
@@ -1884,10 +1904,11 @@ function wsQuoteTotals(quote, deliveryFee) {
   const productsTotal = wsMoney(quote.totals.gross_after_discount);
   const fee = wsMoney(deliveryFee);
   const voucherDiscount = quote.voucher?.code && quote.voucher?.valid && quote.voucher?.matches_cart ? discount : 0;
+  const rewardDiscount = wsMoney(quote.loyalty_reward?.discount);
   const weekdayDiscount = wsMoney(quote.weekday_discount?.discount_total);
   const weekdayMinimum = wsMoney(quote.weekday_discount?.minimum_cart_gross);
   const weekdayRemaining = wsMoney(quote.weekday_discount?.amount_remaining);
-  return { sousTotal: subtotal, croise: 0, remise: Math.max(0, discount - voucherDiscount - weekdayDiscount), bon: voucherDiscount, weekday: weekdayDiscount, weekdayPercent: wsMoney(quote.weekday_discount?.percent), frais: fee,
+  return { sousTotal: subtotal, croise: 0, remise: Math.max(0, discount - voucherDiscount - weekdayDiscount - rewardDiscount), reward: rewardDiscount, bon: voucherDiscount, weekday: weekdayDiscount, weekdayPercent: wsMoney(quote.weekday_discount?.percent), frais: fee,
            weekdayMinimum, weekdayRemaining, weekdayThresholdMet: quote.weekday_discount?.threshold_met !== false,
            total: wsArrondi(productsTotal + fee), productsTotal };
 }
@@ -2147,6 +2168,7 @@ function Basket({ hidePrices, contextLabel, officeName, shop, mode, basket, quot
             <div className="ws-line__qty">×{groupedPromotion ? 1 : row.quantity}</div>
             <div className="ws-line__body">
               <div className="ws-line__name">{displayName}</div>
+              <LoyaltyBasketIcons rows={row.lines} quoteState={quoteState}/>
               {groupedPromotion
                 ? row.lines.map((line) => <div key={line.line} className="ws-line__opt">×{line.qty} {line.portion_label || (line.options || []).map(option => option.label).join(', ')} {line.name}</div>)
                 : l.options.map((o, i) => (<div key={i} className="ws-line__opt">{o.label}</div>))}
@@ -2216,6 +2238,7 @@ function Basket({ hidePrices, contextLabel, officeName, shop, mode, basket, quot
             <span>−€{wsNumber(T.remise)}</span>
           </div>
         )}
+        {T.reward > 0 && <div className="ws-basket__row ws-basket__row--promo"><span>{t('loyaltyUse.title')}</span><span>−€{wsNumber(T.reward)}</span></div>}
         {T.bon > 0 && <div className="ws-basket__row ws-basket__row--promo">
           <span>{t('sum.code')} {quoteState.quote.voucher.code}</span><span>−€{wsNumber(T.bon)}</span>
         </div>}
@@ -2467,7 +2490,7 @@ function CategoryRow({ active, sub, onSelect, onSelectSub, onBack, accent, tint,
 
 // Variant A : Subtle: small shop chip after brand
 
-function NavbarA({ shop, mode, onMode, onSwitchShop, cartCount, date, onDate, user, onAccount, onAllergens,
+function NavbarA({ shop, mode, onMode, onSwitchShop, cartCount, date, onDate, user, onAccount, onAllergens, loyaltyEnabled, onLoyalty, activeVoucher, newVouchers,
                    collectCutoffPassed, collectCutoffLabel, deliveryCutoffPassed, deliveryCutoffLabel, minLeadDays, officeMenus }) {
   const { t } = wsUseT();
   return (
@@ -2494,6 +2517,9 @@ function NavbarA({ shop, mode, onMode, onSwitchShop, cartCount, date, onDate, us
             vide le bloc de droite sur mobile → le nom de la boutique récupère
             toute la ligne (fin de la troncature « Atelier by Ber… »). */}
         {window.AllergenNavButton && <window.AllergenNavButton onClick={onAllergens}/>}
+        {loyaltyEnabled && <button type="button" className="ws-nav__icon ws-nav__loyalty" aria-label={t('loyaltyWallet.open')} title={activeVoucher ? `${t('loyaltyWallet.open')} · ${t('vouchers.active')}` : t('loyaltyWallet.open')} aria-haspopup="dialog" onClick={onLoyalty}>
+          <LoyaltyCardIcon size={22} active={!!activeVoucher} updated={newVouchers}/>
+        </button>}
         <button className="ws-nav__icon" aria-label={t('nav.accountAria')} onClick={onAccount}>
           {user
             ? <span className="ws-nav__avatar" aria-hidden="true">{user.firstName?.[0] || user.email?.[0]?.toUpperCase() || '·'}</span>
@@ -2515,7 +2541,7 @@ function NavbarA({ shop, mode, onMode, onSwitchShop, cartCount, date, onDate, us
 }
 
 // Variant B : Medium: full colored brand bar above navbar
-function NavbarB({ shop, mode, onMode, onSwitchShop, cartCount, date, onDate, onAllergens,
+function NavbarB({ shop, mode, onMode, onSwitchShop, cartCount, date, onDate, onAllergens, loyaltyEnabled, onLoyalty, activeVoucher, newVouchers,
                    collectCutoffPassed, collectCutoffLabel, deliveryCutoffPassed, deliveryCutoffLabel, minLeadDays }) {
   const { t } = wsUseT();
   return (
@@ -2545,6 +2571,9 @@ function NavbarB({ shop, mode, onMode, onSwitchShop, cartCount, date, onDate, on
         <div className="ws-nav__right">
           {window.LangChip && <window.LangChip />}
           {window.AllergenNavButton && <window.AllergenNavButton onClick={onAllergens}/>}
+          {loyaltyEnabled && <button type="button" className="ws-nav__icon ws-nav__loyalty" aria-label={t('loyaltyWallet.open')} title={activeVoucher ? `${t('loyaltyWallet.open')} · ${t('vouchers.active')}` : t('loyaltyWallet.open')} aria-haspopup="dialog" onClick={onLoyalty}>
+            <LoyaltyCardIcon size={22} active={!!activeVoucher} updated={newVouchers}/>
+          </button>}
           <button className="ws-nav__icon" aria-label={t('nav.accountAria')}><Pict d={ICONS.user} s={15}/></button>
           <button className="ws-nav__icon ws-nav__cart" aria-label={t('nav.cartAria')}>
             <Pict d={ICONS.bag} s={15}/>
@@ -2557,7 +2586,7 @@ function NavbarB({ shop, mode, onMode, onSwitchShop, cartCount, date, onDate, on
 }
 
 // Variant C : Strong: full per-shop accent. Brand wordmark, navbar background, CTA, focus rings all picked up.
-function NavbarC({ shop, mode, onMode, onSwitchShop, cartCount, date, onDate, onAllergens,
+function NavbarC({ shop, mode, onMode, onSwitchShop, cartCount, date, onDate, onAllergens, loyaltyEnabled, onLoyalty, activeVoucher, newVouchers,
                    collectCutoffPassed, collectCutoffLabel, deliveryCutoffPassed, deliveryCutoffLabel, minLeadDays }) {
   const { t } = wsUseT();
   return (
@@ -2583,6 +2612,9 @@ function NavbarC({ shop, mode, onMode, onSwitchShop, cartCount, date, onDate, on
       <div className="ws-nav__right">
         {window.LangChip && <window.LangChip />}
         {window.AllergenNavButton && <window.AllergenNavButton onClick={onAllergens}/>}
+        {loyaltyEnabled && <button type="button" className="ws-nav__icon ws-nav__loyalty" aria-label={t('loyaltyWallet.open')} title={activeVoucher ? `${t('loyaltyWallet.open')} · ${t('vouchers.active')}` : t('loyaltyWallet.open')} aria-haspopup="dialog" onClick={onLoyalty}>
+          <LoyaltyCardIcon size={22} active={!!activeVoucher} updated={newVouchers}/>
+        </button>}
         <button className="ws-nav__icon" aria-label={t('nav.accountAria')}><Pict d={ICONS.user} s={15}/></button>
         <button className="ws-nav__icon ws-nav__cart" aria-label={t('nav.cartAria')}>
           <Pict d={ICONS.bag} s={15}/>
@@ -3221,24 +3253,11 @@ function LoginModal({ open, onClose, onLogin, onRegister, onGoToAccount, shopId,
 const ACCOUNT_TABS = [
   { key: 'profil',   get label() { return wsText("nav.profile"); } },
   { key: 'achats',   get label() { return wsText("ui.purchases"); } },
+  { key: 'vouchers', get label() { return wsText('vouchers.title'); } },
   { key: 'offices', get label() { return wsText('acc.offices.title'); } },
   { key: 'fidelite', get label() { return wsText("ui.loyalty"); }, configFlag: 'fidelityTabEnabled' },
 ];
 const ACCOUNT_TAB_LS = 'ws.accountTab';
-
-// Onglet Fidélité : coquille volontairement explicite, pas d'écran nu ni de
-// compteur à zéro qui laisserait croire que le client a perdu ses points.
-function FideliteShell() {
-  const { t } = wsUseT();
-  return (
-    <div className="ws-acc__section">
-      <div className="ws-acc__section-h">{t('acc.loyalty')}</div>
-      <div className="ws-acc__card ws-acc__card--empty">
-        <p className="ws-acc__note"><strong>{t('acc.loyaltySoon')}</strong> {t('acc.loyaltySoonHint')}</p>
-      </div>
-    </div>
-  );
-}
 
 // =========================================================================
 // MON COMPTE : onglet « Mes achats » : UNE liste qui fusionne tickets et
@@ -3422,7 +3441,7 @@ if (typeof document !== 'undefined' && !document.getElementById('ws-bureau-style
   document.head.appendChild(_st);
 }
 
-function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdateUser, shops, currentShopId, onChangePreferredShop, office, tour, onManageOffices }) {
+function AccountModal({ open, requestedTab, requestedLoyaltyCard, user, onClose, onLogout, onRequestOffice, onUpdateUser, shops, currentShopId, onChangePreferredShop, office, tour, onManageOffices, onUseVoucher, activeVoucherCode, onClearVoucher, onVouchersViewed, onBrowseVoucher }) {
   const { t } = wsUseT();
   const [form, setForm] = useState({
     firstName: user?.firstName || '',
@@ -3434,7 +3453,6 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
     locality: user?.locality || '',
     isBusiness: !!user?.isBusiness,
     preferredShopId: user?.preferredShopId || null,
-    fidelityApp: user?.fidelityApp || { active: false, linkedAt: null },
     invoice: {
       country: user?.invoice?.country || 'BE',
       vat: user?.invoice?.vat || '',
@@ -3464,7 +3482,6 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
   const [vies, setVies] = useState(() => (user?.invoice?.viesVerified
     ? { status: 'ok', message: wsText("ui.vatVerified") }
     : { status: 'idle', message: '' })); // idle | loading | ok | invalid | unavailable
-  const [fidOpen, setFidOpen] = useState(false);
   // Comptes entreprise (livraison bureau) rattachés à l'e-mail du client
   // (ws_office_emails → ws_offices), affichés en lecture seule, comme la PWA.
   const [linkedCompanies, setLinkedCompanies] = useState([]);
@@ -3500,6 +3517,7 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
   const [tab, setTab] = useState(() => {
     try { return window.WSSessionStorage.getItem(ACCOUNT_TAB_LS) || 'profil'; } catch (_) { return 'profil'; }
   });
+  useEffect(() => { if (open && requestedTab) setTab(requestedTab); }, [open, requestedTab]);
   // Sociétés de facturation : flux d'ajout (VIES ou sans TVA), jamais
   // d'édition en place d'une société existante.
   const [companyStep, setCompanyStep] = useState('idle'); // 'idle' | 'vies' | 'novat'
@@ -3519,13 +3537,14 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
   // Config serveur (liste blanche ws_param) à l'ouverture de la modale.
   useEffect(() => {
     let alive = true;
+    setCfg({});
     if (!open || !window.WSAuth || typeof window.WSAuth.config !== 'function') return;
     Promise.resolve(window.WSAuth.config())
-      .then((c) => { if (alive && c) setCfg((prev) => ({ ...prev, ...c })); })
+      .then((c) => { if (alive && c) setCfg(c); })
       .catch(() => {});
     return () => { alive = false; };
   }, [open]);
-  const visibleTabs = ACCOUNT_TABS.filter((t) => !t.configFlag || cfg[t.configFlag] !== false);
+  const visibleTabs = ACCOUNT_TABS.filter((t) => !t.configFlag || cfg[t.configFlag] === true);
   const activeTab = visibleTabs.some((t) => t.key === tab) ? tab : 'profil';
   function selectTab(k) {
     setTab(k); setPurchaseDetailsOpen(false);
@@ -3590,7 +3609,6 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
       postalCode: user.postalCode || '',
       isBusiness: !!user.isBusiness,
       preferredShopId: user.preferredShopId || null,
-      fidelityApp: user.fidelityApp || { active: false, linkedAt: null },
       invoice: {
         country: user.invoice?.country || 'BE',
         vat: user.invoice?.vat || '',
@@ -3648,19 +3666,6 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
       } catch (e) { return { ok: false, error: wsText("error.unsaved") }; }
     }
     return { ok: false, error: wsText("error.accountUnavailable") };
-  }
-
-  // Toggle app fidélité. L'état réel vit en base (fidelity_active, écrit par le
-  // PWA lors de la liaison) ; la boutique le reflète seulement.
-  //  • OFF→ON : ouvre la modale QR vers le PWA (pas d'activation locale, c'est
-  //    dans le PWA que ça se lie ; on ne coche donc pas le toggle).
-  //  • ON→OFF : délie côté boutique (état local jusqu'au prochain reload).
-  function toggleFidelity(next) {
-    if (next) {
-      setFidOpen(true);              // modale QR → installer/ouvrir le PWA
-    } else {
-      persistPartial({ fidelityApp: { active: false, linkedAt: null } });
-    }
   }
 
   // ── Office: unplug / reconnect / add new ───────────────────────────
@@ -3859,6 +3864,10 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
       <p className="ws-modal__eyebrow">{t('auth.myAccount')}</p>
       <h2 className="ws-modal__title">{tRich(t, 'acc.hello', { name: form.firstName || user.firstName })}</h2>
       <p className="ws-modal__lede">{user.email}</p>
+      <button type="button" className="ws-linkbtn ws-account-cookie-settings" onClick={() => {
+        onClose();
+        window.setTimeout(() => window.WSConsent?.open(), 0);
+      }}>{t('cookies.settings')}</button>
       {user.activationRequired === true && <section className="ws-acc__section">
         <p>{t('activation.accountWarning')}</p>
         <button type="button" className="ws-cta" disabled={activationSending} onClick={resendAccountActivation}>
@@ -3880,36 +3889,13 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
       </div>
 
       {activeTab === 'achats' && <AccountPurchases refreshRevision={purchaseRevision} onDetailsChange={setPurchaseDetailsOpen} />}
-      {activeTab === 'fidelite' && <FideliteShell />}
+      {activeTab === 'vouchers' && <AccountVouchers key={`${user.id}:${currentShopId}`} shopId={currentShopId} onUse={onUseVoucher} activeCode={activeVoucherCode} onClear={onClearVoucher} onViewed={onVouchersViewed} onBrowse={onBrowseVoucher}/>}
+      {activeTab === 'fidelite' && <AccountLoyalty initialCardId={requestedLoyaltyCard} key={`${user.id}:${currentShopId}`} shopId={currentShopId} shopName={shops?.find(item => String(item.id) === String(currentShopId))?.name} />}
       {activeTab === 'offices' && <ProfileOffices currentShopName={shops?.find(item => String(item.id) === String(currentShopId))?.name} onManage={onManageOffices}/>}
 
 
       {activeTab === 'profil' && <>
       <button type="button" className="ws-cta ws-cta--block ws-account-purchases-link" onClick={() => selectTab('achats')}>{t('acc.purchases')}</button>
-      {form.fidelityApp?.active && (
-        <aside className="ws-fidinfo" role="note" aria-label={t('fid.infoAria')}>
-          <div className="ws-fidinfo__icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="6" y="2.5" width="12" height="19" rx="2.5"/>
-              <path d="M10 18.5h4"/>
-              <path d="M9.5 6h5"/>
-            </svg>
-          </div>
-          <div className="ws-fidinfo__body">
-            <div className="ws-fidinfo__title">{t('fid.allInApp')}</div>
-            <p className="ws-fidinfo__lede">
-              {tRich(t, 'fid.managedIn')}
-            </p>
-            <ul className="ws-fidinfo__list">
-              <li>{tRich(t, 'fid.bullet1')}</li>
-              <li>{tRich(t, 'fid.bullet2')}</li>
-              <li>{tRich(t, 'fid.bullet3')}</li>
-            </ul>
-            <p className="ws-fidinfo__foot"> {wsText("ui.notificationsHint")} </p>
-          </div>
-        </aside>
-      )}
-
       <form className="ws-acc__section" onSubmit={saveProfile}>
         <div className="ws-acc__section-h">{t('acc.contact')}</div>
         <div className="ws-acc__form">
@@ -4099,33 +4085,10 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
           </div>
         </div>
 
-        {/* Fidelity mobile app ------------------------------------------ */}
-        <div className="ws-acc__row">
-          <div className="ws-acc__row-body">
-            <div className="ws-acc__row-title">{t('acc.loyaltyApp')}</div>
-            <div className="ws-acc__row-sub"> {wsText("ui.mobileLinkHint")} </div>
-            {form.fidelityApp?.active ? (
-              <span className="ws-acc__row-status">{wsText("ui.linked")} {form.fidelityApp.linkedAt ? new Date(form.fidelityApp.linkedAt).toLocaleDateString(wsLocale()) : wsText("ui.recently")}</span>
-            ) : (
-              <span className="ws-acc__row-status ws-acc__row-status--off">{t('acc.notLinked')}</span>
-            )}
-          </div>
-          <label className="ws-acc__toggle" aria-label={t('acc.enableLoyalty')}>
-            <input
-              type="checkbox"
-              checked={!!form.fidelityApp?.active}
-              onChange={(e) => toggleFidelity(e.target.checked)}
-            />
-            <span className="ws-acc__toggle-track" aria-hidden="true"><span className="ws-acc__toggle-thumb"/></span>
-          </label>
-        </div>
+        {cfg.fidelityTabEnabled === true && <div className="ws-acc__row">
+          <button type="button" className="ws-linkbtn" onClick={() => selectTab('fidelite')}>{t('loyalty.title')}</button>
+        </div>}
       </div>
-
-      <FidelityLinkPanel
-        open={fidOpen}
-        user={user}
-        onClose={() => setFidOpen(false)}
-      />
 
       <div className="ws-acc__section">
         <div className="ws-acc__section-h">{t('officeAccess.title')}</div>
@@ -4159,76 +4122,6 @@ function AccountModal({ open, user, onClose, onLogout, onRequestOffice, onUpdate
         {activeTab === 'profil' && <button className="ws-acc__logout" onClick={() => { onLogout(); onClose(); }}>{t('acc.signout')}</button>}
       </div>
     </ModalShell>
-  );
-}
-
-// =========================================================================
-// FIDELITY APP LINK : QR modal
-// Shown when the user toggles the fidelity-app setting from OFF to ON.
-// =========================================================================
-function FidelityQR({ payload }) {
-  const { t } = wsUseT();
-  // Vrai QR scannable (window.QR, fourni par qr.jsx). Rendu « classique »
-  // modules pleins, sombres, marge complète : le style brandé (points ronds
-  // bordeaux, finders arrondis) n'est pas lu par tous les scanners.
-  const svg = React.useMemo(() => {
-    try {
-      if (payload && window.QR && typeof window.QR.render === 'function') {
-        return window.QR.render(payload, { size: 240, margin: 4, branded: false, color: '#111111' });
-      }
-    } catch (_) {}
-    return null;
-  }, [payload]);
-  if (svg) {
-    return (
-      <div className="ws-fid__qr" role="img" aria-label={t('fid.qrAlt')}
-        dangerouslySetInnerHTML={{ __html: svg }} />
-    );
-  }
-  // Encodeur indisponible : lien direct plutôt qu'un faux QR illisible.
-  return (
-    <p className="ws-fid__hint"> {wsText("ui.qrUnavailable")}{' '}
-      <a href={payload} target="_blank" rel="noopener noreferrer">{payload}</a>
-    </p>
-  );
-}
-
-function FidelityLinkPanel({ open, user, onClose }) {
-  const { t } = wsUseT();
-  // Modale QR-only : elle montre l'adresse du PWA (user.fidelityApp.installUrl,
-  // servi par le backend depuis ws_param.pwa_url). L'activation réelle de l'app
-  // fidélité se fait DANS le PWA (il écrit fidelity_active en base) ; la boutique
-  // ne fait que refléter cet état, pas de fausse liaison locale ici.
-  const payload = React.useMemo(() => {
-    if (!open || !user) return '';
-    return (user.fidelityApp && user.fidelityApp.installUrl) || '';
-  }, [open, user?.fidelityApp?.installUrl]);
-  if (!open) return null;
-  return (
-    <div className="ws-fidpanel" role="dialog" aria-modal="true" aria-label={t('fid.title')}>
-      <div className="ws-fidpanel__head">
-        <span className="ws-fidpanel__eyebrow">{t('acc.loyaltyApp')}</span>
-        <button type="button" className="ws-fidpanel__close" aria-label={t('common.close2')} onClick={onClose}>×</button>
-      </div>
-      <div className="ws-fid ws-fid--inline">
-        <div className="ws-fid__qrwrap ws-fid__qrwrap--sm">
-          {payload
-            ? <FidelityQR payload={payload}/>
-            : <p className="ws-fid__hint">{t('fid.noLink')}</p>}
-        </div>
-        <ol className="ws-fid__steps ws-fid__steps--sm">
-          <li><span className="ws-fid__step-n">1</span> {t('fid.scan')}</li>
-          <li><span className="ws-fid__step-n">2</span> {tRich(t, 'fid.step2')}</li>
-          <li><span className="ws-fid__step-n">3</span> {t('fid.signinSync')}</li>
-        </ol>
-        {payload && (
-          <a className="ws-fid__link" href={payload} target="_blank" rel="noopener noreferrer">{t('fid.open')}</a>
-        )}
-        <div className="ws-fid__foot ws-fid__foot--sm">
-          <button type="button" className="ws-cta ws-fid__confirm" onClick={onClose}>{t('common.close2')}</button>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -4269,7 +4162,7 @@ function usePaymentMethods(shopId, mode, deliveryFeeResult, profile, companyId) 
 
 function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, onLogin, onPlaced,
                           voucherInput, setVoucherInput, voucherApplied, setVoucherApplied,
-                          office, tour, date, onDate,
+                          loyaltyEnabled, loyaltyReward, onRewardSelect, office, tour, date, onDate,
                           deliveryFeeResult, deliveryFeeErr, officeSites, selectedSiteId, setSelectedSiteId, onQuoteChanged }) {
   const { t } = wsUseT();
   const [step, setStep] = useState(1);
@@ -4283,6 +4176,9 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
   const [forceAuth, setForceAuth] = useState(false);
   const [paying, setPaying] = useState(false);
   const [payErr, setPayErr] = useState(null);
+  // Keep the exact request while its outcome is unknown: quoting again would
+  // reject a reward already reserved by a successfully saved order.
+  const [pendingOrder, setPendingOrder] = useState(null);
   // Clé d'idempotence : STABLE tant que le tunnel reste ouvert, renouvelée à
   // chaque réouverture. Deux clics, ou un renvoi après une erreur réseau
   // portent donc la même clé, et le serveur renvoie la commande déjà créée au
@@ -4361,7 +4257,8 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
     companyId ? 'company' : (user ? 'registered' : 'guest'),
     companyId || null,
   ).filter((method) => method.method !== 'shop' && method.family !== 'shop');
-  const paymentMethods = companyBilling
+  const freeRewardOrder = mode === 'collect' && (!!quoteState.quote?.loyalty_reward || (quoteState.quote?.voucher?.valid === true && quoteState.quote?.voucher?.matches_cart === true)) && Number(quoteState.quote?.totals?.gross_after_discount) === 0;
+  const paymentMethods = freeRewardOrder ? [{id:'shop',method:'shop',family:'shop',label:t('loyaltyUse.noPayment'),sub:t('loyaltyUse.collect')}] : companyBilling
     ? [{ id: 'company_invoice', method: 'company_invoice', label: t('payment.method.company_invoice'), family: 'deferred', sub: t('officeAccess.companyNote') }]
     : ordinaryPaymentMethods;
   React.useEffect(() => {
@@ -4371,6 +4268,19 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
 
 
   if (!open) return null;
+
+  if (pendingOrder) return <aside className="ws-checkout" role="dialog" aria-label={t('co.subtitle')}>
+    <div className="ws-checkout__body">
+      <p role="status">{t('loyaltyUse.orderPending')}</p>
+      <p>{pendingOrder.shopName} · {wsCurrency(pendingOrder.total)}</p>
+      {payErr && <p role="alert">{wsMessage(payErr)}</p>}
+    </div>
+    <footer className="ws-checkout__foot">
+      {String(user?.id || '') === pendingOrder.client
+        ? <button type="button" className="ws-btn" disabled={paying} onClick={() => retryOrder()}>{t('loyaltyUse.retryOrder')}</button>
+        : <button type="button" className="ws-btn" onClick={onLogin}>{t('loyaltyUse.sameAccount')}</button>}
+    </footer>
+  </aside>;
 
   const deliveryFee = (mode === 'delivery' && deliveryFeeResult) ? (deliveryFeeResult.fee_amount || 0) : 0;
   const T = wsQuoteTotals(quoteState.quote, deliveryFee);
@@ -4394,7 +4304,7 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
   // Étape 3 : un moyen de paiement doit être proposé ET choisi. Sans ce test, le
   // bouton « Payer » restait actif alors que l'écran affichait « moyens
   // indisponibles », et la commande partait avec un moyen vide.
-  function step3Valid() { return paymentMethods.length > 0 && Boolean(payment); }
+  function step3Valid() { return paymentMethods.some((method) => method.id === payment); }
 
   async function handlePay() {
     if (!user) { onLogin(); return; }
@@ -4405,7 +4315,7 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
     setPaying(true); setPayErr(null);
     try {
       const freshQuote = await window.WSQuote.quote({ shopId: shop.id, mode, basket, shoppingContext, deliveryDate: date,
-        voucherCode: voucherApplied?.ok ? voucherApplied.voucher?.code : null });
+        voucherCode: voucherApplied?.ok ? voucherApplied.voucher?.code : null, loyaltyReward });
       if (voucherApplied?.ok && (freshQuote.voucher?.valid !== true || freshQuote.voucher?.matches_cart !== true)) {
         onQuoteChanged?.(freshQuote); setPayErr(t('error.codeInvalid')); return;
       }
@@ -4426,6 +4336,7 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
         shopping_context: shoppingContext,
         selected_automatic_promotion_id: wsSelectedAutomaticPromotionId(basket),
         expected_total: freshQuote.totals.gross_after_discount,
+        loyalty_reward: loyaltyReward,
         mode,
         deliveryDate,
         slot: typeof slot === 'object' && slot
@@ -4437,7 +4348,7 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
         companyId: officeContext ? null : (companyId || null),
         onAccount: officeContext ? companyBilling : !!onAccount,
         customer: user ? { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, phone: user.phone || null, officeId: user.officeId || null } : { ...contact },
-        payment: { method: companyBilling ? 'company_invoice' : payment },
+        payment: { method: freeRewardOrder ? 'shop' : companyBilling ? 'company_invoice' : payment },
         delivery: mode === 'delivery' && office ? {
           office_client_id:            office.id,
           office_delivery_site_id:     selectedSiteId || null,
@@ -4460,48 +4371,17 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
       // commande qui n'existait nulle part. Sans module → erreur, jamais de
       // confirmation inventée.
       if (!window.WSOrders) throw new Error(wsText("error.orderUnavailable"));
-      const result = await window.WSOrders.place(payload);
-      /* PAIEMENT EN LIGNE (famille « stripe », servie par /payment-methods).
-         La commande vient d'être ENREGISTRÉE ; l'encaissement se fait sur la
-         page Stripe hébergée, créée par POST /payments/checkout, et seul le
-         webhook Stripe marque « payé ». Sans cet appel, une commande « carte »
-         était confirmée à l'écran sans qu'aucun paiement n'ait jamais lieu :
-         POST /orders ne rend pas d'URL de paiement, et rien n'appelait la
-         route qui la fabrique. Hors ligne : différé/sur compte (la facture
-         suit) et paiement en boutique (encaissé au comptoir). */
-      const payFam = (paymentMethods.find((x) => x.id === payment) || {}).family || payment;
-      const differe = Boolean(result && (result.paymentType === 'deferred' || result.paymentType === 'company_invoice' || result.onAccount));
-      if ((payment === 'stripe' || payFam === 'stripe') && !differe && window.WSOrders.pay) {
-        let sess;
-        try {
-          sess = await window.WSOrders.pay(result.orderRef);
-        } catch (_) {
-          // The order already exists. Consume its basket and expose a durable
-          // recovery view instead of letting the customer submit it again.
-          onPlaced({ ...result, paymentPending: true });
-          const returnUrl = new URL(window.location.href);
-          returnUrl.searchParams.set('stripe', 'return'); returnUrl.searchParams.set('orderRef', result.orderRef);
-          window.history.replaceState(window.history.state, '', returnUrl.pathname + returnUrl.search);
-          window.dispatchEvent(new CustomEvent('ws:stripe-recovery', { detail: { orderRef: result.orderRef } }));
-          return;
-        }
-        if (sess.status === 'paid') { onPlaced({ ...result, slot, payment, total: result.total }); return; }
-        onPlaced({ ...result, paymentPending: true });
-        if (sess.uiMode === 'embedded' || sess.status === 'pending') {
-          window.dispatchEvent(new CustomEvent('ws:stripe-recovery', { detail: { orderRef: result.orderRef, session: sess } }));
-        } else window.location.href = sess.checkoutUrl;
-        return;
+      const attempt = JSON.parse(JSON.stringify({ payload, client: String(user.id), shopName: shop.name,
+        slot, payment: payload.payment.method, total, paymentMethods, freeRewardOrder }));
+      setPendingOrder(attempt);
+      let result;
+      try { result = await window.WSOrders.place(attempt.payload); }
+      catch (error) {
+        if (error.orderRejected) setPendingOrder(null);
+        throw error;
       }
-      // Le LIBELLÉ vient de la liste serveur : la confirmation annonçait
-      // « Bancontact » pour toute méthode non reconnue, donc aussi pour un
-      // paiement en boutique ou sur compte, que le client n'a pas fait.
-      const payLabel = (paymentMethods.find((x) => x.id === payment) || {}).label || payment;
-      /* Le total du SERVEUR, pas celui du navigateur. L'ancien ordre
-         (`{ ...result, total }`) écrasait le montant facturé par l'aperçu
-         local : le client lisait sur sa confirmation un montant que personne
-         n'avait débité. L'aperçu ne sert qu'à défaut de réponse chiffrée. */
-      const totalFacture = (result && typeof result.total === 'number') ? result.total : total;
-      onPlaced({ ...result, slot, payment, paymentLabel: payLabel, total: totalFacture });
+      setPendingOrder(null);
+      await finishOrder(attempt, result);
     } catch (ex) {
       if (ex.code === 'WEBSHOP_QUOTE_CHANGED' && ex.quote) {
         onQuoteChanged?.(ex.quote); setPayErr(t('officeAccess.priceChanged'));
@@ -4511,8 +4391,69 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
     }
   }
 
+  async function retryOrder() {
+    if (paying || !pendingOrder || String(user?.id || '') !== pendingOrder.client) return;
+    setPaying(true); setPayErr(null);
+    try {
+      const result = await window.WSOrders.place(pendingOrder.payload);
+      const attempt = pendingOrder;
+      setPendingOrder(null);
+      await finishOrder(attempt, result);
+    } catch (error) {
+      // A rejection now cannot disprove the earlier uncertain attempt.
+      // Keep its key and payload until the server confirms the existing order.
+      setPayErr(error.message || wsText('error.payment'));
+    } finally { setPaying(false); }
+  }
+
+  async function finishOrder(attempt, result) {
+    const {slot, payment, total, paymentMethods, freeRewardOrder} = attempt;
+    /* PAIEMENT EN LIGNE (famille « stripe », servie par /payment-methods).
+       La commande vient d'être ENREGISTRÉE ; l'encaissement se fait sur la
+       page Stripe hébergée, créée par POST /payments/checkout, et seul le
+       webhook Stripe marque « payé ». Sans cet appel, une commande « carte »
+       était confirmée à l'écran sans qu'aucun paiement n'ait jamais lieu :
+       POST /orders ne rend pas d'URL de paiement, et rien n'appelait la
+       route qui la fabrique. Hors ligne : différé/sur compte (la facture
+       suit) et paiement en boutique (encaissé au comptoir). */
+    const payFam = (paymentMethods.find((x) => x.id === payment) || {}).family || payment;
+    const differe = Boolean(result && (result.paymentType === 'deferred' || result.paymentType === 'company_invoice' || result.onAccount));
+    if (!freeRewardOrder && (payment === 'stripe' || payFam === 'stripe') && !differe && window.WSOrders.pay) {
+      let sess;
+      try {
+        sess = await window.WSOrders.pay(result.orderRef);
+      } catch (_) {
+        // The order already exists. Consume its basket and expose a durable
+        // recovery view instead of letting the customer submit it again.
+        onPlaced({ ...result, paymentPending: true });
+        const returnUrl = new URL(window.location.href);
+        returnUrl.searchParams.set('stripe', 'return'); returnUrl.searchParams.set('orderRef', result.orderRef);
+        window.history.replaceState(window.history.state, '', returnUrl.pathname + returnUrl.search);
+        window.dispatchEvent(new CustomEvent('ws:stripe-recovery', { detail: { orderRef: result.orderRef } }));
+        return;
+      }
+      if (sess.status === 'paid') { onPlaced({ ...result, slot, payment, total: result.total }); return; }
+      onPlaced({ ...result, paymentPending: true });
+      if (sess.uiMode === 'embedded' || sess.status === 'pending') {
+        window.dispatchEvent(new CustomEvent('ws:stripe-recovery', { detail: { orderRef: result.orderRef, session: sess } }));
+      } else window.location.href = sess.checkoutUrl;
+      return;
+    }
+    // Le LIBELLÉ vient de la liste serveur : la confirmation annonçait
+    // « Bancontact » pour toute méthode non reconnue, donc aussi pour un
+    // paiement en boutique ou sur compte, que le client n'a pas fait.
+    const payLabel = (paymentMethods.find((x) => x.id === payment) || {}).label || payment;
+    /* Le total du SERVEUR, pas celui du navigateur. L'ancien ordre
+       (`{ ...result, total }`) écrasait le montant facturé par l'aperçu
+       local : le client lisait sur sa confirmation un montant que personne
+       n'avait débité. L'aperçu ne sert qu'à défaut de réponse chiffrée. */
+    const totalFacture = (result && typeof result.total === 'number') ? result.total : total;
+    onPlaced({ ...result, slot, payment, paymentLabel: payLabel, total: totalFacture });
+  }
+
   function next() {
-    if (paying || quoteState.status !== 'ready' || !quoteState.quote?.totals) return;
+    if (paying) return;
+    if (quoteState.status !== 'ready' || !quoteState.quote?.totals) { setPayErr(wsText('error.quote')); return; }
     if (!user) { onLogin(); return; }
     if (step === 1) {
       if (!step1Valid()) return;
@@ -4577,6 +4518,7 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
             voucherInput={voucherInput} setVoucherInput={setVoucherInput}
             voucherApplied={voucherApplied} setVoucherApplied={setVoucherApplied}
             voucherDiscount={voucherDiscount}
+            loyaltyEnabled={loyaltyEnabled} loyaltyReward={loyaltyReward} onRewardSelect={onRewardSelect}
             giftEmail={user ? (user.email || null) : ((contact && contact.email) || null)}
             customerId={user ? user.id : null}
           />
@@ -4674,6 +4616,7 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
 
       <footer className="ws-checkout__foot">
         {payErr && <div className="ws-checkout__pay-err" role="alert">{wsMessage(payErr)}</div>}
+        {step === 3 && paymentMethods.length === 0 && <div className="ws-checkout__pay-err" role="alert">{t('error.noPayments')}</div>}
         <div className="ws-checkout__foot-total">
           <span className="ws-checkout__foot-k">{t('sum.total')}</span>
           <span className="ws-checkout__foot-v">€{wsNumber(total)}</span>
@@ -4681,11 +4624,12 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
         <div className="ws-checkout__foot-actions">
           {step > 1 && <button className="ws-btn-ghost" {...wsTap(() => setStep((s) => s - 1), { shield: true })} disabled={paying}>{t('co.prev')}</button>}
           <button
+            type="button"
             className="ws-cta ws-cta--block"
             disabled={paying || quoteState.status !== 'ready' || (!!user && ((step === 1 && !step1Valid()) || (step === 2 && !step2Valid()) || (step === 3 && !step3Valid())))}
-            {...wsTap(next, { shield: true })}
+            onClick={next}
           >
-            {!user ? t('co.auth.signin') : paying ? t('co.processing') : step === 3 ? (companyBilling ? t('officeAccess.confirmOrder') : t('co.payAmount', { amount: '€' + wsNumber(total) })) : t('co.continue')}
+            {!user ? t('co.auth.signin') : paying ? t('co.processing') : step === 3 ? (companyBilling || payment === 'shop' ? t('officeAccess.confirmOrder') : t('co.payAmount', { amount: '€' + wsNumber(total) })) : t('co.continue')}
             {!paying && step < 3 && <Pict d={<path d="M5 12h14M13 5l7 7-7 7"/>} s={13}/>}
           </button>
         </div>
@@ -4974,9 +4918,9 @@ function CheckoutStep2({ mode, shop, office, tour, slot, setSlot, date, onDate, 
 function CheckoutStep3({ basket, subtotal, totaux, total, payment, setPayment, isOffice, isB2B, invoice, setInvoice, vat, setVat, shop,
                          shopId, mode, voucherInput, setVoucherInput, voucherApplied, setVoucherApplied, voucherDiscount,
                          deliveryFee, deliveryFeeResult, deliveryFeeErr, profile, companyId, customerId, quoteState,
-                         paymentMethods, shoppingContext, companyBilling, deliveryDate }) {
+                         paymentMethods, shoppingContext, companyBilling, deliveryDate, loyaltyEnabled, loyaltyReward, onRewardSelect }) {
   const { t } = wsUseT();
-  const allowVoucher = shoppingContext?.mode !== 'office_offer';
+  const allowVoucher = shoppingContext?.mode !== 'office_offer' && !loyaltyReward;
   const isOfficeContext = shoppingContext?.mode !== 'standard';
   const voucherLoading = quoteState?.status === 'loading';
   const voucherErr = quoteState?.status === 'error' ? quoteState.error : null;
@@ -5018,7 +4962,7 @@ function CheckoutStep3({ basket, subtotal, totaux, total, payment, setPayment, i
       <h3 className="ws-co-step__title">{t('sum.payment')}</h3>
       <p className="ws-co-step__lede">{t('co.pay.subtitle')}</p>
 
-      {!allowVoucher && <p className="ws-office-context">{t('officeAccess.noVoucher')}</p>}
+      {!allowVoucher && !loyaltyReward && <p className="ws-office-context">{t('officeAccess.noVoucher')}</p>}
       {allowVoucher && <div className="ws-co-voucher">
         <div className="ws-co-voucher__head">
           <span className="ws-co-voucher__lbl">{t('co.promo.title')}</span>
@@ -5088,6 +5032,7 @@ function CheckoutStep3({ basket, subtotal, totaux, total, payment, setPayment, i
           <div className="ws-co-summary__row ws-co-summary__row--promo">
             <span>{t('sum.weekdayDiscountMinimum', { amount: `€${wsNumber(totaux.weekdayMinimum)}`, remaining: `€${wsNumber(totaux.weekdayRemaining)}` })}</span>
           </div>)}
+        {totaux?.reward > 0 && <div className="ws-co-summary__row ws-co-summary__row--promo"><span>{t('loyaltyUse.title')}</span><span>−€{wsNumber(totaux.reward)}</span></div>}
         {voucherDiscount > 0 && voucherApplied && (
           <div className="ws-co-summary__row ws-co-summary__row--promo">
             <span>{t('sum.code')} <strong>{voucherApplied.voucher.code}</strong></span>
@@ -5110,11 +5055,7 @@ function CheckoutStep3({ basket, subtotal, totaux, total, payment, setPayment, i
       </div>
 
       <div className="ws-pay">
-        {paymentMethods.length === 0 ? (
-          // Aucun moyen de paiement renvoyé par le serveur : on le DIT au lieu
-          // d'afficher des options inventées (règle go-live « vraies données »).
-          <p className="ws-co-error" role="alert"> {wsText("error.noPayments")} </p>
-        ) : paymentMethods.map((p) => (
+        {paymentMethods.map((p) => (
           <label key={p.id} className={`ws-pay__opt${payment === p.id ? ' is-active' : ''}`}>
             <input type="radio" name="payment" value={p.id} checked={payment === p.id} onChange={() => setPayment(p.id)}/>
             <span className="ws-pay__radio"/>
@@ -5298,6 +5239,8 @@ function ShopFrame({ variant }) {
 
   // The cart is priced by the API after every material change. Nothing from
   // this state is used to decide a product price in the browser.
+  const [loyaltyConfig, setLoyaltyConfig] = useState(null);
+  const loyaltyEnabled = loyaltyConfig?.shopId === shopId && loyaltyConfig.enabled === true;
   const [quoteResult, setQuoteState] = useState({ status: 'idle', quote: null, error: '' });
   const [detailPromotionPreview, setDetailPromotionPreview] = useState({ key: null, productId: null, suggestions: [], upcomingSuggestions: [] });
   const [detailOptionsState, setDetailOptionsState] = useState({ productId: null, menuReady: true, promotionsReady: true });
@@ -5306,10 +5249,29 @@ function ShopFrame({ variant }) {
   // Voucher state : may be pre-filled by deep link
   const [voucherInput, setVoucherInput] = useState(_deep.voucher || '');
   const [voucherApplied, setVoucherApplied] = useState(null);
+  useEffect(()=>{
+    const open=()=>{setLoyaltyWalletOpen(false);setRequestedAccountTab('vouchers');setAccountOpen(true);};
+    window.addEventListener('ws:open-vouchers',open);
+    return()=>window.removeEventListener('ws:open-vouchers',open);
+  },[]);
   const [user, setUser] = useState(null);
+  const voucherNotifications=useVoucherNotifications(user?.id);
+  const [rewardChoice, setRewardChoice] = useState(null);
+  const loyaltyReward = rewardSelection(rewardChoice,basket,user?.id,cartShopId,loyaltyEnabled,mode,cartContext.mode);
+  const rewardKey = JSON.stringify(loyaltyReward);
+  const selectReward = value => {
+    setRewardChoice(value ? {id:value.id,line:String(basket[value.line_index].line),client:user.id,shop:cartShopId} : null);
+    if (value) { setVoucherApplied(null); setVoucherInput(''); }
+  };
+  useEffect(() => { if (rewardChoice && !loyaltyReward) setRewardChoice(null); }, [rewardKey,rewardChoice]);
+  useEffect(() => {
+    const clear = () => { setRewardChoice(null); setVoucherApplied(null); setVoucherInput(''); };
+    window.addEventListener('ws:session-ended',clear);
+    return () => window.removeEventListener('ws:session-ended',clear);
+  }, []);
   const [quoteRevision, setQuoteRevision] = useState(0);
   const cartHasPromotionSelection = wsHasPromotionSelection(basket);
-  const quoteKey = JSON.stringify([cartShopId, mode, basket, date, user?.id, quoteRevision, voucherApplied?.ok ? voucherApplied.voucher?.code : '']);
+  const quoteKey = JSON.stringify([cartShopId, mode, basket, date, user?.id, loyaltyEnabled, rewardKey, quoteRevision, voucherApplied?.ok ? voucherApplied.voucher?.code : '']);
   // Invalidate synchronously: effects run after rendering, so a previous ready
   // quote must not enable checkout for a basket which has just changed.
   const quoteState = quoteResult.status === 'ready' && quoteResult.key !== quoteKey
@@ -5326,7 +5288,7 @@ function ShopFrame({ variant }) {
     const key = JSON.stringify([contextKey, quantity]);
     const empty = { key, contextKey, productId: Number(productId), suggestions: [], upcomingSuggestions: [] };
     const standardCart = basket.length === 0 || (cartContext.mode === 'standard' && Number(cartShopId) === Number(shopId));
-    if (!shopId || context.mode !== 'standard' || voucherApplied?.ok || !standardCart || !window.WSQuote || typeof window.WSQuote.quote !== 'function') {
+    if (!shopId || context.mode !== 'standard' || loyaltyReward || voucherApplied?.ok || !standardCart || !window.WSQuote || typeof window.WSQuote.quote !== 'function') {
       setDetailPromotionPreview({ ...empty, status: 'ready' });
       markDetailOptionReady(productId, 'promotionsReady');
       return;
@@ -5372,9 +5334,9 @@ function ShopFrame({ variant }) {
       controller.abort();
       if (requestId === detailPromotionRequest.current) ++detailPromotionRequest.current;
     };
-  }, [shopId, mode, basket, date, browseContext, cartContext.mode, cartShopId, user?.id, voucherApplied?.ok, markDetailOptionReady]);
+  }, [shopId, mode, basket, date, browseContext, cartContext.mode, cartShopId, user?.id, rewardKey, voucherApplied?.ok, markDetailOptionReady]);
   React.useEffect(() => {
-    if (!basket.length) { setQuoteState({ status: 'idle', quote: null, error: '' }); setVoucherApplied(null); setVoucherInput(''); return; }
+    if (!basket.length) { setQuoteState({ status: 'idle', quote: null, error: '' }); return; }
     if (!shopId || !window.WSQuote || typeof window.WSQuote.quote !== 'function') {
       setQuoteState({ status: 'error', quote: null, error: wsText("error.quote") });
       return;
@@ -5382,7 +5344,7 @@ function ShopFrame({ variant }) {
     const controller = new AbortController();
     setQuoteState((current) => ({ status: 'loading', quote: current.quote, error: '' }));
     const voucherCode = voucherApplied?.ok ? voucherApplied.voucher?.code : null;
-    window.WSQuote.quote({ shopId: cartShopId, mode, basket, voucherCode, shoppingContext: cartContext, deliveryDate: date, signal: controller.signal })
+    window.WSQuote.quote({ shopId: cartShopId, mode, basket, voucherCode, shoppingContext: cartContext, deliveryDate: date, includeLoyalty: loyaltyEnabled, loyaltyReward, signal: controller.signal })
       .then((quote) => {
         if (controller.signal.aborted) return;
         const valid = !voucherCode || (quote.voucher?.valid === true && quote.voucher?.matches_cart === true);
@@ -5394,7 +5356,7 @@ function ShopFrame({ variant }) {
         setQuoteState((current) => ({ status: 'error', quote: current.quote, error: error?.message || wsText("error.quote"), key: quoteKey }));
       });
     return () => controller.abort();
-  }, [cartShopId, basket, date, user?.id, quoteRevision, voucherApplied?.ok ? voucherApplied.voucher?.code : '']);
+  }, [cartShopId, mode, basket, date, user?.id, loyaltyEnabled, rewardKey, quoteRevision, voucherApplied?.ok ? voucherApplied.voucher?.code : '']);
   React.useEffect(() => {
     if (quoteResult.status !== 'ready' || !quoteResult.quote?.next_recalculation_at) return;
     const delay = Date.parse(quoteResult.quote.next_recalculation_at) - Date.parse(quoteResult.quote.server_time);
@@ -5624,6 +5586,12 @@ function ShopFrame({ variant }) {
     else setAuthOpen(true);
   }, [officeHint, user?.id, sessionRestored]);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [requestedAccountTab, setRequestedAccountTab] = useState(null);
+  const [requestedLoyaltyCard,setRequestedLoyaltyCard]=useState(null);
+  const [loyaltyWalletOpen,setLoyaltyWalletOpen]=useState(false);
+  const handleLoyalty = () => { if(user) setLoyaltyWalletOpen(true); else setAuthOpen(true); };
+  const loyaltyIdentity=useLoyaltyIdentity(user?.id,loyaltyEnabled);
+  useEffect(()=>{setLoyaltyWalletOpen(false);},[user?.id,shopId]);
   const [allergensOpen, setAllergensOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   // Set only by an explicit successful login/register. A restored token must
@@ -5816,7 +5784,7 @@ function ShopFrame({ variant }) {
     if (!background) { loadedCatalogueKey.current = null; setAllProducts([]); setCategories([]); setAssortments([]); setCatalogueContextData(null); }
     if (!shop || !window.WSCatalog) { loadedCatalogueKey.current = null; setCatalogueLoading(false); return; }
     setCatalogueLoading(!background);
-    window.WSCatalog.loadCatalogue({ shopId: shop.id, mode, date, shoppingContext: browseContext })
+    window.WSCatalog.loadCatalogue({ shopId: shop.id, mode, date, shoppingContext: browseContext, includeLoyalty: loyaltyEnabled })
       .then((catalogue) => {
         if (!alive) return;
         loadedCatalogueKey.current = contextKey;
@@ -5831,7 +5799,7 @@ function ShopFrame({ variant }) {
       })
       .finally(() => { if (alive) setCatalogueLoading(false); });
     return () => { alive = false; };
-  }, [shop?.id, mode, date, lang, user?.id, user?.officeId, catalogueRefresh, JSON.stringify(browseContext)]);
+  }, [shop?.id, mode, date, lang, user?.id, user?.officeId, catalogueRefresh, JSON.stringify(browseContext), loyaltyEnabled]);
   // Source commune GRILLE + LIGNE DE NAV : le catalogue restreint au créneau
   // et à la date en cours. La règle d'affichage de la nav (« n'afficher que ce
   // qui contient au moins un produit disponible ») est ainsi exactement celle
@@ -5908,13 +5876,14 @@ function ShopFrame({ variant }) {
   const [navIcons, setNavIcons] = React.useState({ all: null, back: null });
   React.useEffect(() => {
     let alive = true;
+    setLoyaltyConfig(null);
     if (window.WSAuth && typeof window.WSAuth.config === 'function') {
       window.WSAuth.config().then((c) => {
-        if (alive && c) setNavIcons({ all: c.categoryNavAllIcon || null, back: c.categoryNavBackIcon || null });
+        if (alive && c) { setNavIcons({ all: c.categoryNavAllIcon || null, back: c.categoryNavBackIcon || null }); setLoyaltyConfig({shopId,enabled:c.fidelityTabEnabled === true}); }
       }).catch(() => {});
     }
     return () => { alive = false; };
-  }, []);
+  }, [shopId]);
 
   // L'URL est la vérité partageable : category= / sub= (fusionnés dans la
   // query existante : shop, mode, voucher… restent intacts). Les BASCULES de
@@ -6373,10 +6342,10 @@ function ShopFrame({ variant }) {
             </div>
           )}
           {shopsFailed && <p className="ws-shopselect__help">{wsText("ui.connecting")}</p>}
+          <CookieConsent />
         </main>
         <footer className="ws-shopselect__footer">© {new Date().getFullYear()} L'Atelier By</footer>
-      </div><PwaInstallPrompt />
-      <CookieConsent /></>
+      </div><PwaInstallPrompt /></>
     );
   }
 
@@ -6384,6 +6353,24 @@ function ShopFrame({ variant }) {
   // et facturé serveur, seul l'affichage disparaît (classe sur la racine).
   const cartShop = (shops || []).find(item => Number(item.id) === Number(cartShopId)) || shop;
   const hidePrices = false; // Office membership never silently changes the standard catalogue.
+  const activeVoucher = voucherApplied?.ok ? voucherApplied.voucher : null;
+  const handleUseVoucher = (code,name,targets) => {
+    if(activeVoucher)return;
+    setRewardChoice(null); setVoucherInput(code); setVoucherApplied({ok:true,voucher:{code,name,targets}});
+  };
+  const clearActiveVoucher = () => {setVoucherApplied(null);setVoucherInput('');};
+  const browseVoucherTarget = target => {
+    const product=target.kind==='product'?allProducts.find(item=>Number(item.id)===Number(target.id)):null;
+    const categoryId=target.kind==='category'?target.id:product?.cat_id;
+    const root=navCats.find(item=>Number(item.categoryId)===Number(categoryId)||(item.subs||[]).some(sub=>Number(sub.categoryId)===Number(categoryId)));
+    if(browseContext.mode!=='standard'||(target.kind==='product'&&!product)||(target.kind==='category'&&!root)) {
+      setNotice({titre:wsText('vouchers.unavailableProduct'),texte:''});return;
+    }
+    setLoyaltyWalletOpen(false);setAccountOpen(false);setRequestedAccountTab(null);setRequestedLoyaltyCard(null);
+    const sub=(root?.subs||[]).find(item=>Number(item.categoryId)===Number(categoryId));
+    setCat(root?.id||'all');setSubCat(sub?.id||null);syncCatUrl(root?.id||'all',sub?.id||null,true);
+    if(product)openProductDetail(product);
+  };
   const hasOfficeMembership = officeMemberships.length > 0;
   const menuOffices = mode === 'delivery' && userOffice
     ? officeMemberships.filter(office => Number(office.id) === Number(userOffice.id))
@@ -6399,10 +6386,17 @@ function ShopFrame({ variant }) {
               </div><button type="button" className="ws-office-manage" onClick={() => setOfficeAccessOpen(true)}><img src={hasOfficeMembership ? linkedOfficeIcon : noLinkedOfficeIcon} alt="" aria-hidden="true"/><span>{t('officeAccess.manage')}</span></button>
             </div>) : null;
   return (
+    <LoyaltyShoppingContext.Provider value={{tap:wsTap,enabled:loyaltyEnabled && cartContext.mode==='standard' && browseContext.mode==='standard',
+      userId:user?.id ?? null, identity:JSON.stringify([user?.id,shopId]),
+      scope:JSON.stringify([quoteKey,shopId,browseContext]), canPreview:Number(cartShopId)===Number(shopId),
+      basket, request:{shopId,mode,deliveryDate:date,shoppingContext:browseContext,loyaltyReward,voucherCode:voucherApplied?.ok?voucherApplied.voucher?.code:null},
+      onOpenCards:()=>{if(detailProduct) closeProductDetail();setCartDrawerOpen(false);if(user){setRequestedAccountTab('fidelite');setAccountOpen(true);}else setAuthOpen(true);}}}>
+
     <div className={`ws ws--${variant}${hidePrices ? ' ws-noprice' : ''}`} data-mode={mode}>
       {invitationDialog}
       <Nav officeMenus={officeMenus} shop={shop} mode={mode} onMode={handleMode} onSwitchShop={() => setSwitcherOpen(true)}
            cartCount={cartCount} date={date} onDate={handleDate} user={user} onAccount={handleAccount}
+           loyaltyEnabled={loyaltyEnabled} onLoyalty={handleLoyalty} activeVoucher={!!activeVoucher} newVouchers={voucherNotifications.hasUnread}
            onAllergens={() => setAllergensOpen(true)}
            collectCutoffPassed={collectCutoffPassed} collectCutoffLabel={collectCutoffLabel}
            deliveryCutoffPassed={deliveryCutoffPassed} deliveryCutoffLabel={deliveryCutoffLabel}
@@ -6475,6 +6469,7 @@ function ShopFrame({ variant }) {
               return <ProductCard key={p.id} p={p} imagePriority={index < 4} onAdd={handleAdd} onOpen={openProductDetail} mode={mode} basketQty={bqty} stock={stock} platsBadge={mode === 'delivery' && selectedSlot === 'soir' && p.cat === 'plats'}/>;
             })}
           </div>
+          <CookieConsent />
         </main>
 
         <button
@@ -6506,8 +6501,8 @@ function ShopFrame({ variant }) {
         <Basket hidePrices={hidePrices} contextLabel={basket.length ? contextLabel : null} officeName={userOffice?.name || ''} shop={cartShop} mode={mode} basket={basket} quoteState={quoteState} onCheckout={handleCheckout} onRemove={handleRemove} onNote={handleNote} notesEnabled={lineNotesEnabled} deliveryFeeResult={deliveryFeeResult} date={date} slotTime={crossSlotTime} onCrossAdd={Number(cartShopId) === Number(shopId) && cartContext.mode === 'standard' && browseContext.mode === 'standard' ? handleCrossAdd : undefined}/>
       </div>
 
-      {/* Mobile bottom tab bar : 2 buttons, 50/50 split */}
-      <nav className="ws-tabbar" aria-label={t('nav.navAria')}>
+      {/* Mobile navigation with direct access to the customer loyalty QR. */}
+      <nav className={`ws-tabbar${loyaltyEnabled ? ' ws-tabbar--loyalty' : ''}`} aria-label={t('nav.navAria')}>
         <button className="ws-tabbar__btn ws-tabbar__btn--cart" onClick={() => setCartDrawerOpen(true)} aria-label={t('nav.cart')}>
           <span className="ws-tabbar__cart-wrap">
             <Pict d={ICONS.bag} s={20}/>
@@ -6515,6 +6510,9 @@ function ShopFrame({ variant }) {
           </span>
           <span className="ws-tabbar__label">{t('nav.cart')}</span>
         </button>
+        {loyaltyEnabled && <button className="ws-tabbar__btn ws-tabbar__btn--loyalty" aria-label={t('loyaltyWallet.open')} aria-haspopup="dialog" onClick={handleLoyalty}>
+          <LoyaltyCardIcon active={!!activeVoucher} updated={voucherNotifications.hasUnread}/>
+        </button>}
         <button className="ws-tabbar__btn ws-tabbar__btn--account" onClick={handleAccount} aria-label={user ? t('nav.profile') : t('nav.signin')}>
           <Pict d={ICONS.user} s={20}/>
           <span className="ws-tabbar__label">{user ? t('nav.profile') : t('nav.signin')}</span>
@@ -6554,16 +6552,22 @@ function ShopFrame({ variant }) {
           PWA, session restaurée) tant que le code postal manque en base. */}
       <PostcodeCatchupModal user={user} onUpdateUser={(u) => setUser(u)}/>
       <StripeReturnDialog />
-      <AccountModal
+      {loyaltyWalletOpen && user && loyaltyEnabled && <LoyaltyWallet key={`${user.id}:${shopId}`} identity={loyaltyIdentity} user={user} shopId={shopId} onUseVoucher={handleUseVoucher} activeVoucherCode={activeVoucher?.code} onClearVoucher={clearActiveVoucher} onVouchersViewed={voucherNotifications.markViewed} onBrowseVoucher={browseVoucherTarget} onClose={()=>setLoyaltyWalletOpen(false)}/>}
+      <AccountModal requestedLoyaltyCard={requestedLoyaltyCard} requestedTab={requestedAccountTab}
         open={accountOpen}
         user={user}
         shops={shops}
         currentShopId={shopId}
         onChangePreferredShop={requestShopChange}
-        onClose={() => setAccountOpen(false)}
+        onClose={() => {setAccountOpen(false);setRequestedAccountTab(null);setRequestedLoyaltyCard(null);}}
         onLogout={handleLogout}
         onRequestOffice={() => setOfficeAccessOpen(true)}
         onManageOffices={() => { setAccountOpen(false); setOfficeAccessOpen(true); }}
+        onUseVoucher={handleUseVoucher}
+        activeVoucherCode={activeVoucher?.code}
+        onClearVoucher={clearActiveVoucher}
+        onVouchersViewed={voucherNotifications.markViewed}
+        onBrowseVoucher={browseVoucherTarget}
         onUpdateUser={(u) => setUser(u)}
         office={userOffice}
         tour={userTour}
@@ -6607,7 +6611,7 @@ function ShopFrame({ variant }) {
           }}>{wsShopConfirmText('shopConfirm.clearBasketConfirm')}</button>
         </div>
       </section></div>}
-      <ProductDetail open={!!detailProduct} product={detailProduct} mode={mode} onClose={closeProductDetail} onAdd={handleAddConfigured}
+      <ProductDetail open={!!detailProduct} product={detailProduct} mode={mode} activeVoucher={browseContext.mode==='standard'?activeVoucher:null} onClose={closeProductDetail} onAdd={handleAddConfigured}
         onPromotionPreview={previewPromotionsForDetail} promotionSuggestions={Number(detailPromotionPreview.productId) === Number(detailProduct?.id) ? detailPromotionPreview.suggestions : []}
         upcomingPromotionSuggestions={Number(detailPromotionPreview.productId) === Number(detailProduct?.id) ? detailPromotionPreview.upcomingSuggestions : []}
         promotionProducts={allProducts} promotionLocked={cartHasPromotionSelection}
@@ -6618,6 +6622,7 @@ function ShopFrame({ variant }) {
       <CheckoutWizard open={checkoutOpen} onClose={() => setCheckoutOpen(false)} shop={cartShop} mode={mode} basket={basket} quoteState={quoteState} user={user} onLogin={() => setAuthOpen(true)} onPlaced={handlePlaced} onQuoteChanged={() => setQuoteRevision(value => value + 1)}
         voucherInput={voucherInput} setVoucherInput={setVoucherInput}
         voucherApplied={voucherApplied} setVoucherApplied={setVoucherApplied}
+        loyaltyEnabled={loyaltyEnabled} loyaltyReward={loyaltyReward} onRewardSelect={selectReward}
         office={userOffice} tour={userTour} date={date} onDate={setDate}
         deliveryFeeResult={deliveryFeeResult} deliveryFeeErr={wsMessage(deliveryFeeErr)}
         officeSites={officeSites} selectedSiteId={selectedSiteId} setSelectedSiteId={setSelectedSiteId}
@@ -6670,8 +6675,8 @@ function ShopFrame({ variant }) {
       )}
       {orderToast && <OrderConfirmation orderRef={orderToast.orderRef} total={orderToast.total} shop={cartShop} onClose={() => setOrderToast(null)}/>}
       <PwaInstallPrompt />
-      <CookieConsent />
     </div>
+    </LoyaltyShoppingContext.Provider>
   );
 }
 
