@@ -1,63 +1,74 @@
-# Browser storage revision 2026-10-27
+# WebShop browser session — 2026-11-04
 
-This is a technical retention reduction, not a legal determination of necessity.
+The browser refresh token is an opaque, rotating token stored in the host-only
+`__Secure-ws_refresh` cookie. It is Secure, HttpOnly, SameSite=Lax, scoped to
+`/api/v1/clients/auth`, and expires 60 days after login or successful rotation.
+The corresponding server record has the same 60-day lifetime. Access JWTs keep
+their existing 30-minute lifetime and remain in page memory. Profiles are fetched
+from `/clients/auth/me` and are no longer persisted to browser storage.
 
-## Implemented
+## Transport and deployment
 
-The main Vite storefront, legacy entry and standalone translated account pages
-load `public/session-storage.js` before reading browser preferences. It removes
-only known legacy localStorage keys (auth tokens, customer profile, language,
-active shop, delivery preferences, account tab and PWA prompt markers). It does
-not migrate these values. Consent and other applications' keys remain intact.
+The browser opts in with `X-Webshop-Session: cookie` and application/json.
+Login, refresh and logout require a trusted Origin and reject cross-site requests.
+The browser response never exposes its refresh token in JSON. Other API clients
+without that header keep the existing token-pair contract and 90-day refresh TTL.
+Cookie authentication is used only for refresh/logout; ordinary API endpoints
+continue requiring Authorization: Bearer. No database migration is needed.
 
-Those functional records now use versioned sessionStorage envelopes with a maximum
-age of 12 hours **from each write**. Reads do not extend the deadline; token
-rotation/profile updates are new writes. Browser sessions normally end with the
-tab; browser restore and opener-created tabs can retain/copy sessionStorage.
-Expiry checks therefore run on access, startup, pageshow and focus. This is not
-a guarantee of physical deletion while a browser is closed or suspended, nor an
-absolute 12-hour server login limit. Server token validity remains unchanged
-(access 30 minutes, refresh 90 days). No remember-me feature is introduced.
+Production must expose `/api/v1` on the WebShop hostname and build with
+`VITE_SAME_ORIGIN_API=1`. The previous direct API connection between
+`webshop.atelierby.be` and `atelierby.tfbuddy.com` is cross-site and cannot be used
+for this Lax cookie flow. Use the existing proxy configuration described in
+`../API-CONNECTION.md`. Deploy backend and frontend together; HTTPS is required.
 
-Storage failures fall back to page memory only. A reload then needs a new login.
-Existing permanent sessions are deliberately invalidated locally during upgrade;
-users must sign in again. Reloads and payment returns in the same tab retain
-valid records. Independent tabs do not share sign-in; installed PWA windows can
-also require a separate login or the existing handoff flow.
+## Startup, rotation and logout
 
-Logout/session invalidation additionally removes the session profile, account tab
-and all customer/shop delivery preferences. Locale and active-shop selection
-remain until session expiry. PWA prompt dismissal/installation markers are now
-session-scoped, at most 12 hours, instead of a permanent installation marker or
-seven-day persistent reminder. Installation is still detected from browser mode.
+Startup calls refresh even after the page/tab/browser was closed; the browser
+attaches its cookie. A rejected refresh stops background retries for that page.
+Network/server failures retain the possibility of recovery. Existing tab refresh
+tokens are exchanged once for a cookie and then removed from sessionStorage.
+Old permanent token/profile keys are still removed rather than migrated.
 
-The B2B landing independently deletes legacy la_lang and stores an explicit
-language choice in its own 12-hour session envelope. It needs separate deployment.
+Cookie mutations are queued locally and use the Web Locks API across tabs where
+available. BroadcastChannel invalidates account views after login/logout in
+another tab. Server-side cookie rotation locks the old refresh-session row within
+a transaction, so concurrent reuse cannot issue two replacement sessions.
 
-Navigation HTML runtime cache has maxEntries=2 and maxAgeSeconds=43200, enforced
-by Workbox during cache activity. API and query navigation remain excluded.
-Precached application assets remain versioned, cleaned on service-worker upgrade;
-they are public resources, not customer profiles. No periodic offline deletion is
-claimed. Existing transactional sessionStorage keys (order access/payment resume)
-are unchanged to preserve checkout; they still need separate purpose/retention
-review. GA4 deduplication remains conditional on analytics consent.
+Logout immediately clears the local account view, then revokes the refresh token
+and expires the cookie. The non-secret `ws.auth.loggedOut` localStorage marker
+prevents automatic login after reopening if logout was performed offline. It is
+removed by a successful explicit login. Without working localStorage this offline
+marker cannot survive a reload. Server revocation requires network connectivity.
+Existing access JWTs retain their normal short expiry, as before.
 
-## Still open
+## Shop and remaining preferences
 
-DEC-08 remains open for legal necessity, reasonable durations and PWA/Stripe /
-transactional storage assessment. Twelve hours is an implementation choice,
-not a prescribed statutory period. Changing storage does not fix server/database
-retention, revoke old refresh tokens on the server, or replace provider review.
+`ws.activeShop` uses localStorage key `ws.preference.v1:ws.activeShop`, with an
+explicit 60-day expiry from each write. A new visit/selection writes it again.
+A `?shop=` link still takes precedence. Logout preserves the selected shop.
+Only this preference and the non-secret logout marker become persistent.
 
-The privacy-drafts folder now contains draft-0.2 with updated storage tables,
-code anchors and SHA manifest. These remain unapproved; refresh the snapshot
-again if code changes before final publication. Earlier Word/ZIP exports and
-the original ChatGPT Page snapshot are historical and must not be published.
+Language, delivery preferences, account tab and PWA prompt markers retain their
+12-hour tab-session envelopes. Customer profiles are memory-only. Existing
+checkout/payment continuation records and cookie consent are unchanged.
+Expired/corrupt entries are removed on access/startup/focus/pageshow; storage
+failures fall back to page memory. Browser clearing/private browsing may remove
+cookies and preferences earlier than their configured lifetime.
 
 ## Validation
 
-Unit suite, production build, auth refresh test and local Chromium scenarios cover
-migration, expiry/corruption, blocked storage, login/reload, independent tabs,
-logout, consent retention, embedded Stripe fixtures and old-worker/offline PWA.
-No live provider, production or deployment tests; CI is configured but not run on
-GitHub. Other browser scenarios have updated seed formats but were not all run.
+- Node tests: cookie restoration, legacy migration, expiry, blocked storage,
+  account isolation during delayed responses, offline logout and shop retention.
+- PHPUnit: origin/header/JSON checks, cookie attributes, rejected refresh,
+  legacy contract, server expiry and transactional token rotation.
+- `npm run test:storage:browser`: local PHP/Chromium fixture with real Set-Cookie,
+  close/reopen, concurrent tabs, logout and CSRF. No production connections.
+- `npm run build`: production Vite/PWA bundle.
+
+The existing full unit suite also has failures in menu-composition, office-context
+and personalization tests (`Cannot use import statement outside a module`),
+reproduced against the unchanged workspace. Those tests are outside this change.
+Actual MySQL integration, live reverse proxy, payment-provider and deployed PWA
+upgrade tests have not been run. Public storage disclosures must describe this
+new retention when this implementation is published.

@@ -24,7 +24,7 @@ test('reload and payment navigation retain session; independent tab does not; ex
 });
 test('corrupt, future and unbounded restored records are removed',()=>{
  const f=fixture();for(const raw of ['broken',JSON.stringify({value:'x',createdAt:200000000,expiresAt:243200000}),JSON.stringify({value:'x',createdAt:100000000,expiresAt:Infinity})]) {
- f.session.set('ws.session.v1:ws.customer',raw);assert.equal(f.api.getItem('ws.customer'),null);assert.equal(f.session.size,0);
+ f.session.set('ws.session.v1:ws.accountTab',raw);assert.equal(f.api.getItem('ws.accountTab'),null);assert.equal(f.session.size,0);
  }
 });
 test('blocked storage uses memory, never writes permanent storage, and still expires',()=>{

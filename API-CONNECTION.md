@@ -84,3 +84,18 @@ nie obejmuje zagnieżdżonej nazwy `www.webshop.atelierby.be`.
 API dopuszcza oba dokładne originy HTTPS. Ustawienia URL sklepu dla zaproszeń
 i powrotów płatności powinny wskazywać adres główny bez `www`.
 Adres API i parametr buildu `SITE_BASE=/` pozostają bez zmian.
+
+## Trwałe logowanie WebShopu (60 dni)
+
+Nowy frontend wymaga cookie `__Secure-ws_refresh` (HttpOnly, Secure, SameSite=Lax).
+Dlatego przed jego wdrożeniem musi działać opisany wyżej reverse proxy `/api/v1`
+i build z `VITE_SAME_ORIGIN_API=1`. Nie używać starego bezpośredniego połączenia
+`.atelierby.be` → `.tfbuddy.com` do logowania przez cookie. Backend odrzuca
+cross-site żądania tego transportu. Nie należy obchodzić tego przez wildcard CORS
+ani przechowywanie długiego tokenu w JavaScript.
+
+Najpierw sprawdzić proxy i HTTPS, następnie wdrożyć API oraz cały nowy build
+WebShopu. Test: zalogować się, zamknąć kartę, ponownie otworzyć stronę główną —
+powinny wrócić konto i sklep. Po wylogowaniu ponowne otwarcie ma pozostać
+niezalogowane. Pozostali klienci API zachowują dotychczasowy kontrakt tokenów.
+Szczegóły i ograniczenia testów: `docs/browser-storage.md`.

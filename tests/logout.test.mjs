@@ -11,10 +11,11 @@ function fixture(fetch) {
  const api=context.window.WSAuth;api.endpoint='/auth';return {api,storage};
 }
 test('logout clears both tokens before API completes and sends the captured refresh token',async()=>{
- const response=deferred(); let request;
- const {api,storage}=fixture((url,options)=>{request={url,options};return response.promise;});
+ const response=deferred(),started=deferred(); let request;
+ const {api,storage}=fixture((url,options)=>{request={url,options};started.resolve();return response.promise;});
  const logout=api.logout();
  assert.equal(storage.size,0);
+ await started.promise;
  assert.equal(request.url,'/auth/logout');
  assert.equal(JSON.parse(request.options.body).refresh_token,'refresh');
  assert.equal(request.options.keepalive,true);
