@@ -13,27 +13,101 @@
      GET  {endpoint}/me                  -> { user }
      PATCH {endpoint}/me                 -> { user }
 
-   Session: the storefront and API may live on different domains, so
-   auth is by BEARER TOKEN (not cookies). The access and rotating refresh
-   tokens are stored in a bounded tab session and the access token is sent as
-   `Authorization: Bearer …` on authenticated calls.
+   Browser session: refresh uses a Secure HttpOnly SameSite=Lax cookie and
+   requires a same-site API (production: /api/v1 on the WebShop hostname).
+   The access JWT stays in page memory and is sent as Authorization: Bearer
+   on protected API calls. Browser refresh tokens are never exposed in JSON.
    ===================================================================== */
 (function () {
   const TOKEN_KEY = 'ws_auth_token';
   const REFRESH_TOKEN_KEY = 'ws_auth_refresh_token';
   let refreshPending = null;
-  const getToken = () => { try { return window.WSSessionStorage.getItem(TOKEN_KEY); } catch (_) { return null; } };
-  const getRefreshToken = () => { try { return window.WSSessionStorage.getItem(REFRESH_TOKEN_KEY); } catch (_) { return null; } };
-  const setToken = (t) => { try { t ? window.WSSessionStorage.setItem(TOKEN_KEY, t) : window.WSSessionStorage.removeItem(TOKEN_KEY); } catch (_) {} };
-  const setRefreshToken = (t) => { try { t ? window.WSSessionStorage.setItem(REFRESH_TOKEN_KEY, t) : window.WSSessionStorage.removeItem(REFRESH_TOKEN_KEY); } catch (_) {} };
-  const clearSession = () => { setToken(null); setRefreshToken(null); window.WSSessionStorage.clearCustomer?.(); };
-  const setSession = (session) => {
-    const accessToken = session && (session.access_token || session.accessToken);
-    const refreshToken = session && (session.refresh_token || session.refreshToken);
-    if (!accessToken || !refreshToken) return false;
-    setToken(accessToken);
-    setRefreshToken(refreshToken);
+  let sessionGeneration = 0;
+  let loginAttempt = 0;
+  // Access tokens stay in page memory. Migrate an existing tab session once.
+  const readLegacy = key => { try { return window.WSSessionStorage.getItem(key); } catch (_) { return null; } };
+  let accessToken = readLegacy(TOKEN_KEY);
+  let legacyRefresh = readLegacy(REFRESH_TOKEN_KEY);
+  for (const key of [TOKEN_KEY, REFRESH_TOKEN_KEY]) {
+    try { window.WSSessionStorage.removeItem(key); } catch (_) {}
+  }
+  const loggedOut = () => { try { return window.localStorage.getItem('ws.auth.loggedOut') === '1'; } catch (_) { return false; } };
+  const rememberLogout = value => {
+    try { value ? window.localStorage.setItem('ws.auth.loggedOut', '1') : window.localStorage.removeItem('ws.auth.loggedOut'); } catch (_) {}
+  };
+  let restoreAllowed = !loggedOut();
+  if (!restoreAllowed) { accessToken = null; legacyRefresh = null; }
+  const getToken = () => accessToken;
+  const getRefreshToken = () => legacyRefresh || (restoreAllowed ? '@cookie' : null);
+  const setToken = token => { accessToken = token; };
+  const setRefreshToken = token => { legacyRefresh = token; };
+  let sessionPresent = Boolean(accessToken);
+  let mutationPending = Promise.resolve();
+  // Serialise cookie rotation/login/logout, including across tabs when Web Locks is available.
+  const sessionMutation = work => {
+    const run = () => typeof navigator !== 'undefined' && navigator.locks?.request
+      ? navigator.locks.request('webshop-auth-session', work) : work();
+    const pending = mutationPending.catch(() => {}).then(run);
+    mutationPending = pending;
+    return pending;
+  };
+  const browserHeaders = () => ({ 'Content-Type': 'application/json', 'X-Webshop-Session': 'cookie' });
+  let sessionChannel = null;
+  try { if (typeof BroadcastChannel === 'function') sessionChannel = new BroadcastChannel('webshop-auth-session'); } catch (_) {}
+  const announce = type => sessionChannel?.postMessage({type});
+  const notifySessionEnded = () => {
+    if (typeof window.dispatchEvent === 'function' && typeof Event === 'function') {
+      window.dispatchEvent(new Event('ws:session-ended'));
+    }
+  };
+  const clearSession = (cancelLogin = true) => {
+    sessionGeneration++;
+    if (cancelLogin) loginAttempt++;
+    refreshPending = null;
+    sessionPresent = false;
+    setToken(null); setRefreshToken(null);
+    restoreAllowed = false;
+    window.WSSessionStorage?.clearCustomer?.();
+    notifySessionEnded();
+  };
+  const setSession = session => {
+    const token = session?.access_token;
+    if (typeof token !== 'string' || !token.trim() || session.session_transport !== 'cookie') return false;
+    setToken(token);
+    setRefreshToken(null);
+    restoreAllowed = true;
+    sessionPresent = true;
     return true;
+  };
+  const sessionChanged = () => Object.assign(new Error('SESSION_CHANGED'), { code: 'SESSION_CHANGED' });
+  const assertSession = generation => { if (generation !== sessionGeneration) throw sessionChanged(); };
+  const revoke = async refreshToken => {
+    if (!api.endpoint || !refreshToken) return;
+    try {
+      await fetch(`${api.endpoint}/logout`, {
+        keepalive: true, method: 'POST', credentials: 'include', headers: browserHeaders(),
+        body: JSON.stringify(refreshToken === '@cookie' ? {} : { refresh_token: refreshToken }),
+      });
+    } catch (_) { /* Local session removal never depends on network availability. */ }
+  };
+  const acceptLogin = async (session, attempt, generation) => {
+    if (attempt !== loginAttempt || generation !== sessionGeneration) {
+      await revoke('@cookie');
+      return { ok: false, error: 'SESSION_CHANGED' };
+    }
+    const replacingSession = sessionPresent;
+    if (!setSession(session)) return { ok: false, error: 'Invalid session response.' };
+    const acceptedGeneration = ++sessionGeneration;
+    refreshPending = null;
+    window.WSSessionStorage?.clearCustomer?.();
+    if (replacingSession) notifySessionEnded();
+    const user = await api.me();
+    if (acceptedGeneration !== sessionGeneration || attempt !== loginAttempt) return { ok: false, error: 'SESSION_CHANGED' };
+    if (user) { rememberLogout(false); announce('login'); return { ok: true, user }; }
+    const refreshToken = getRefreshToken();
+    clearSession();
+    await revoke(refreshToken);
+    return { ok: false, error: 'Could not load the account profile.' };
   };
   const authHeaders = () => { const t = getToken(); return t ? { 'Authorization': 'Bearer ' + t } : {}; };
   const expiresSoon = () => {
@@ -72,22 +146,23 @@
     async login({ identifier, email, password, phonePrefix, authMethod }) {
       const ident = (identifier || email || '').trim();
       if (!api.endpoint) return { ok: false, error: 'Service de connexion non configuré, please debug.' };
-      try {
-        const r = await fetch(`${api.endpoint}/login`, {
-          method: 'POST', credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ login: shopPhone(ident, phonePrefix), password }),
-        });
-        const j = await r.json().catch(() => ({}));
-        if (!r.ok) return { ok: false, error: errorMessage(j, 'Unable to sign in.'), status: r.status };
-        if (!setSession(j)) return { ok: false, error: 'Invalid session response.' };
-        const user = await api.me();
-        if (user) return { ok: true, user };
-        clearSession();
-        return { ok: false, error: 'Could not load the account profile.' };
-      } catch (_) {
-        return { ok: false, error: 'Réseau indisponible, connexion impossible.' };
-      }
+      const attempt = ++loginAttempt;
+      return sessionMutation(async () => {
+        if (attempt !== loginAttempt) return { ok: false, error: 'SESSION_CHANGED' };
+        const generation = sessionGeneration;
+        try {
+          const r = await fetch(`${api.endpoint}/login`, {
+            method: 'POST', credentials: 'include',
+            headers: browserHeaders(),
+            body: JSON.stringify({ login: shopPhone(ident, phonePrefix), password }),
+          });
+          const j = await r.json().catch(() => ({}));
+          if (!r.ok) return { ok: false, error: errorMessage(j, 'Unable to sign in.'), status: r.status };
+          return await acceptLogin(j, attempt, generation);
+        } catch (_) {
+          return { ok: false, error: 'Réseau indisponible, connexion impossible.' };
+        }
+      });
     },
 
     /* ── Register ──────────────────────────────────────────────────── */
@@ -104,6 +179,8 @@
     },
 
     async register({ email, phone, phonePrefix, password, firstName, lastName, postalCode, locality, authMethod, shopId }) {
+      const attempt = ++loginAttempt;
+      const generation = sessionGeneration;
       if (api.endpoint) {
         try {
           const r = await fetch(`${api.endpoint}/register`, {
@@ -117,13 +194,13 @@
           });
           const j = await r.json().catch(() => ({}));
           if (!r.ok) return { ok: false, error: errorMessage(j, 'Unable to create the account.'), exists: r.status === 409, status: r.status };
+          if (attempt !== loginAttempt || generation !== sessionGeneration) {
+            // Registration no longer creates a browser session.
+            return { ok: false, error: 'SESSION_CHANGED' };
+          }
           if (j.registered === true && j.activation_required === false) return api.login({ identifier: email, password });
           if (j.activation_required === true) return { ok: true, activationRequired: true, emailSent: j.activation_email_sent === true };
-          if (!setSession(j)) return { ok: false, error: 'Invalid session response.' };
-          const user = await api.me();
-          if (user) return { ok: true, user };
-          clearSession();
-          return { ok: false, error: 'Could not load the account profile.' };
+          return await acceptLogin(j, attempt, generation);
         } catch (_) {
           return { ok: false, error: 'Réseau indisponible, inscription impossible.' };
         }
@@ -191,45 +268,15 @@
       } catch (_) { return { ok: false, error: 'SMS_RESET_UNAVAILABLE' }; }
     },
 
-    /* ── Set / update password (compte existant) ─────────────────────── */
-    /* Chemin SANS preuve d'identité. Le serveur le refuse (409 otp_requis)
-       dès que le SMS est configuré ; il ne subsiste que tant qu'il ne l'est
-       pas, faute de quoi les comptes sans mot de passe, c'est-à-dire tous
-       resteraient dehors. L'appelant doit traiter 'otp_requis'. */
+    // Legacy prototype entry points have no central API contract. Never accept
+    // their single `token` response beside another customer's refresh token.
     async setPassword({ email, phone, phonePrefix, identifier, password }) {
-      if (api.endpoint) {
-        try {
-          const r = await fetch(`${api.endpoint}/set-password`, {
-            method: 'POST', credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, phone, phonePrefix: phonePrefix || '+32', identifier, password }),
-          });
-          const j = await r.json();
-          if (r.ok) { if (j.token) setToken(j.token); return { ok: true, user: j.user }; }
-          return { ok: false, code: j.code || null,
-                   error: j.error || j.message || 'Échec de la mise à jour.' };
-        } catch (_) {}
-      }
-      return { ok: false, error: 'Service indisponible.' };
+      return { ok: false, code: 'PASSWORD_RESET_REQUIRED', error: 'Use the password reset form.' };
     },
 
-    /* ── SSO handoff (PWA -> webshop) : échange un jeton à usage unique
-       contre une session webshop. */
+    // Compatibility result for old callers; Fidelity has no separate login.
     async handoff(token) {
-      if (!token) return { ok: false, error: 'Jeton manquant.' };
-      if (api.endpoint) {
-        try {
-          const r = await fetch(`${api.endpoint}/handoff`, {
-            method: 'POST', credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token }),
-          });
-          const j = await r.json();
-          if (r.ok) { if (j.token) setToken(j.token); return { ok: true, user: j.user }; }
-          return { ok: false, error: j.error || j.message || 'Lien invalide.' };
-        } catch (_) {}
-      }
-      return { ok: false, error: 'Service indisponible.' };
+      return { ok: false, code: 'HANDOFF_UNAVAILABLE', error: 'Sign in with your Webshop account.' };
     },
 
     /* ── Vérification TVA + liaison société (persistée) : miroir de la PWA
@@ -248,12 +295,11 @@
       };
       if (!api.endpoint) return failure('VIES_ENDPOINT_UNAVAILABLE');
       try {
-        const r = await fetch(`${api.endpoint}/billing-verify`, {
+        const { response: r, data: j } = await api.authenticatedJson(`${api.endpoint}/billing-verify`, {
           method: 'POST', credentials: 'include',
           headers: { 'Content-Type': 'application/json', ...authHeaders() },
           body: JSON.stringify({ vat, country }),
         });
-        const j = await r.json().catch(() => null);
         if (r.ok && j?.valid === true && j.user) return { ok: true, data: j.data, user: j.user };
         if (r.status === 401 || r.status === 403) return failure('VIES_AUTH_REQUIRED');
         return failure(j?.description || 'VIES_ENDPOINT_UNAVAILABLE');
@@ -279,12 +325,11 @@
     async setOfficeSite(siteId) {
       if (!api.endpoint) return { ok: false, error: 'Service indisponible.' };
       try {
-        const r = await fetch(`${api.endpoint}/office`, {
+        const { response: r, data: j } = await api.authenticatedJson(`${api.endpoint}/office`, {
           method: 'POST', credentials: 'include',
           headers: { 'Content-Type': 'application/json', ...authHeaders() },
           body: JSON.stringify({ siteId: siteId || null }),
         });
-        const j = await r.json();
         if (r.ok) return { ok: true, user: j.user };
         return { ok: false, error: j.error || 'Échec de la liaison.' };
       } catch (_) {
@@ -404,12 +449,11 @@
     async addCompanyNoVat({ name, address, postalCode, city }) {
       if (!api.endpoint) return { ok: false, error: 'Service indisponible.' };
       try {
-        const r = await fetch(`${api.endpoint}/billing-company`, {
+        const { response: r, data: j } = await api.authenticatedJson(`${api.endpoint}/billing-company`, {
           method: 'POST', credentials: 'include',
           headers: { 'Content-Type': 'application/json', ...authHeaders() },
           body: JSON.stringify({ name, address, postalCode, city }),
         });
-        const j = await r.json();
         if (r.ok) return { ok: true, user: j.user };
         return { ok: false, error: j.error || 'Échec de l\'ajout.' };
       } catch (_) { return { ok: false, error: 'Réseau indisponible.' }; }
@@ -418,11 +462,10 @@
       const error = (key = 'error.billingUnlink') => ({ ok: false, error: window.WSI18n?.t?.(key) || 'Could not remove billing details. Please try again.' });
       if (!api.endpoint) return error();
       try {
-        const r = await fetch(`${api.endpoint}/billing-company/unlink`, {
+        const { response: r, data: j } = await api.authenticatedJson(`${api.endpoint}/billing-company/unlink`, {
           method: 'POST', credentials: 'include',
           headers: { 'Content-Type': 'application/json', ...authHeaders() },
         });
-        const j = await r.json().catch(() => null);
         if (r.ok && j?.ok === true && j.user) return { ok: true, user: j.user };
         if (r.status === 401 || r.status === 403) return error('error.viesAuth');
         if (j?.description === 'VIES_COMPANY_MANAGED_BY_SHOP') return error('error.viesCompanyManaged');
@@ -432,41 +475,41 @@
 
     /* ── Logout ─────────────────────────────────────────────────────── */
     async logout() {
-      const refreshToken = getRefreshToken();
+      const refreshToken = getRefreshToken() || '@cookie';
+      rememberLogout(true);
       clearSession(); // Local logout must not wait for the network.
+      announce('logout');
       try {
         sessionStorage.removeItem('ws.pendingPay');
         sessionStorage.removeItem('ws.lastPay');
         Object.keys(sessionStorage).filter(key => key.startsWith('ws.order.token.')).forEach(key => sessionStorage.removeItem(key));
       } catch (_) {}
       window.dispatchEvent(new Event('ws:payment-logout'));
-      if (api.endpoint) {
-        try {
-          await fetch(`${api.endpoint}/logout`, {
-            keepalive: true, method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refresh_token: refreshToken || '' }),
-          });
-        } catch (_) {}
-      }
+      await sessionMutation(() => revoke(refreshToken));
       return { ok: true };
     },
 
     /* ── Session check (GET /me) ─────────────────────────────────────── */
     async me() {
+      const generation = sessionGeneration;
       if (api.endpoint) {
-        if (!getToken()) return null; // no session → don't bother the server
+        if (!getToken() && !getRefreshToken()) {
+          if (sessionPresent) clearSession();
+          return null;
+        }
         try {
-          const r = await api.authenticatedFetch(`${api.endpoint}/me`, { credentials: 'include' });
+          const { response: r, data: j } = await api.authenticatedJson(`${api.endpoint}/me`, { credentials: 'include' });
+          assertSession(generation);
           if (!getToken()) return null;
           if (r.ok) {
-            const j = await r.json();
-            return getToken() ? (j.user || j || null) : null;
+            const user = j.user || j;
+            return Number.isSafeInteger(Number(user?.id)) && Number(user.id) > 0 ? user : null;
           }
           if (r.status === 401 || r.status === 403) clearSession();
           // Toute autre réponse était avalée : une session perdue pour cause de
           // panne serveur ressemblait trait pour trait à « pas de session ».
           else console.error('[auth] session non restaurée, /me a répondu HTTP ' + r.status);
-        } catch (e) { console.error('[auth] session non restaurée, /me injoignable', e); }
+        } catch (e) { if (e.code !== 'SESSION_CHANGED') console.error('[auth] session non restaurée, /me injoignable', e); }
         return null;
       }
       return null; // No session in demo mode
@@ -474,25 +517,29 @@
 
     /* ── Profile update (PATCH /me) ──────────────────────────────────── */
     async updateMe(patch) {
+      const generation = sessionGeneration;
       if (api.endpoint) {
         try {
-          const r = await fetch(`${api.endpoint}/me`, {
+          const { response: r, data: j } = await api.authenticatedJson(`${api.endpoint}/me`, {
             method: 'PATCH', credentials: 'include',
             headers: { 'Content-Type': 'application/json', ...authHeaders() },
             body: JSON.stringify(patch),
           });
-          if (r.ok) { const j = await r.json(); return { ok: true, user: j.user || j }; }
-          const j = await r.json().catch(() => ({}));
+          assertSession(generation);
+          const user = j?.user || j;
+          if (r.ok && Number.isSafeInteger(Number(user?.id)) && Number(user.id) > 0) return { ok: true, user };
           if (r.status === 401 || r.status === 403) clearSession();
           return { ok: false, error: errorMessage(j, 'Profile update rejected.') };
-        } catch (_) {}
+        } catch (e) { if (e.code === 'SESSION_CHANGED') return { ok: false, error: 'SESSION_CHANGED' }; }
       }
       // Go-live : plus de mutation d'un store local fictif.
       return { ok: false, error: 'Service profil indisponible, réessayez.' };
     },
 
     async authenticatedFetch(url, options = {}) {
+      const generation = sessionGeneration;
       await api.ensureFreshSession();
+      assertSession(generation);
       const token = getToken();
       const request = () => {
         const headers = { ...options.headers };
@@ -500,40 +547,63 @@
         return fetch(url, { ...options, headers: { ...headers, ...authHeaders() } });
       };
       let response = await request();
+      assertSession(generation);
       if (response.status === 401 && getRefreshToken()) {
-        if (token !== getToken() || await api.refresh()) response = await request();
+        const renewed = token !== getToken() || await api.refresh();
+        // Rejection of this session is returned as 401. A different signed-in
+        // customer must never inherit a replay of the previous customer's call.
+        if (generation !== sessionGeneration && !getToken()) return response;
+        assertSession(generation);
+        if (renewed) response = await request();
+        assertSession(generation);
       }
       return response;
     },
 
+    // Account-specific JSON (including future Fidelity reads) stays bound to
+    // the same session through body decoding, not just until headers arrive.
+    async authenticatedJson(url, options = {}) {
+      const generation = sessionGeneration;
+      const response = await api.authenticatedFetch(url, options);
+      const data = await response.json();
+      assertSession(generation);
+      return { response, data };
+    },
+
     async refresh() {
       if (refreshPending) return refreshPending;
-      const originalRefresh = getRefreshToken();
-      const renew = () => originalRefresh !== getRefreshToken() ? Promise.resolve(Boolean(getToken())) : api.refreshSession();
-      refreshPending = typeof navigator !== 'undefined' && navigator.locks?.request
-        ? navigator.locks.request('webshop-session-refresh', renew)
-        : renew();
-      try { return await refreshPending; }
-      finally { refreshPending = null; }
+      const generation = sessionGeneration;
+      const pending = sessionMutation(() => generation === sessionGeneration ? api.refreshSession() : false);
+      refreshPending = pending;
+      try { return await pending; }
+      finally { if (refreshPending === pending) refreshPending = null; }
     },
 
     async ensureFreshSession() {
-      if (api.endpoint && getRefreshToken() && expiresSoon()) return api.refresh();
+      if (!getToken() && !getRefreshToken()) {
+        if (sessionPresent) clearSession();
+        return false;
+      }
+      if (api.endpoint && getRefreshToken() && (legacyRefresh || !getToken() || expiresSoon())) return api.refresh();
       return Boolean(getToken());
     },
 
     async refreshSession() {
       const refreshToken = getRefreshToken();
+      const generation = sessionGeneration;
       if (!api.endpoint || !refreshToken) return false;
       try {
         const r = await fetch(`${api.endpoint}/refresh`, {
-          method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refresh_token: refreshToken }),
+          method: 'POST', credentials: 'include', headers: browserHeaders(),
+          body: JSON.stringify(refreshToken === '@cookie' ? {} : { refresh_token: refreshToken }),
         });
         const j = await r.json().catch(() => ({}));
-        if (refreshToken !== getRefreshToken()) return Boolean(getToken() && getRefreshToken());
+        if (generation !== sessionGeneration || refreshToken !== getRefreshToken()) {
+          if (r.ok) await revoke('@cookie');
+          return Boolean(getToken() && getRefreshToken());
+        }
         if (r.ok && setSession(j)) return true;
-        if ((r.status === 401 || r.status === 403) && refreshToken === getRefreshToken()) clearSession();
+        if ((r.status === 401 || r.status === 403) && refreshToken === getRefreshToken()) clearSession(false);
       } catch (_) { /* A network failure does not invalidate the stored session. */ }
       return false;
     },
@@ -554,6 +624,12 @@
     },
   };
 
+  if (sessionChannel) sessionChannel.onmessage = event => {
+    if (!['login', 'logout'].includes(event.data?.type)) return;
+    clearSession();
+    restoreAllowed = event.data.type === 'login' && !loggedOut();
+    if (restoreAllowed) window.dispatchEvent(new Event('ws:session-available'));
+  };
   window.WSAuth = api;
   // Timers may pause on mobile. Also renew when returning to the shop or going online.
   const renewInBackground = () => {

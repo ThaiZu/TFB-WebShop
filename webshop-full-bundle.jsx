@@ -5534,62 +5534,16 @@ function ShopFrame({ variant }) {
     };
   }, [user?.id, user?.activationRequired]);
 
-  // SSO handoff PWA -> webshop : si l'URL porte ?handoff=<jeton>, on l'échange
-  // contre une session webshop, puis on retire le jeton de l'URL (usage unique,
-  // ne doit pas rester visible/partageable).
-  //
-  // AVANT le login token, on force un HARD REFRESH pour repartir d'un état 100%
-  // propre : une session/onglet précédent laisse en mémoire (état React) et en
-  // session de cet onglet un contexte résiduel (jeton, boutique active, mode, office/site,
-  // LISTE PRODUITS déjà chargée) qui « colle » et empêche les filtres livraison
-  // de s'appliquer comme sur le webshop online. Le reload wipe tout l'état React
-  // en mémoire (panier, mode, listes) et re-fetch le catalogue de la bonne
-  // boutique ; on purge aussi la session cliente résiduelle. Garde one-shot via
-  // sessionStorage pour ne jamais boucler (le ?handoff survit au reload).
+  // Fidelity uses this storefront's CLIENT session. Old prototype links must
+  // not replace it with a single token or force a reload that loses the cart.
   React.useEffect(() => {
-    let alive = true;
-    let token = null;
-    try { token = new URLSearchParams(window.location.search).get('handoff'); } catch (_) {}
-    if (!token || !window.WSAuth || typeof window.WSAuth.handoff !== 'function') return;
-
-    const CLEAN_FLAG = 'ws_handoff_clean';
-    // Déjà « nettoyé » ? Si sessionStorage est indisponible (navigation privée
-    // stricte), on considère nettoyé → on saute le refresh plutôt que de boucler.
-    let cleaned = true;
-    try { cleaned = sessionStorage.getItem(CLEAN_FLAG) === '1'; } catch (_) { cleaned = true; }
-    if (!cleaned) {
-      // 1er passage : purge la session résiduelle + hard refresh, mais UNIQUEMENT
-      // si le drapeau one-shot a bien pu être persisté (sinon on boucle à l'infini).
-      let persisted = false;
-      try { sessionStorage.setItem(CLEAN_FLAG, '1'); persisted = sessionStorage.getItem(CLEAN_FLAG) === '1'; } catch (_) {}
-      if (persisted) {
-        try { window.WSSessionStorage.removeItem('ws_auth_token'); } catch (_) {} // drop la session précédente
-        window.location.reload();                                       // hard refresh (l'URL garde ?handoff)
-        return;
-      }
-      // persistance impossible → on continue sans refresh (pas de boucle).
-    }
-    // État frais garanti → on procède au login token.
-    try { sessionStorage.removeItem(CLEAN_FLAG); } catch (_) {}
-
-    window.WSAuth.handoff(token).then((r) => {
-      if (alive && r && r.ok && r.user) {
-        setUser(r.user);
-        // Transfert PWA : un client B2B (rattaché à un office) atterrit
-        // DIRECTEMENT en mode Livraison bureau. L'office puis son site par défaut
-        // sont ensuite auto-sélectionnés par les effets [user.officeId]/[userOffice],
-        // et le catalogue est re-fetché avec mode=delivery (liste éligible, filtre
-        // serveur). Un client sans office reste en Collecte.
-        // Delivery is selected explicitly after resolving memberships.
-      }
-      try {
-        const p = new URLSearchParams(window.location.search);
-        p.delete('handoff');
-        const qs = p.toString();
-        window.history.replaceState({}, '', window.location.pathname + (qs ? '?' + qs : '') + window.location.hash);
-      } catch (_) {}
-    }).catch(() => {});
-    return () => { alive = false; };
+    try {
+      const p = new URLSearchParams(window.location.search);
+      if (!p.has('handoff')) return;
+      p.delete('handoff');
+      const qs = p.toString();
+      window.history.replaceState({}, '', window.location.pathname + (qs ? '?' + qs : '') + window.location.hash);
+    } catch (_) {}
   }, []);
   // Restauration de la session au chargement. Le jeton était bien écrit dans
   // la session de cet onglet à la connexion et WSAuth.me() existait pour le revalider, mais
@@ -5598,15 +5552,14 @@ function ShopFrame({ variant }) {
   // qu'il a un compte.
   React.useEffect(() => {
     let alive = true;
-    // Un ?handoff en cours ouvre lui-même la session : ne pas courir contre lui.
-    let hasHandoff = false;
-    try { hasHandoff = !!new URLSearchParams(window.location.search).get('handoff'); } catch (_) {}
-    if (hasHandoff || !window.WSAuth || typeof window.WSAuth.me !== 'function') return;
-    Promise.resolve(window.WSAuth.me())
+    if (!window.WSAuth || typeof window.WSAuth.me !== 'function') return;
+    const restore = () => Promise.resolve(window.WSAuth.me())
       .then((u) => { if (alive && u && u.id) setUser(u); })
       .catch((e) => bug('session', 'session non restaurée', e))
       .finally(() => { if (alive) setSessionRestored(true); });
-    return () => { alive = false; };
+    restore();
+    window.addEventListener('ws:session-available', restore);
+    return () => { alive = false; window.removeEventListener('ws:session-available', restore); };
   }, []);
   const [officeSlots, setOfficeSlots] = React.useState([]);
   const [slotCta, setSlotCta] = React.useState(null);
@@ -6329,8 +6282,13 @@ function ShopFrame({ variant }) {
     // If freshly logged-in user already has delivery enabled & was on collect, leave mode alone (don't surprise the user).
   }
   function handleLogout() {
-    window.WSAuth?.logout();
+    if (window.WSAuth?.logout) window.WSAuth.logout();
+    else clearAccountContext();
+  }
+  function clearAccountContext() {
     setUser(null); setPendingContextLine(null); setOfficeAccessOpen(false);
+    setAccountOpen(false); setCheckoutOpen(false);
+    setQuoteState({status:'idle',quote:null,error:''});
     setBrowseContext(normaliseShoppingContext(null)); setPendingMenu(null);
     // La livraison au bureau exige un compte : à la déconnexion, le mode revient
     // à Click & Collect et le panier tombe. Perdre un panier sans un mot oblige
@@ -6345,6 +6303,13 @@ function ShopFrame({ variant }) {
       });
     }
   }
+
+  // Revocation and local expiry must clear an already mounted account as well
+  // as storage. This also unmounts account-scoped Fidelity views on switching.
+  React.useEffect(() => {
+    window.addEventListener('ws:session-ended', clearAccountContext);
+    return () => window.removeEventListener('ws:session-ended', clearAccountContext);
+  }, [mode, cartContext.mode, basket.length]);
 
   // Go-live : sans boutique resolue (API /shops en echec ou vide), on affiche
   const invitationDialog = inviteToken && !authOpen && <div className="ws-office-overlay"><section className="ws-office-modal" role="dialog" aria-modal="true" aria-labelledby="ws-invitation-title">
