@@ -51,7 +51,7 @@ test('IP locale is used before render, falls back to French and never replaces a
 });
 
 test('all literal component and standalone keys exist in every dictionary', () => {
- const files=['webshop-office-delivery.jsx','webshop-profile-offices.jsx','webshop-purchase-details.jsx','webshop-stripe-return.jsx','webshop-full-bundle.jsx','webshop-i18n-react.jsx','webshop-allergens.jsx','public/inscription.html','public/reset-password.html','public/activate-account.html','public/activate-account.js'];
+ const files=['webshop-loyalty-reward.jsx','webshop-office-delivery.jsx','webshop-profile-offices.jsx','webshop-purchase-details.jsx','webshop-stripe-return.jsx','webshop-full-bundle.jsx','webshop-i18n-react.jsx','webshop-allergens.jsx','public/inscription.html','public/reset-password.html','public/activate-account.html','public/activate-account.js'];
  for(const file of files) {
   const source=fs.readFileSync(new URL(file,root),'utf8');
   const keys=[...source.matchAll(/(?:\bt|\bwsText)\(['"]([\w.]+)['"]\s*[,)]/g)].map(m=>m[1]);

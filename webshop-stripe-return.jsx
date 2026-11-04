@@ -34,9 +34,11 @@ export function StripeReturnDialog() {
       }
     };
     const logout = () => { setCheckoutSession(null); setReference(''); const url = new URL(window.location.href); url.searchParams.delete('stripe'); url.searchParams.delete('orderRef'); window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash); };
+    const openVouchers=()=>{setCheckoutSession(null);setReference('');};
+    window.addEventListener('ws:open-vouchers',openVouchers);
     window.addEventListener('ws:stripe-recovery', recover);
     window.addEventListener('ws:payment-logout', logout);
-    return () => { window.removeEventListener('ws:stripe-recovery', recover); window.removeEventListener('ws:payment-logout', logout); };
+    return () => { window.removeEventListener('ws:open-vouchers',openVouchers);window.removeEventListener('ws:stripe-recovery', recover); window.removeEventListener('ws:payment-logout', logout); };
   }, []);
   const close = () => {
     setCheckoutSession(null);

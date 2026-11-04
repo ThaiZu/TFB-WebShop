@@ -1,3 +1,4 @@
+import { announceVoucherAwards, voucherAwardCount } from './webshop-voucher-notifications.js';
 import { analyticsPurchase } from './webshop-analytics.js';
 import { useEffect, useState, useRef } from 'react';
 import './webshop-order-confirmation.css';
@@ -6,6 +7,8 @@ import './webshop-order-confirmation.css';
 export function OrderSummary({ order, total, shop }) {
   const t = window.WSI18n.t;
   const locale = window.WSI18n.getLang();
+  const awardCount=voucherAwardCount(order);
+  useEffect(()=>{announceVoucherAwards(order);},[order.orderRef,order.payment?.status,awardCount]);
   const money = value => Number(value).toLocaleString(locale, { style: 'currency', currency: 'EUR' });
   const dateValue = order.slot?.dateTime;
   const parsed = new Date(String(dateValue || '').replace(' ', 'T'));
@@ -23,6 +26,11 @@ export function OrderSummary({ order, total, shop }) {
       </section>
       <section><span>{t('acc.orders.payment')}</span><strong>{t('payment.method.' + (order.payment?.method === 'company_invoice' ? 'company_invoice' : order.payment?.method === 'stripe' ? 'stripe' : 'shop'))}</strong></section>
     </div>
+    {awardCount>0&&<section className="ws-order-vouchers" role="status">
+      <strong>{t('vouchers.awarded',{count:awardCount})}</strong>
+      <p>{t('vouchers.awardedInfo')}</p>
+      <button type="button" className="ws-linkbtn" onClick={()=>window.dispatchEvent(new Event('ws:open-vouchers'))}>{t('vouchers.open')}</button>
+    </section>}
     <h3>{t('acc.orders.details')}</h3>
     <ul className="ws-order-summary__items">{(order.items || []).map((line,index) => <li key={line.id || index}>
       <div><strong>{line.name}</strong>
@@ -57,6 +65,7 @@ export function OrderConfirmation({ orderRef, total, shop, onClose }) {
     dialog.current?.focus();
     return () => {if(previous?.isConnected)previous.focus();};
   },[]);
+  useEffect(()=>{window.addEventListener('ws:open-vouchers',onClose);return()=>window.removeEventListener('ws:open-vouchers',onClose);},[onClose]);
   const onKeyDown = event => {
     if(event.key === 'Escape')onClose();
     if(event.key !== 'Tab')return;

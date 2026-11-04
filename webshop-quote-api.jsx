@@ -5,7 +5,7 @@ import { basketShoppingContext, normaliseShoppingContext } from './webshop-offic
   const amount = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
   const api = {
     endpoint: null,
-    async quote({ shopId, basket, voucherCode, signal, shoppingContext, deliveryDate, mode, promotionPreviewLineKey } = {}) {
+    async quote({ shopId, basket, voucherCode, signal, shoppingContext, deliveryDate, mode, promotionPreviewLineKey, includeLoyalty = false, loyaltyReward = null } = {}) {
       if (!api.endpoint) throw new Error('Cart quote API is not configured.');
       if (!/^\d+$/.test(String(shopId || ''))) throw new Error('A numeric shop ID is required.');
       const date = deliveryDate instanceof Date ? `${deliveryDate.getFullYear()}-${String(deliveryDate.getMonth() + 1).padStart(2, '0')}-${String(deliveryDate.getDate()).padStart(2, '0')}` : deliveryDate;
@@ -31,12 +31,16 @@ import { basketShoppingContext, normaliseShoppingContext } from './webshop-offic
         } : {}),
       }));
       if (!products.length) return null;
-      const response = await window.WSAuth.authenticatedFetch(api.endpoint, {
-        method: 'POST', credentials: 'include', signal,
+      const options = {
+        method: 'POST', credentials: 'include', cache: 'no-store', signal,
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify({ id_shop: Number(shopId), fulfilment_mode: mode, shopping_context: context, products, ...(promotionPreviewLineKey ? { promotion_preview_line_key: 'web-' + String(promotionPreviewLineKey).replace(/[^A-Za-z0-9-]/g, '-').slice(0, 60) } : {}), ...(date ? { delivery_date: date } : {}), ...(voucherCode ? { voucher_code: voucherCode } : {}), ...(promotionIds.size === 1 ? { selected_automatic_promotion_id: [...promotionIds][0] } : {}) }),
-      });
-      const body = await response.json().catch(() => ({}));
+        body: JSON.stringify({ ...(includeLoyalty ? {include_loyalty:true} : {}), ...(loyaltyReward ? {loyalty_reward:loyaltyReward} : {}), id_shop: Number(shopId), fulfilment_mode: mode, shopping_context: context, products, ...(promotionPreviewLineKey ? { promotion_preview_line_key: 'web-' + String(promotionPreviewLineKey).replace(/[^A-Za-z0-9-]/g, '-').slice(0, 60) } : {}), ...(date ? { delivery_date: date } : {}), ...(voucherCode ? { voucher_code: voucherCode } : {}), ...(promotionIds.size === 1 ? { selected_automatic_promotion_id: [...promotionIds][0] } : {}) }),
+      };
+      // Fidelity contains a customer's balance: validate session through JSON decoding.
+      const decoded = includeLoyalty || loyaltyReward
+        ? await window.WSAuth.authenticatedJson(api.endpoint, options)
+        : await window.WSAuth.authenticatedFetch(api.endpoint, options).then(async response => ({response,data:await response.json().catch(()=>({}))}));
+      const {response,data:body} = decoded;
       if (!response.ok) {
         const message = typeof body.error === 'string' ? body.error : (body.error && body.error.message) || `Cart quote failed (HTTP ${response.status}).`;
         const error = new Error(body?.code || body?.error?.code || body?.description || message);
@@ -50,6 +54,8 @@ import { basketShoppingContext, normaliseShoppingContext } from './webshop-offic
           products.some(product => !body.items.some(line => line.line_key === product.line_key && money(line.total_gross_value_after_discount)))) {
         throw new Error('error.quote');
       }
+      if (loyaltyReward && (body.loyalty_reward?.id !== loyaltyReward.id || body.loyalty_reward?.line_index !== loyaltyReward.line_index
+        || !money(body.loyalty_reward?.discount) || Number(body.loyalty_reward.discount) <= 0)) throw new Error('LOYALTY_REWARD_UNAVAILABLE');
       return body;
     },
   };

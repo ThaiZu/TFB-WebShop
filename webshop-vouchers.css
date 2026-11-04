@@ -1,0 +1,22 @@
+.ws-vouchers__heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ws-vouchers__list{display:grid;gap:10px;margin:16px 0}
+.ws-vouchers__item{display:grid;gap:10px;padding:14px;border:1px solid var(--color-border,#e4d9cc);border-radius:14px;background:var(--color-surface,#fffaf3);min-width:0}
+.ws-vouchers__main{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
+.ws-vouchers__main h4{margin:0;min-width:0;overflow-wrap:anywhere;font-size:14px}
+.ws-vouchers__main .ws-cta{flex-shrink:0;width:auto;min-height:40px;padding:9px 12px;font-size:12px}
+.ws-vouchers__meta{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:12px;color:var(--color-muted,#7d6b5e);font-size:10px;line-height:1.5}
+.ws-vouchers__meta small{font-size:inherit;overflow-wrap:anywhere}
+.ws-vouchers .ws-vouchers__meta code{text-align:right;min-width:0;margin:0;overflow-wrap:anywhere;font-size:inherit;line-height:inherit;letter-spacing:normal;color:inherit}
+.ws-vouchers__item.is-selected{border-color:#287647;background:#edf7ef;box-shadow:inset 0 0 0 1px #287647}
+.ws-vouchers__item.is-selected h4{color:#205d39}
+.ws-vouchers__item.is-locked{opacity:.55}
+.ws-vouchers__main .ws-cta:disabled{cursor:default;opacity:.6}
+.ws-vouchers__item.is-selected .ws-cta:disabled{background:#287647;color:#fff;opacity:1}
+.ws-vouchers__selection{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0;color:#205d39;font-size:12px;line-height:1.5}
+.ws-vouchers__selection .ws-linkbtn{flex-shrink:0}
+.ws-vouchers__filter{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;color:#7d6b5e}
+.ws-vouchers__filter .ws-linkbtn{flex-shrink:0}
+.ws-vouchers__status{font-size:11px;max-width:45%;text-align:right;color:#7d6b5e}
+.ws-vouchers__browse{display:flex;flex-wrap:wrap;gap:4px 12px}
+.pdm-voucher{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;margin:0 0 14px;border:1px solid #c4ddcb;border-radius:10px;background:#edf6ef;color:#265b39;font-size:13px}
+.pdm-voucher .ws-linkbtn{min-height:40px;font-size:12px}

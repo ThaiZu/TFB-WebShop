@@ -1,0 +1,34 @@
+.ws-loyalty { color:var(--ws-text,#332d28); }
+.ws-loyalty__head { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.ws-loyalty h3 { font-size:1.05rem; margin:0 0 8px; }
+.ws-loyalty p { font-size:.88rem; line-height:1.5; margin:8px 0; }
+.ws-loyalty__shop { font-weight:600; }
+.ws-loyalty__card {padding:0;margin:20px auto 26px;max-width:455px;overflow-wrap:anywhere;}
+.ws-loyalty__card-meta {padding:12px 4px 0;}
+.ws-loyalty__balance { display:block; margin-top:16px; }
+.ws-loyalty__note { border-left:3px solid #976640; padding-left:10px; }
+.ws-loyalty__details section { margin:20px 0; }
+.ws-loyalty__reward { border:1px solid #e9dfd5; border-radius:12px; padding:14px; margin:12px 0; }
+.ws-loyalty__qr { text-align:center; margin-top:12px; }
+.ws-loyalty__qr svg { max-width:100%; height:auto; background:white; }
+.ws-loyalty__qr code { display:block; font-size:.9rem; overflow-wrap:anywhere; user-select:all; }
+.ws-loyalty__history { padding:0; list-style:none; }
+.ws-loyalty__history li { display:flex; justify-content:space-between; gap:14px; border-bottom:1px solid #e9dfd5; padding:12px 0; font-size:.85rem; }
+.ws-loyalty__history time,.ws-loyalty__history small { display:block; margin-top:5px; font-size:.75rem; }
+.ws-loyalty__history li>div:last-child { text-align:right; min-width:80px; }
+.ws-loyalty .ws-linkbtn { min-height:44px; white-space:normal; }
+
+@font-face {font-family:'WS Fidelity Display';src:url('./assets/fidelity/GC_Vank.ttf') format('truetype');font-weight:400;font-display:swap;unicode-range:U+0020-007E;}
+.ws-loyalty .ws-loyalty__artwork {position:relative;overflow:hidden;text-align:center;border:1px solid #e0d2c1;border-radius:12px;padding:26px 20px 20px;background-color:var(--card-tint,#fbf3e7);background-image:url('./assets/fidelity/pattern.svg');background-size:100% 100%;box-shadow:0 2px 5px #5c3a2010;color:var(--card-accent,#573a23);}
+.ws-loyalty__logo {display:block;margin:0 auto 22px;width:105px;height:105px;object-fit:contain;mix-blend-mode:multiply;}
+.ws-loyalty .ws-loyalty__artwork h3 {font:400 30px/1.15 'WS Fidelity Display',Arial,sans-serif;margin:0 0 10px;color:var(--card-accent,#573a23);overflow-wrap:anywhere;}
+.ws-loyalty__tagline {font:400 9px/1.8 Arial,sans-serif;letter-spacing:3px;color:#98785f;}
+.ws-loyalty__stamps {display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:13px 10px;margin:27px 0;}
+.ws-loyalty__stamp {aspect-ratio:1;border:1px dashed #a58b74;border-radius:50%;display:grid;place-items:center;font:400 23px Georgia,serif;color:#8f7764;}
+.ws-loyalty__stamp.is-filled {background:var(--card-fill,#8d142c);border:1px solid var(--card-fill,#8d142c);color:white;}
+.ws-loyalty__croissant {display:inline-block;width:35px;height:28px;background:currentColor;mask:url('./assets/fidelity/stamp.svg') center/contain no-repeat;-webkit-mask:url('./assets/fidelity/stamp.svg') center/contain no-repeat;}
+.ws-loyalty .ws-loyalty__reward-band {display:flex;justify-content:center;align-items:center;gap:10px;border-radius:14px;background:#ecdbc6;padding:10px 8px;font:bold 19px/1.3 Georgia,serif;color:var(--card-fill,#8d142c);margin:25px 18px 30px;overflow-wrap:anywhere;}
+.ws-loyalty__reward-band>.ws-loyalty__croissant {flex-shrink:0;}
+.ws-loyalty .ws-loyalty__thanks {font:400 12px/1.5 Arial,sans-serif;color:#a38d78;margin:0;}
+.ws-loyalty .ws-loyalty__stamp-limit {font-size:10px;}
+@media(max-width:420px){.ws-loyalty .ws-loyalty__artwork{padding:22px 14px 18px;}.ws-loyalty .ws-loyalty__reward-band{margin-left:0;margin-right:0;font-size:16px;}.ws-loyalty__stamp{font-size:20px;}.ws-loyalty__stamp .ws-loyalty__croissant{width:28px;height:24px;}}

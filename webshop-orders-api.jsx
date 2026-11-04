@@ -48,6 +48,9 @@
         });
         const j = await r.json().catch(() => ({}));
         if (r.ok) {
+          if (!j || typeof j.orderRef !== 'string' || !j.orderRef.trim()) {
+            throw new Error('Order confirmation is invalid.');
+          }
           const result = { ok: true, ...j };
           if (result.guestAccessToken && result.orderRef) {
             try { sessionStorage.setItem('ws.order.token.' + result.orderRef, result.guestAccessToken); } catch (_) {}
@@ -70,6 +73,8 @@
           ? (j.available > 0 ? ` (il en reste ${j.available})` : ' (il n\'en reste aucune)')
           : '';
         const error = new Error(base + quoi + reste + (j.detail ? (', ' + j.detail) : ''));
+        error.status = r.status;
+        error.orderRejected = r.status >= 400 && r.status < 500 && r.status !== 408;
         error.code = j.code || j.error?.code || j.description;
         error.quote = j.errors?.quote || j.error?.errors?.quote;
         throw error;

@@ -78,6 +78,7 @@ export function adaptShopCatalogue(rows, { mode } = {}) {
     });
     products.push({
       id: Number(row.id), name: productName, price: row.office_whole_available === false && portionOptions.length ? portionOptions[0].price : price,
+      loyaltyCard: row.loyaltyStatus === 'available' ? row.loyaltyCard : null,
       is_weighted: enabled(row.is_divisible),
       webshop_bulk_quantity_enabled: enabled(row.webshop_bulk_quantity_enabled),
       cat_id: categoryId, cat: categoryId, category: row.category.name || row.category_name,

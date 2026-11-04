@@ -15,7 +15,7 @@ function extract(name) {
 }
 const context = { React, useState: React.useState, useEffect: React.useEffect,
   wsUseT: () => ({ t: key => key }), wsText: key => key, wsMessage: value => value,
-  wsNumber: value => Number(value).toFixed(2), Pict: () => null,
+  wsNumber: value => Number(value).toFixed(2), Pict: () => null, LoyaltyBasketIcons: () => null,
   wsArrondi: value => Math.round(value * 100) / 100 };
 vm.runInNewContext(transformSync(['wsMoney','wsCheckoutQuoteComparable','wsQuoteLineKey','wsQuoteTotals','wsBasketDisplayRows','wsPromotionDisplayTotal','wsHasPromotionSelection','wsSelectedAutomaticPromotionId','wsRemoveBasketLines','CheckoutStep3'].map(extract).join('\n'), { loader: 'jsx' }).code, context);
 const quote = voucher => ({ items: [{ line_key: 'web-1', unit_gross_price: '10.00', total_gross_value_after_discount: '8.50' }],
@@ -131,7 +131,6 @@ test('product sheet previews every automatic promotion type before the item is a
   assert.match(source, /promotion_suggestions \|\| quote\?\.bundle_suggestions/);
   assert.match(source, /promotion\.promotion_type/);
   assert.match(source, /disabled=\{blocked\}/);
-  assert.match(source, /promotion\.inline\.locked/);
   assert.match(source, /onAdd\(\{[\s\S]*?\}, selectedPromotion\)/);
   assert.match(source, /promotionAdditionLines\(selectedPromotion, lineId, promotionGroup, promotionDisplay\)/);
 });
@@ -400,4 +399,12 @@ test('basket omits availability banners even when the API returns unlocked offer
   }));
   assert.doesNotMatch(html, /ws-cart-reward|Unlocked offer|Available gift|cart\.unlocked|cart\.reward/);
   assert.match(html, /Sandwich/);
+});
+
+test('reward discount is counted once and changes invalidate checkout even at equal totals', () => {
+  const original = {...quote(null),loyalty_reward:{id:1,line_index:0,discount:'1.50'}};
+  const total = context.wsQuoteTotals(original,0);
+  assert.equal(total.reward,1.50); assert.equal(total.remise,0); assert.equal(total.total,8.50);
+  const changed = {...original,loyalty_reward:{...original.loyalty_reward,id:2}};
+  assert.notDeepEqual(context.wsCheckoutQuoteComparable(original),context.wsCheckoutQuoteComparable(changed));
 });

@@ -117,8 +117,10 @@ for(const width of [1440,390]){
  await page.waitForFunction(()=>!document.querySelector('.pdm-cta'));
  if(width<600)await page.locator('.ws-tabbar__btn--cart').click();
  const composition=basket.locator('.ws-line--promotion .ws-line__opt');
- assert.match(await composition.first().innerText(),/1\/4/);
- assert.match(await composition.last().innerText(),/1\/4 Tarte fraise/);
+ assert.match(await composition.first().textContent(),/1\/4/);
+ assert.match(await composition.last().textContent(),/1\/4 Tarte fraise/);
+ assert.equal(await composition.first().isVisible(),false,'promotional composition remains in the DOM but is hidden');
+ assert.equal(await composition.last().isVisible(),false);
  assert.equal(await basket.locator('.ws-cart-unlocked .ws-cart-reward').count(),0,'selected promotion no longer announces unlocking');
  const actual=quotes.filter(q=>!q.promotion_preview_line_key&&q.products.some(l=>l.promotion_group));
  assert.ok(actual.length>=2);
