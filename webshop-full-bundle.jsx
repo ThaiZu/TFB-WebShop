@@ -1,3 +1,4 @@
+import {useVoucherActivation} from './webshop-voucher-activation.js';
 import {voucherProductPortions} from './webshop-voucher-targets.js';
 import {useVoucherNotifications} from './webshop-voucher-notifications.js';
 import {LoyaltyShoppingContext, LoyaltyIcon, LoyaltyBasketIcons} from './webshop-loyalty-shopping.jsx';
@@ -5241,24 +5242,33 @@ function ShopFrame({ variant }) {
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
   // Voucher state : may be pre-filled by deep link
   const [voucherInput, setVoucherInput] = useState(_deep.voucher || '');
-  const [voucherApplied, setVoucherApplied] = useState(null);
+  const [voucherApplied, setVoucherAppliedLocal] = useState(null);
   useEffect(()=>{
     const open=()=>{setLoyaltyWalletOpen(false);setRequestedAccountTab('vouchers');setAccountOpen(true);};
     window.addEventListener('ws:open-vouchers',open);
     return()=>window.removeEventListener('ws:open-vouchers',open);
   },[]);
   const [user, setUser] = useState(null);
+  const activation = useVoucherActivation(user?.id,cartShopId,value=>{
+    setVoucherAppliedLocal(value?.code ? {ok:true,voucher:{code:value.code,name:value.name}} : null);
+    setVoucherInput(value?.code || '');
+    if(value?.code)setRewardChoice(null);
+  },error=>setNotice({titre:wsText(error.code==='VOUCHER_ACTIVATION_RESERVED'?'vouchers.activationReserved':error.code==='VOUCHER_ACTIVATION_CHANGED'?'vouchers.activationChanged':'vouchers.activationError'),texte:''}));
+  const setVoucherApplied = value => {
+    if(user?.id) return activation.select(value?.ok ? value.voucher.code : null);
+    setVoucherAppliedLocal(value);
+  };
   const voucherNotifications=useVoucherNotifications(user?.id);
   const [rewardChoice, setRewardChoice] = useState(null);
   const loyaltyReward = rewardSelection(rewardChoice,basket,user?.id,cartShopId,loyaltyEnabled,mode,cartContext.mode);
   const rewardKey = JSON.stringify(loyaltyReward);
   const selectReward = value => {
     setRewardChoice(value ? {id:value.id,line:String(basket[value.line_index].line),client:user.id,shop:cartShopId} : null);
-    if (value) { setVoucherApplied(null); setVoucherInput(''); }
+    if (value) { if(voucherApplied?.ok)activation.select(null); setVoucherInput(''); }
   };
   useEffect(() => { if (rewardChoice && !loyaltyReward) setRewardChoice(null); }, [rewardKey,rewardChoice]);
   useEffect(() => {
-    const clear = () => { setRewardChoice(null); setVoucherApplied(null); setVoucherInput(''); };
+    const clear = () => { setRewardChoice(null); setVoucherAppliedLocal(null); setVoucherInput(''); };
     window.addEventListener('ws:session-ended',clear);
     return () => window.removeEventListener('ws:session-ended',clear);
   }, []);
@@ -5715,7 +5725,8 @@ function ShopFrame({ variant }) {
   function handlePlaced(payload) {
     setCheckoutOpen(false);
     if (payload.paymentPending) {
-      setBasket([]); setVoucherApplied(null); setVoucherInput('');
+      // The placed order owns its reservation; only clear this browser's display.
+      setBasket([]); setVoucherAppliedLocal(null); setVoucherInput('');
       setCatalogueRefresh(value => value + 1);
       return;
     }
@@ -6348,7 +6359,7 @@ function ShopFrame({ variant }) {
   const activeVoucher = voucherApplied?.ok ? voucherApplied.voucher : null;
   const handleUseVoucher = (code,name,targets) => {
     if(activeVoucher)return;
-    setRewardChoice(null); setVoucherInput(code); setVoucherApplied({ok:true,voucher:{code,name,targets}});
+    setRewardChoice(null); setVoucherApplied({ok:true,voucher:{code,name,targets}});
   };
   const clearActiveVoucher = () => {setVoucherApplied(null);setVoucherInput('');};
   const browseVoucherTarget = target => {

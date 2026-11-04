@@ -1141,5 +1141,8 @@
   "loyaltyHub.rewardNoExpiry": "{count} pieczątek = {reward}. Nagroda bez terminu ważności.",
   "loyaltyHub.readyRewards": "Nagrody gotowe do wykorzystania: {count}",
   "loyaltyUse.optional": "Masz dostępną nagrodę pasującą do koszyka. Możesz ją wykorzystać albo kontynuować bez gratisu.",
-  "loyaltyUse.skip": "Nie wykorzystuj nagrody"
+  "loyaltyUse.skip": "Nie wykorzystuj nagrody",
+  "vouchers.activationReserved": "Voucher jest przypisany do rozpoczętej transakcji. Przed zmianą wyboru poproś pracownika o zwolnienie vouchera.",
+  "vouchers.activationChanged": "Wybór vouchera zmienił się. Odświeżyliśmy jego aktualny stan.",
+  "vouchers.activationError": "Nie udało się zmienić wyboru vouchera. Spróbuj ponownie."
 }
