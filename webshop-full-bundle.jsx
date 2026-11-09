@@ -790,7 +790,7 @@ function wsPromotionItemsSummary(promotion, product, t, rewardCost = null) {
   const label = (item, quantity) => {
     const portion = portions[item.product_portion_type] || item.product_portion_label || (item.id_product_portion == null ? '1/1' : '');
     const name = item.product_name || (Number(item.id_product) === Number(product.id) ? product.name : `#${item.id_product}`);
-    return `${Number(quantity || 0)} × ${portion ? `${portion} ` : ''}${name}`;
+    return `${Number(quantity || 0)} × ${portion && portion !== '1/1' ? `${portion} ` : ''}${name}`;
   };
   const summary = (promotion.items || []).map((item) => {
     if (promotion.promotion_type !== 'BUY_X_GET_Y') return label(item, item.quantity);
@@ -1400,7 +1400,6 @@ function ProductDetail({ open, product, mode, activeVoucher, onClose, onAdd, onP
                   ...(personalEnabled && personalChoices.length>0 ? {personalization_selection:{version:product.personalization.version,option_ids:personalChoices}} : {})} : null}/>}
 
               {product.description ? <p className="pdm-desc">{product.description}</p> : null}
-              {product.ingredients ? <p className="pdm-desc"><strong>{t('pd.ingredients')}: </strong>{product.ingredients}</p> : null}
               {product.is_weighted ? <p className="pdm-desc">{t('pd.weightedUnavailable')}</p> : null}
               {/* Allergènes : 3 états distincts (sécurité alimentaire) :
                   liste = connus · [] = recette évaluée, aucun · null = NON
@@ -5009,7 +5008,7 @@ function CheckoutStep3({ basket, subtotal, totaux, total, payment, setPayment, i
             <li key={row.key}>
               <span className="ws-co-summary__qty">×{row.isPromotion ? 1 : row.quantity}</span>
               <span className="ws-co-summary__name">{row.isPromotion && row.promotion ? row.promotion.display_name : row.line.name}
-                {row.isPromotion && row.lines.map(line => <small className="ws-co-summary__portion" key={line.line}>×{line.qty} {line.portion_label || (line.options || []).map(option => option.label).join(', ')} {line.name}</small>)}
+                {row.isPromotion && row.lines.map(line => <small className="ws-co-summary__portion" key={line.line}>{line.qty} × {(line.portion_label || (line.options || []).map(option => option.label).join(', ')).replace(/^1\/1$/, '')} {line.name}</small>)}
               </span>
               <span className="ws-co-summary__amt">€{wsNumber(row.price)}</span>
             </li>
