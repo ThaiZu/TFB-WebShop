@@ -1144,5 +1144,13 @@
   "loyaltyUse.skip": "Ne pas utiliser de récompense",
   "vouchers.activationReserved": "Ce bon est réservé pour une transaction en cours. Demandez au personnel de le libérer avant de changer votre choix.",
   "vouchers.activationChanged": "Le choix du bon a changé. Son état actuel a été actualisé.",
-  "vouchers.activationError": "Impossible de modifier le choix du bon. Réessayez."
+  "vouchers.activationError": "Impossible de modifier le choix du bon. Réessayez.",
+  "loyaltyWallet.barcode": "Code-barres",
+  "loyaltyWallet.qr": "Code QR",
+  "loyaltyWallet.codeFormat": "Format du code de la carte",
+  "loyaltyWallet.barcodeAlt": "Code-barres de votre carte client",
+  "loyaltyWallet.showCard": "Afficher ma carte",
+  "loyaltyWallet.scanExpand": "Agrandir pour scanner",
+  "loyaltyWallet.scanBack": "Revenir à la carte",
+  "loyaltyWallet.scanHint": "Pour faciliter la lecture, tournez le téléphone à l’horizontale."
 }
