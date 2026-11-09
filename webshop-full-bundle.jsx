@@ -2821,27 +2821,15 @@ function phonePrefixOptions() {
 // available only for four-digit Belgian codes.
 // Match the API postal-code contract, including Polish and Dutch codes.
 const CP_RE = /^[A-Za-z0-9][A-Za-z0-9 -]{1,15}$/;
-const _cpLocCache = {};
+const CP_LOCALITIES = typeof __WS_POSTCODE_LOCALITIES__ === 'undefined' ? {} : __WS_POSTCODE_LOCALITIES__;
 async function cpLocalities(cp) {
-  cp = String(cp || '').trim();
-  // The locality directory currently contains Belgian postcodes only.
-  if (!/^[1-9][0-9]{3}$/.test(cp)) return [];
-  if (_cpLocCache[cp]) return _cpLocCache[cp];
-  const base = (window.WSAuth && window.WSAuth.endpoint)
-    ? String(window.WSAuth.endpoint).replace(/\/auth\/?$/, '') : '';
-  if (!base) return [];
-  try {
-    const r = await fetch(`${base}/geo/postcodes?q=${encodeURIComponent(cp)}`);
-    const j = await r.json();
-    const list = [...new Set((Array.isArray(j) ? j : [])
-      .filter((e) => String(e.cp) === cp).map((e) => String(e.commune)))];
-    _cpLocCache[cp] = list;
-    return list;
-  } catch (_) { return []; }
+  const code = String(cp || '').trim();
+  if (!/^[1-9][0-9]{3}$/.test(code)) return [];
+  return CP_LOCALITIES[code] || [];
 }
 // Champ CP + localité auto. `variant` adapte le markup au formulaire hôte
 // ('modal' → ws-field du LoginModal, 'acc' → ws-acc__field du compte).
-function CpField({ cp, locality, onCp, onLocality, onOpts, variant }) {
+function CpField({ cp, locality, onCp, onLocality, onOpts, variant, disabled = false }) {
   const { t } = wsUseT();
   const [opts, setOpts] = useState([]);
   useEffect(() => {
@@ -2868,13 +2856,21 @@ function CpField({ cp, locality, onCp, onLocality, onOpts, variant }) {
   return (
     <>
       <label className={fieldCls}>{lbl(wsText("ui.postal"))}
-        <input className={inputCls} value={cp} onChange={(e) => onCp(e.target.value)}
+        <input className={inputCls} value={cp} disabled={disabled} onChange={(e) => {
+          setOpts([]); if (onOpts) onOpts([]); onLocality(''); onCp(e.target.value);
+        }}
           autoComplete="postal-code" maxLength={16} placeholder="1000 / 00-001" required/>
         {opts.length === 1 && locality && <p style={locHint}>📍 {locality}</p>}
       </label>
+      {opts.length === 0 && CP_RE.test(String(cp).trim()) && (
+        <label className={fieldCls}>{lbl(wsText("ui.locality"))}
+          <input className={inputCls} value={locality} disabled={disabled} maxLength={120}
+            autoComplete="address-level2" onChange={(e) => onLocality(e.target.value)}/>
+        </label>
+      )}
       {opts.length > 1 && (
         <label className={fieldCls}>{lbl(wsText("ui.locality"))}
-          <select className={inputCls} value={locality} onChange={(e) => onLocality(e.target.value)} required>
+          <select className={inputCls} value={locality} disabled={disabled} onChange={(e) => onLocality(e.target.value)} required>
             <option value="">{t('cp.pickLocality')}</option>
             {opts.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
@@ -3390,7 +3386,6 @@ function PostcodeCatchupModal({ user, onUpdateUser }) {
   const { t } = wsUseT();
   const [cp, setCp] = useState('');
   const [locality, setLocality] = useState('');
-  const [cpOpts, setCpOpts] = useState([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [snoozed, setSnoozed] = useState(false);
@@ -3400,13 +3395,22 @@ function PostcodeCatchupModal({ user, onUpdateUser }) {
   if (!needs || snoozed) return null;
   async function submit(e) {
     if (e) e.preventDefault();
+    if (busy) return;
     setErr('');
     if (!CP_RE.test(String(cp).trim())) { setErr(wsText("error.postal")); return; }
-    if (cpOpts.length > 1 && !locality) { setErr(wsText("error.locality")); return; }
     if (!window.WSAuth || typeof window.WSAuth.updateMe !== 'function') { setSnoozed(true); return; }
     setBusy(true);
     try {
-      const r = await window.WSAuth.updateMe({ postalCode: String(cp).trim(), locality });
+      // Resolve from the submitted code as well: a quick submit must not use stale options.
+      const postalCode = String(cp).trim();
+      const options = await cpLocalities(postalCode);
+      const resolvedLocality = options.length === 1 ? options[0] : locality.trim();
+      if (options.length > 1 && !options.includes(resolvedLocality)) {
+        setErr(wsText("error.locality")); return;
+      }
+      const patch = { postalCode };
+      if (resolvedLocality) patch.locality = resolvedLocality;
+      const r = await window.WSAuth.updateMe(patch);
       if (r && r.ok && r.user) { onUpdateUser(r.user); }              // needsPostcode:false → la modal disparaît
       else setErr((r && r.error) || wsText("error.save"));
     } catch (_) {
@@ -3422,7 +3426,7 @@ function PostcodeCatchupModal({ user, onUpdateUser }) {
       <p className="ws-modal__lede">{t('cp.lede')}</p>
       <form className="ws-form" onSubmit={submit} noValidate>
         <CpField variant="modal" cp={cp} locality={locality}
-          onCp={(v) => { setCp(v); setErr(''); }} onLocality={setLocality} onOpts={setCpOpts}/>
+          onCp={(v) => { setCp(v); setErr(''); }} onLocality={setLocality} disabled={busy}/>
         {err && <p className="ws-form__err">{wsMessage(err)}</p>}
         <button type="submit" className="ws-cta ws-cta--block" disabled={busy}>{busy ? wsText('ui.saving') : wsText("ui.validate")}</button>
         <button type="button" className="ws-linkbtn" onClick={() => setSnoozed(true)}>{t('common.later')}</button>
@@ -5254,7 +5258,12 @@ function ShopFrame({ variant }) {
     if(value?.code)setRewardChoice(null);
   },error=>setNotice({titre:wsText(error.code==='VOUCHER_ACTIVATION_RESERVED'?'vouchers.activationReserved':error.code==='VOUCHER_ACTIVATION_CHANGED'?'vouchers.activationChanged':'vouchers.activationError'),texte:''}));
   const setVoucherApplied = value => {
-    if(user?.id) return activation.select(value?.ok ? value.voucher.code : null);
+    if(user?.id) return activation.select(value?.ok ? value.voucher.code : null).then(applied=>{
+      // The server confirms selection; retain local product/portion display hints.
+      if(applied&&value?.ok)setVoucherAppliedLocal(current=>current?.voucher?.code===value.voucher.code
+        ? {...current,voucher:{...value.voucher,...current.voucher}} : current);
+      return applied;
+    });
     setVoucherAppliedLocal(value);
   };
   const voucherNotifications=useVoucherNotifications(user?.id);

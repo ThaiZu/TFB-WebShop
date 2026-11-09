@@ -518,12 +518,15 @@
     /* ── Profile update (PATCH /me) ──────────────────────────────────── */
     async updateMe(patch) {
       const generation = sessionGeneration;
+      const payload = { ...patch };
+      // Empty locality means "not supplied", not a request to clear an existing city.
+      if (payload.locality == null || (typeof payload.locality === 'string' && !payload.locality.trim())) delete payload.locality;
       if (api.endpoint) {
         try {
           const { response: r, data: j } = await api.authenticatedJson(`${api.endpoint}/me`, {
             method: 'PATCH', credentials: 'include',
             headers: { 'Content-Type': 'application/json', ...authHeaders() },
-            body: JSON.stringify(patch),
+            body: JSON.stringify(payload),
           });
           assertSession(generation);
           const user = j?.user || j;

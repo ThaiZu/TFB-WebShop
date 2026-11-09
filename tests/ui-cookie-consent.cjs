@@ -17,7 +17,7 @@ const config = { schemaVersion: 1, scope: 'atelierby', policyVersion: 'atelierby
   await context.route('**/*', async route => {
    const req = route.request(), url = new URL(req.url());
    if (url.hostname === 'www.googletagmanager.com' && url.pathname === '/gtag/js') return route.fulfill({contentType:'application/javascript',body:''});
-   if (url.hostname !== 'webshop.test' && !(url.hostname === 'api.tfbuddy.local' && url.pathname.startsWith('/api/v1/'))) { external.push(req.url()); return route.abort(); }
+   if (url.hostname !== 'webshop.test' && !(['api.tfbuddy.local','api.example.invalid'].includes(url.hostname) && url.pathname.startsWith('/api/v1/'))) { external.push(req.url()); return route.abort(); }
    if (!url.pathname.includes('/api/v1/')) return serveBuild(route, build);
    let data = [];
    if (url.pathname.endsWith('/privacy-config')) {
@@ -37,6 +37,11 @@ const config = { schemaVersion: 1, scope: 'atelierby', policyVersion: 'atelierby
   const panel = page.locator('.ws-cookie-panel'); await panel.waitFor();
   if(process.env.CONSENT_SCREENSHOT_DIR){const fs=require('node:fs');fs.mkdirSync(process.env.CONSENT_SCREENSHOT_DIR,{recursive:true});await page.screenshot({path:path.join(process.env.CONSENT_SCREENSHOT_DIR,'cookie-banner-'+width+'.png')});}
   assert.equal(await panel.getAttribute('aria-modal'), 'false');
+  const bannerBox = await panel.boundingBox();
+  assert.ok(Math.abs(bannerBox.x + bannerBox.width / 2 - width / 2) < 2, 'Banner centered');
+  assert.ok(bannerBox.width <= 560 && bannerBox.height < 280, 'Small initial banner');
+  const bottomGap = 1000 - bannerBox.y - bannerBox.height;
+  assert.ok(bottomGap >= (width <= 1024 ? 76 : 16) && bottomGap < 100, 'Banner near bottom, above mobile navigation');
   assert.equal(await panel.getByText(/Google Ads|Meta/).count(),0);
   assert.equal(await page.evaluate(() => window.WSConsent.get()), null);
   // A missing configuration must not solicit future analytics consent.
@@ -57,6 +62,11 @@ const config = { schemaVersion: 1, scope: 'atelierby', policyVersion: 'atelierby
   assert.equal(await page.evaluate(() => window.WSConsent.integrationAllowed('ga4')), true);
   await page.reload(); await page.locator('.ws-cookie-settings').waitFor();
   assert.equal(await panel.count(), 0);
+  const footer = page.locator('.ws-main .ws-policy-footer');
+  assert.equal(await footer.count(), 1);
+  assert.equal(await footer.locator('.ws-cookie-settings').evaluate(el => getComputedStyle(el).position), 'static');
+  assert.ok(await footer.evaluate(el => el.getBoundingClientRect().height < 130), 'Compact footer');
+  assert.equal(await page.locator('.ws > .ws-policy-footer').count(), 0);
   await page.getByRole('button', { name: 'Ustawienia cookies', exact: true }).click();
   assert.equal(await panel.locator('input:checked').count(), 1);
   await panel.locator('input').first().uncheck();

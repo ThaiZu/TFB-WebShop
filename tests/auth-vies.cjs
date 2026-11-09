@@ -9,6 +9,9 @@ const context = { window: { WSI18n: { t: key => pl[key] } }, localStorage: { get
   assert.equal(options.headers.Authorization, 'Bearer test-token');
   return reply;
 }};
+context.window.setInterval=()=>{};context.window.addEventListener=()=>{};
+context.document={addEventListener(){}};
+context.window.WSSessionStorage={getItem:key=>key==='ws_auth_token'?'test-token':null};
 vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../webshop-auth-api.jsx'), 'utf8'), context);
 context.window.WSAuth.endpoint = '/clients/auth';
 (async () => {

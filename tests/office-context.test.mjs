@@ -25,7 +25,7 @@ test('quote transmits cart context and identity on every line rather than last m
  const calls=[];const sandbox={window:{WSAuth:{authHeaders:()=>({Authorization:'Bearer test'})}},normaliseShoppingContext,basketShoppingContext,
   fetch:async(url,request)=>{calls.push({url,...request});return{ok:true,json:async()=>({items:[{line_key:'web-1',total_gross_value_after_discount:'8.00'}],totals:{gross_before_discount:'10.00',discount:'2.00',gross_after_discount:'8.00'}})};}};
  sandbox.window.WSAuth.authenticatedFetch=sandbox.fetch;
- vm.runInNewContext(fs.readFileSync(new URL('../webshop-quote-api.jsx',import.meta.url),'utf8').replace(/^import .*\n/gm,''),sandbox);
+ vm.runInNewContext(fs.readFileSync(new URL('../webshop-quote-api.jsx',import.meta.url),'utf8').replace(/^import .*\r?\n/gm,''),sandbox);
  sandbox.window.WSQuote.endpoint='/quote';
  await sandbox.window.WSQuote.quote({shopId:2,deliveryDate:'2026-09-18',basket:[{line:1,productId:11,qty:2,id_product_portion:17,shopping_context:offer}]});
  const payload=JSON.parse(calls[0].body);
@@ -39,7 +39,7 @@ test('office catalogue is scoped with auth and leaves standard catalogue endpoin
  const reads=[];const sandbox={window:{WSI18n:{getLang:()=> 'pl'},WSOffices:{catalogue:async data=>{reads.push(data);return{products:[],context:offer,billing:{mode:'company'}};}}},localStorage:{getItem:()=>null},URLSearchParams,adaptShopCatalogue,normaliseShoppingContext,
  fetch:async url=>{reads.push(url);return{ok:true,json:async()=>[]};}};
  sandbox.window.WSAuth={authenticatedFetch:sandbox.fetch};
- vm.runInNewContext(fs.readFileSync(new URL('../webshop-catalog-api.jsx',import.meta.url),'utf8').replace(/^import .*\n/gm,''),sandbox);
+ vm.runInNewContext(fs.readFileSync(new URL('../webshop-catalog-api.jsx',import.meta.url),'utf8').replace(/^import .*\r?\n/gm,''),sandbox);
  sandbox.window.WSCatalog.shopsEndpoint='https://example.test/shops';
  const result=await sandbox.window.WSCatalog.loadCatalogue({shopId:2,date:'2026-09-18',shoppingContext:offer});
  assert.equal(reads[0].officeId,10);assert.equal(reads[0].offerId,20);assert.equal(reads[0].date,'2026-09-18');
