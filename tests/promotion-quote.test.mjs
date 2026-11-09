@@ -239,7 +239,7 @@ test('reduced-price reward is described without promising a free product', () =>
     items: [{ product_name: 'Quiche', quantity: 2,
       role: 'trigger_and_reward', trigger_quantity: 1, reward_quantity: 1 }],
   }, {}, promotionTranslate);
-  assert.equal(summary, 'Kup 1 × 1/1 Quiche + odbierz 1 × 1/1 Quiche w cenie promocyjnej');
+  assert.equal(summary, 'Kup 1 × Quiche + odbierz 1 × Quiche w cenie promocyjnej');
 });
 
 test('different trigger and reward products retain their separate portions', () => {
@@ -254,7 +254,7 @@ test('different trigger and reward products retain their separate portions', () 
 test('older offer responses still show their total composition', () => {
   assert.equal(promotionSummaryContext.wsPromotionItemsSummary({ promotion_type: 'BUY_X_GET_Y',
     items: [{ product_name: 'Quiche', quantity: 2, role: 'trigger_and_reward' }],
-  }, {}, promotionTranslate), '2 × 1/1 Quiche');
+  }, {}, promotionTranslate), '2 × Quiche');
 });
 
 vm.runInNewContext(transformSync(['wsFractionalPromotionRule', 'FractionalPromotionRule'].map(extract).join('\n'), { loader: 'jsx' }).code, Object.assign(promotionSummaryContext, { React }));

@@ -1,7 +1,7 @@
 /* Real storefront UI, controlled API. Does not create orders or payments. */
 const {chromium}=require('playwright');const assert=require('node:assert/strict');
 const suggestions={"WHOLE":{"id_promotion":17,"name":"Kup całość i odbierz ćwiartkę","description":null,"promotion_type":"BUY_X_GET_Y","bundle_price":null,"total_gross_after_discount":"13.90","promotion_total_gross_after_discount":"13.90","discount_total":"12.00","trigger":{"quantity":"1.000","quantity_unit":"PIECE_FRACTION","any_portion":true},"reward":{"type":"FREE","quantity":1,"value":null},"items":[{"id_product":1410018,"id_product_portion":null,"product_name":"Quiche","product_portion_label":null,"product_portion_type":null,"quantity":"1","role":"trigger","missing_quantity":"0"},{"id_product":1410018,"id_product_portion":3,"product_name":"Quiche","product_portion_label":null,"product_portion_type":"ONE_QUARTER","quantity":"1","role":"reward","missing_quantity":"1.00000000"}]},"ONE_HALF":{"id_promotion":17,"name":"Kup całość i odbierz ćwiartkę","description":null,"promotion_type":"BUY_X_GET_Y","bundle_price":null,"total_gross_after_discount":"20.00","promotion_total_gross_after_discount":"20.00","discount_total":"12.00","trigger":{"quantity":"1.000","quantity_unit":"PIECE_FRACTION","any_portion":true},"reward":{"type":"FREE","quantity":1,"value":null},"items":[{"id_product":1410018,"id_product_portion":2,"product_name":"Quiche","product_portion_label":null,"product_portion_type":"ONE_HALF","quantity":"2","role":"trigger","missing_quantity":"1.00000000"},{"id_product":1410018,"id_product_portion":3,"product_name":"Quiche","product_portion_label":null,"product_portion_type":"ONE_QUARTER","quantity":"1","role":"reward","missing_quantity":"1.00000000"}]},"ONE_QUARTER":{"id_promotion":17,"name":"Kup całość i odbierz ćwiartkę","description":null,"promotion_type":"BUY_X_GET_Y","bundle_price":null,"total_gross_after_discount":"48.00","promotion_total_gross_after_discount":"48.00","discount_total":"12.00","trigger":{"quantity":"1.000","quantity_unit":"PIECE_FRACTION","any_portion":true},"reward":{"type":"FREE","quantity":1,"value":null},"items":[{"id_product":1410018,"id_product_portion":3,"product_name":"Quiche","product_portion_label":null,"product_portion_type":"ONE_QUARTER","quantity":"5.00000000","role":"trigger_and_reward","trigger_quantity":"4","reward_quantity":"1","missing_quantity":"4.00000000"}]}};
-(async()=>{const browser=await chromium.launch({headless:true,args:['--no-sandbox','--host-resolver-rules=MAP webshop.tfbuddy.local 127.0.0.1']});try{
+(async()=>{const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE||undefined,args:['--no-sandbox','--host-resolver-rules=MAP webshop.tfbuddy.local 127.0.0.1']});try{
 for(const width of [1440,390]){
  const context=await browser.newContext({ignoreHTTPSErrors:true,viewport:{width,height:1000}});
  await context.addInitScript(()=>sessionStorage.setItem('ws.session.v1:' + 'ws.lang', ((createdAt)=>JSON.stringify({value:'pl', createdAt, expiresAt:createdAt+43200000}))(Date.now())));
@@ -18,10 +18,11 @@ for(const width of [1440,390]){
   return route.fulfill({json:body});
  });
  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto('https://webshop.tfbuddy.local/?shop=2&category=category%3A14100');
+ const consent=page.locator('.ws-cookie-panel');if(await consent.isVisible())await consent.locator('button').last().click();
  await page.locator('.ws-card .ws-add').first().click();
  const card=page.locator('.pdm-promotion__card');
  await card.locator('.pdm-promotion__rule').waitFor();
- for(const [name,quantity,fraction] of [['Całość',1,'1/1'],['1/2',2,'1/2'],['1/4',4,'1/4']]){
+ for(const [name,quantity,fraction] of [['Całość',1,''],['1/2',2,'1/2'],['1/4',4,'1/4']]){
   await page.locator('.pdm-seg--portions').getByRole('radio',{name,exact:false}).click();
   await card.locator('.pdm-promotion__composition').filter({hasText:`Kup ${quantity} ×${fraction?' '+fraction:''} Quiche`}).waitFor();
   const text=await card.innerText();
@@ -30,7 +31,7 @@ for(const width of [1440,390]){
  }
  await page.locator('.pdm-seg--portions').getByRole('radio',{name:/1\/2/}).click();
  await card.locator('.pdm-promotion__composition').filter({hasText:'Kup 2 × 1/2'}).waitFor();
- await card.click();await page.locator('.pdm-cta').click();
+ await card.click();if(await consent.isVisible())await consent.locator('button').last().click();await page.locator('.pdm-cta').click();
  await page.waitForFunction(()=>!document.querySelector('.pdm-cta'));
  await page.waitForTimeout(300);
  const selected=quotes.find(q=>q.products.some(l=>Number(l.quantity)===2&&l.id_product_portion===2)&&q.products.some(l=>Number(l.quantity)===1&&l.id_product_portion===3));
