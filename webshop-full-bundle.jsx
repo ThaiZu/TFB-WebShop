@@ -1,3 +1,4 @@
+import {ShopPhoto} from './webshop-shop-photo.jsx';
 import {useVoucherActivation} from './webshop-voucher-activation.js';
 import {voucherProductPortions} from './webshop-voucher-targets.js';
 import {useVoucherNotifications} from './webshop-voucher-notifications.js';
@@ -5134,6 +5135,8 @@ function ShopSwitcher({ open, currentId, onPick, onClose, shops }) {
           {list.map((s) => (
             <button key={s.id} className={`ws-shopcard${s.id === currentId ? ' is-current' : ''}`} onClick={() => { onPick(s.id); onClose(); }} style={{ '--accent': s.accent }}>
               <span className="ws-shopcard__bar"/>
+              <ShopPhoto shop={s}/>
+              <div className="ws-shopcard__body">
               <div className="ws-shopcard__head">
                 <span className="ws-shopcard__city">{s.city}</span>
                 {s.id === currentId && <span className="ws-shopcard__active"><Pict d={ICONS.check} s={11}/> {t('shoppick.current')}</span>}
@@ -5144,6 +5147,7 @@ function ShopSwitcher({ open, currentId, onPick, onClose, shops }) {
                 <span>{t('nav.mode.collect')}</span>
                 <span>·</span>
                 <span>{t('shoppick.delivery')}</span>
+              </div>
               </div>
             </button>
           ))}
@@ -6335,6 +6339,7 @@ function ShopFrame({ variant }) {
                 <button key={s.id} type="button" className="ws-shopselect__card" role="listitem"
                         onClick={() => setShopId(s.id)} style={{ '--shop-accent': s.accent || 'var(--color-primary)' }}>
                   <span className="ws-shopselect__cardbar" aria-hidden="true"/>
+                  <ShopPhoto shop={s}/>
                   <span className="ws-shopselect__cardcopy">
                     {s.city && <span className="ws-shopselect__city">{s.city}</span>}
                     <strong>{s.name}</strong>

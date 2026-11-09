@@ -4599,3 +4599,15 @@
   font-size: 12px; font-weight: 700; line-height: 1.4; white-space: normal; min-width: 0; flex: 1 1 auto;
 }
 .pdm-promotion__schedule > .pdm-promotion__validity-end { font-size: 11px; color: var(--color-text-muted); white-space: normal; }
+
+/* Storefront photos keep a stable landscape frame in both shop pickers. */
+.ws-shop-photo{display:flex;width:100%;aspect-ratio:8/5;overflow:hidden;align-items:center;justify-content:center;background:#f5eee6;color:#c1a28c;}
+.ws-shop-photo img{display:block;width:100%;height:100%;object-fit:cover;object-position:center;}
+.ws-shop-photo__placeholder{width:64px;height:64px;opacity:.6;}
+.ws-shopselect__card{display:block;padding:0;min-height:0;}
+.ws-shopselect__cardcopy{padding:18px 56px 20px 23px;min-height:108px;align-content:center;}
+.ws-shopselect__card .ws-shopselect__choose{top:auto;bottom:22px;right:18px;transform:none;}
+.ws-shopcard{padding:0;}
+.ws-shopcard__body{padding:16px 18px 18px;}
+.ws-shopcard__bar,.ws-shopselect__cardbar{z-index:1;}
+@media(max-width:600px){.ws-shopselect__cardcopy{padding:16px 50px 18px 20px;}.ws-shopcard__body{padding:14px 16px 16px;}}
