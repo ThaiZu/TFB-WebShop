@@ -1,3 +1,4 @@
+import {renderLoyaltyBarcode,isLoyaltyCardCode,isShortLoyaltyCardCode} from './webshop-loyalty-barcode.js';
 import {useLoyaltyPage} from './webshop-loyalty.jsx';
 import {LoyaltyProgram} from './webshop-loyalty-program.jsx';
 import {AccountVouchers} from './webshop-vouchers.jsx';
@@ -23,7 +24,7 @@ export function useLoyaltyIdentity(clientId,enabled) {
     window.WSAuth.authenticatedJson(`${__WS_API_BASE_URL__}/webshop/loyalty/identity`,{method:'GET',cache:'no-store',signal:controller.signal})
       .then(({response,data})=>{
         if(!alive)return;
-        if(!response.ok||data?.status!=='available'||!/^FID1-[0-9A-Z]{1,6}-[0-9A-F]{32}$/.test(data.code))throw new Error('LOYALTY_IDENTITY_UNAVAILABLE');
+        if(!response.ok||data?.status!=='available'||!isLoyaltyCardCode(data.code))throw new Error('LOYALTY_IDENTITY_UNAVAILABLE');
         setState({clientId,status:'ready',code:data.code});
       })
       .catch(error=>{if(alive&&error.name!=='AbortError')setState({clientId,status:'error'});});
@@ -37,6 +38,10 @@ export function LoyaltyWallet({identity,shopId,user,onClose,onUseVoucher,activeV
   const dialog=React.useRef(null);
   const [selected,setSelected]=React.useState(null);
   const [view,setView]=React.useState('programs');
+  const [codeFormat,setCodeFormat]=React.useState('barcode');
+  const [scanExpanded,setScanExpanded]=React.useState(false);
+  const scanTrigger=React.useRef(null);
+  const scanBack=React.useRef(null);
   const navigate=card=>{setSelected(card);dialog.current?.scrollTo({top:0});};
   React.useEffect(()=>{
     dialog.current?.querySelector(selected?'.ws-loyalty-wallet__back':'.ws-loyalty-wallet__identity')?.focus({preventScroll:true});
@@ -45,27 +50,42 @@ export function LoyaltyWallet({identity,shopId,user,onClose,onUseVoucher,activeV
   const activePrograms=programs.items.filter(card=>card.accepting);
   const svg=React.useMemo(()=>{
     if(identity.status!=='ready')return null;
-    try{return window.QR?.render(identity.code,{size:260,margin:4,branded:false,color:'#000000',bg:'#ffffff'})||null;}catch{return null;}
-  },[identity.status,identity.code]);
+    try{return codeFormat==='barcode'?renderLoyaltyBarcode(identity.code):window.QR?.render(identity.code,{size:260,margin:4,branded:false,color:'#000000',bg:'#ffffff'})||null;}catch{return null;}
+  },[identity.status,identity.code,codeFormat]);
+  React.useEffect(()=>{
+    if(!scanExpanded)return;
+    scanBack.current?.focus();
+    return()=>scanTrigger.current?.focus();
+  },[scanExpanded]);
   React.useEffect(()=>{
     const node=dialog.current,previous=document.activeElement,overflow=document.body.style.overflow;
     node.showModal();document.body.style.overflow='hidden';
     const ended=()=>onClose();window.addEventListener('ws:session-ended',ended);
     return()=>{window.removeEventListener('ws:session-ended',ended);document.body.style.overflow=overflow;node.close();previous?.focus?.();};
   },[]);
-  return <dialog ref={dialog} className="ws-loyalty-wallet" aria-labelledby="ws-wallet-title" onCancel={event=>{event.preventDefault();onClose();}} onClick={event=>{
+  return <dialog ref={dialog} className={`ws-loyalty-wallet${codeFormat==='barcode'&&!selected?' ws-loyalty-wallet--barcode':''}${scanExpanded?' ws-loyalty-wallet--scan':''}`} aria-labelledby={scanExpanded?undefined:'ws-wallet-title'} aria-label={scanExpanded?t('loyaltyWallet.barcodeAlt'):undefined} onCancel={event=>{event.preventDefault();if(scanExpanded)setScanExpanded(false);else onClose();}} onClick={event=>{
     if(event.target!==dialog.current)return;const box=dialog.current.getBoundingClientRect();
     if(event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom)onClose();
   }}>
+    {scanExpanded?<>
+      <button ref={scanBack} type="button" className="ws-loyalty-wallet__scan-back" onClick={()=>setScanExpanded(false)}>← {t('loyaltyWallet.scanBack')}</button>
+      <div className="ws-loyalty-wallet__scan-code" role="img" aria-label={t('loyaltyWallet.barcodeAlt')} dangerouslySetInnerHTML={{__html:svg}}/>
+    </>:<>
     <header><div><h2 id="ws-wallet-title">{t('loyaltyWallet.title')}</h2></div><button type="button" className="ws-loyalty-wallet__close" onClick={onClose} aria-label={t('loyaltyWallet.close')}>×</button></header>
     {selected?<>
-      <nav className="ws-loyalty-wallet__navigation"><button type="button" className="ws-linkbtn ws-loyalty-wallet__back" onClick={()=>navigate(null)}>← {t('loyaltyHub.back')}</button><button type="button" className="ws-loyalty-wallet__show-qr" onClick={()=>navigate(null)}>{t('loyaltyHub.showQr')}</button></nav>
+      <nav className="ws-loyalty-wallet__navigation"><button type="button" className="ws-linkbtn ws-loyalty-wallet__back" onClick={()=>navigate(null)}>← {t('loyaltyHub.back')}</button><button type="button" className="ws-loyalty-wallet__show-qr" onClick={()=>navigate(null)}>{t('loyaltyWallet.showCard')}</button></nav>
       <LoyaltyProgram key={selected.id} card={selected} shopId={shopId}/>
     </>:<>
     <section className="ws-loyalty-wallet__identity" tabIndex={-1} aria-label={t('loyaltyWallet.identity')}>
       <p>{user.firstName || user.name || ''}</p>
+      {identity.status==='ready'&&<div className="ws-loyalty-wallet__formats" role="group" aria-label={t('loyaltyWallet.codeFormat')}>
+        <button type="button" aria-pressed={codeFormat==='barcode'} onClick={()=>setCodeFormat('barcode')}>{t('loyaltyWallet.barcode')}</button>
+        <button type="button" aria-pressed={codeFormat==='qr'} onClick={()=>setCodeFormat('qr')}>{t('loyaltyWallet.qr')}</button>
+      </div>}
       {identity.status==='ready'&&svg?<>
-        <div className="ws-loyalty-wallet__qr" role="img" aria-label={t('loyaltyWallet.qrAlt')} dangerouslySetInnerHTML={{__html:svg}}/>
+        <div className={codeFormat==='barcode'?'ws-loyalty-wallet__barcode':'ws-loyalty-wallet__qr'} role="img" aria-label={t(codeFormat==='barcode'?'loyaltyWallet.barcodeAlt':'loyaltyWallet.qrAlt')} dangerouslySetInnerHTML={{__html:svg}}/>
+        {codeFormat==='barcode'&&!isShortLoyaltyCardCode(identity.code)&&<button ref={scanTrigger} type="button" className="ws-loyalty-wallet__expand" onClick={()=>setScanExpanded(true)}>{t('loyaltyWallet.scanExpand')}</button>}
+        {codeFormat==='barcode'&&!isShortLoyaltyCardCode(identity.code)&&<p className="ws-loyalty-wallet__scan-hint">{t('loyaltyWallet.scanHint')}</p>}
       </>:identity.status==='error'||(identity.status==='ready'&&!svg)?<div role="alert"><p>{t('loyaltyWallet.error')}</p><button type="button" className="ws-linkbtn" onClick={identity.retry}>{t('loyalty.retry')}</button></div>:<div className="ws-loyalty-wallet__loading" role="status">{t('loyaltyWallet.loading')}</div>}
     </section>
     <div className="ws-loyalty-wallet__section-head">
@@ -89,6 +109,7 @@ export function LoyaltyWallet({identity,shopId,user,onClose,onUseVoucher,activeV
       {programs.nextCursor&&!programs.error&&<button type="button" className="ws-linkbtn" disabled={programs.busy} onClick={programs.more}>{t('loyalty.more')}</button>}
       </>}
     </section>
+    </>}
     </>}
   </dialog>;
 }

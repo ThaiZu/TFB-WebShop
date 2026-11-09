@@ -1144,5 +1144,13 @@
   "loyaltyUse.skip": "Nie wykorzystuj nagrody",
   "vouchers.activationReserved": "Voucher jest przypisany do rozpoczętej transakcji. Przed zmianą wyboru poproś pracownika o zwolnienie vouchera.",
   "vouchers.activationChanged": "Wybór vouchera zmienił się. Odświeżyliśmy jego aktualny stan.",
-  "vouchers.activationError": "Nie udało się zmienić wyboru vouchera. Spróbuj ponownie."
+  "vouchers.activationError": "Nie udało się zmienić wyboru vouchera. Spróbuj ponownie.",
+  "loyaltyWallet.barcode": "Kod kreskowy",
+  "loyaltyWallet.qr": "Kod QR",
+  "loyaltyWallet.codeFormat": "Format kodu karty",
+  "loyaltyWallet.barcodeAlt": "Kod kreskowy Twojej karty klienta",
+  "loyaltyWallet.showCard": "Pokaż moją kartę",
+  "loyaltyWallet.scanExpand": "Powiększ do skanowania",
+  "loyaltyWallet.scanBack": "Wróć do karty",
+  "loyaltyWallet.scanHint": "Dla wygodnego skanowania obróć telefon poziomo."
 }

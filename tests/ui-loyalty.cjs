@@ -24,8 +24,8 @@ const reward=(id,status='READY',changes={})=>({id,status,code:status==='READY' ?
    const configGate=new Promise(resolve=>{releaseConfig=resolve;});
    await context.route('**/*',async route=>{
     const req=route.request(),url=new URL(req.url());
-    if(url.hostname==='webshop.test') return serveBuild(route,build);
-    if(url.hostname!=='api.example.invalid'){external.push(req.url());return route.abort();}
+    if(url.hostname==='webshop.test'&&!url.pathname.startsWith('/api/v1/')) return serveBuild(route,build);
+    if(!['api.example.invalid','webshop.test'].includes(url.hostname)){external.push(req.url());return route.abort();}
     let data=[];
     const isA=req.headers().authorization==='Bearer access-A';
     if(url.pathname.endsWith('/clients/auth/me')) data={user:{id:isA?1:2,firstName:isA?'Anna':'Beata',email:isA?'anna@example.invalid':'beata@example.invalid',lastName:'Test',phone:'+32470123456',postalCode:'1000',locality:'Bruxelles',preferredShopId:2,needsPostcode:false,activationRequired:false,isBusiness:false,invoice:{},fidelityApp:{active:true,installUrl:'https://obsolete-pwa.invalid'}}};
@@ -42,7 +42,7 @@ const reward=(id,status='READY',changes={})=>({id,status,code:status==='READY' ?
     else if(url.pathname.includes('/webshop/loyalty/')) {
      loyaltyRequests.push(req.url()); assert.equal(url.searchParams.has('clientId'),false); assert.ok(req.headers().authorization);
      const kind=url.pathname.split('/').pop(),cursor=url.searchParams.get('cursor');
-     if(kind==='identity')data={status:'available',code:'FID1-'+(isA?'1':'2')+'-'+(isA?'A':'B').repeat(32)};
+     if(kind==='identity')data={status:'available',code:process.env.SHORT_LOYALTY_CODE==='1'?(isA?'9800000000000001':'9800000000000002'):'FID1-'+(isA?'1':'2')+'-'+(isA?'A':'B').repeat(32)};
      else if(kind==='program') data={status:'available',asOf:new Date().toISOString(),id:Number(url.searchParams.get('cardId')),startsAt:'2026-10-01T00:00:00Z',endsAt:null,rewardValidityDays:30,products:[{id:11,name:'Test bread'},{id:12,name:'Tarta jabłkowa'}],categories:[{id:3,name:'Pieczywo'}],excludedProducts:[{id:13,name:'Bułka'}],rewardChoices:[{id:12,name:'Tarta jabłkowa',portion:null},{id:101,name:'Tarta jabłkowa',portion:'1/2'}]};
      else if(kind==='cards') {
       if(mode==='error') return route.fulfill({status:503,json:{error:'LOYALTY_UNAVAILABLE'}});
@@ -94,12 +94,12 @@ const reward=(id,status='READY',changes={})=>({id,status,code:status==='READY' ?
      assert.equal(await shortcut.evaluate(node=>node.nextElementSibling.getAttribute('aria-label')),'Konto');
      assert.equal(await shortcut.getAttribute('aria-haspopup'),'dialog');
     }
-    await shortcut.focus();await page.keyboard.press('Enter');await page.locator('.ws-loyalty-wallet:modal .ws-loyalty-wallet__qr svg').waitFor();
+    await shortcut.focus();await page.keyboard.press('Enter');await page.locator('.ws-loyalty-wallet:modal .ws-loyalty-wallet__barcode svg').waitFor();
     assert.equal(await page.locator('.ws-loyalty-wallet__identity code').count(),0,'QR identity stays scannable without showing the raw code');
     assert.equal(await page.locator('.ws-loyalty-wallet__hint, .ws-loyalty-wallet header small').count(),0);
     await page.waitForFunction(()=>document.querySelector('.ws-loyalty-wallet__loading')===null);
     assert.equal(await page.locator('.ws-loyalty-wallet__program').count(),0,'Identity QR does not wait for program data');
-    const qr=await page.locator('.ws-loyalty-wallet__qr').boundingBox();assert.ok(qr.y>=0&&qr.y+qr.height<=1000);
+    const qr=await page.locator('.ws-loyalty-wallet__barcode').boundingBox();assert.ok(qr.y>=0&&qr.y+qr.height<=1000);
     await page.screenshot({path:'/tmp/fidelity-mobile-wallet.png'});
     mode='ready';await page.waitForFunction(()=>document.querySelector('.ws-loyalty-wallet__programs [role=status]')!==null);releaseCards();
     await page.locator('.ws-loyalty-wallet__program').first().waitFor();
@@ -152,8 +152,8 @@ const reward=(id,status='READY',changes={})=>({id,status,code:status==='READY' ?
     await wallet.getByRole('region',{name:'Historia pieczątek',exact:true}).waitFor();
     await wallet.getByText('Zdobyte pieczątki',{exact:true}).first().waitFor();
     await page.screenshot({path:'/tmp/fidelity-mobile-program-details.png'});
-    await wallet.getByRole('button',{name:'Pokaż mój QR',exact:true}).click();
-    await wallet.locator('.ws-loyalty-wallet__qr svg').waitFor();
+    await wallet.getByRole('button',{name:'Pokaż moją kartę',exact:true}).click();
+    await wallet.locator('.ws-loyalty-wallet__barcode svg').waitFor();
     assert.equal(await wallet.evaluate(node=>node.scrollTop),0);
     await wallet.getByRole('button',{name:'Zamknij kartę klienta',exact:true}).click();
     assert.equal(await shortcut.evaluate(node=>node===document.activeElement),true,'Closing restores shortcut focus');

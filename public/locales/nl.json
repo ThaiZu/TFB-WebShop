@@ -1144,5 +1144,13 @@
   "loyaltyUse.skip": "Geen beloning gebruiken",
   "vouchers.activationReserved": "Deze voucher is gereserveerd voor een lopende transactie. Vraag een medewerker de voucher vrij te geven voordat u uw keuze wijzigt.",
   "vouchers.activationChanged": "De voucherkeuze is gewijzigd. De huidige status is vernieuwd.",
-  "vouchers.activationError": "De voucherkeuze kon niet worden gewijzigd. Probeer het opnieuw."
+  "vouchers.activationError": "De voucherkeuze kon niet worden gewijzigd. Probeer het opnieuw.",
+  "loyaltyWallet.barcode": "Streepjescode",
+  "loyaltyWallet.qr": "QR-code",
+  "loyaltyWallet.codeFormat": "Codeformaat van de kaart",
+  "loyaltyWallet.barcodeAlt": "Streepjescode van je klantenkaart",
+  "loyaltyWallet.showCard": "Toon mijn kaart",
+  "loyaltyWallet.scanExpand": "Vergroten om te scannen",
+  "loyaltyWallet.scanBack": "Terug naar de kaart",
+  "loyaltyWallet.scanHint": "Draai de telefoon horizontaal om gemakkelijker te scannen."
 }
