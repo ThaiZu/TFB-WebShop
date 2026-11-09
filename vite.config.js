@@ -18,6 +18,13 @@ export default defineConfig(({ command, mode }) => {
   if (!['http:', 'https:'].includes(apiUrl.protocol) || apiUrl.username || apiUrl.password || apiUrl.search || apiUrl.hash || apiUrl.pathname !== '/api/v1') {
     throw new Error('VITE_API_BASE_URL must be an HTTP(S) URL ending in /api/v1, without credentials, query or fragment.');
   }
+  // Reuse the existing public Belgian directory; no auth API postcode route exists.
+  const postcodeLocalities = {};
+  for (const { zip, city } of JSON.parse(readFileSync(new URL('./php-api/data/zipcodes_be.json', import.meta.url), 'utf8'))) {
+    const code = String(zip); const name = String(city).trim();
+    if (!postcodeLocalities[code]) postcodeLocalities[code] = [];
+    if (name && !postcodeLocalities[code].includes(name)) postcodeLocalities[code].push(name);
+  }
   const policyManifest = JSON.parse(readFileSync(new URL('./privacy-policies.json',import.meta.url),'utf8'));
   const policyPreview = process.env.PRIVACY_POLICY_PREVIEW === '1';
   const isDevelopment = command === 'serve';
@@ -79,7 +86,7 @@ export default defineConfig(({ command, mode }) => {
   },
   // Tampon de build : affiché par ?tapdebug=1 et window.__WS_BUILD pour
   // savoir QUELLE version un téléphone sert réellement (cache SW vs code).
-  define: { __WS_POLICY_CONTROLLER__: JSON.stringify(policyManifest.status === 'approved' ? policyManifest.controllerNotice : {}), __WS_PUBLIC_POLICIES__: JSON.stringify(policyManifest.status === 'approved'), __WS_POLICY_PREVIEW__: JSON.stringify(policyPreview), __WS_LOCAL_IMAGES__: JSON.stringify(catalogueImages), __WS_IMAGE_BASE__: JSON.stringify(base), __WS_API_BASE_URL__: JSON.stringify(browserApiBase), __WS_BUILD__: JSON.stringify(new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC') },
+  define: { __WS_POSTCODE_LOCALITIES__: JSON.stringify(postcodeLocalities), __WS_POLICY_CONTROLLER__: JSON.stringify(policyManifest.status === 'approved' ? policyManifest.controllerNotice : {}), __WS_PUBLIC_POLICIES__: JSON.stringify(policyManifest.status === 'approved'), __WS_POLICY_PREVIEW__: JSON.stringify(policyPreview), __WS_LOCAL_IMAGES__: JSON.stringify(catalogueImages), __WS_IMAGE_BASE__: JSON.stringify(base), __WS_API_BASE_URL__: JSON.stringify(browserApiBase), __WS_BUILD__: JSON.stringify(new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC') },
   esbuild: {
     jsx: 'transform', // classic runtime → React.createElement (React injecté ci-dessous)
     jsxInject: "import React from 'react';import * as ReactDOM from 'react-dom/client';",

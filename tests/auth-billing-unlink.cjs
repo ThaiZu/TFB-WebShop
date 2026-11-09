@@ -4,6 +4,9 @@ let response;
 const context={window:{WSI18n:{t:key=>pl[key]}},localStorage:{getItem:()=> 'test'},fetch:async(url,options)=>{
  assert.equal(url,'/clients/auth/billing-company/unlink');assert.equal(options.method,'POST');assert.equal(options.headers.Authorization,'Bearer test');return response;
 }};
+context.window.setInterval=()=>{};context.window.addEventListener=()=>{};
+context.document={addEventListener(){}};
+context.window.WSSessionStorage={getItem:key=>key==='ws_auth_token'?'test':null};
 vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../webshop-auth-api.jsx'),'utf8'),context);context.window.WSAuth.endpoint='/clients/auth';
 (async()=>{
  response={ok:true,json:async()=>({ok:true,user:{isBusiness:false,company:'',companyClientId:null,invoice:{vat:'',viesVerified:false}}})};

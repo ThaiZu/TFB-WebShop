@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import {basketShoppingContext,normaliseShoppingContext} from '../webshop-office-context.js';
 import {adaptShopCatalogue} from '../webshop-catalog-adapter.js';
-const source=name=>fs.readFileSync(new URL('../'+name,import.meta.url),'utf8').replace(/^import .*\n/gm,'');
+const source=name=>fs.readFileSync(new URL('../'+name,import.meta.url),'utf8').replace(/^import .*\r?\n/gm,'');
 test('menu quote transmits identifiers, mode and date, not client prices',async()=>{
  const requests=[];const context={window:{WSAuth:{authHeaders:()=>({}),authenticatedFetch:async(u,o)=>{const p=JSON.parse(o.body);requests.push(p);return {ok:true,json:async()=>({items:p.products.map(l=>({line_key:l.line_key,total_gross_value_after_discount:'8.00'})),totals:{gross_before_discount:'8.00',gross_after_discount:'8.00',discount:'0.00'}})};}}},basketShoppingContext,normaliseShoppingContext};
  vm.runInNewContext(source('webshop-quote-api.jsx'),context);context.window.WSQuote.endpoint='https://example.test/api/v1/quote';

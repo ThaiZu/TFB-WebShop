@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 
 const source=fs.readFileSync(new URL('../webshop-voucher-activation.js',import.meta.url),'utf8')
-  .replace(/^import .*\n/,'').replace(/export /g,'');
+  .replace(/^import .*\r?\n/,'').replace(/export /g,'');
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
 function setup(request) {
   const refs=[],effects=[],events={},changes=[],errors=[],calls=[];let index=0,timer;

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import {basketShoppingContext,normaliseShoppingContext} from '../webshop-office-context.js';
-const source=fs.readFileSync(new URL('../webshop-quote-api.jsx',import.meta.url),'utf8').replace(/^import .*\n/,'');
+const source=fs.readFileSync(new URL('../webshop-quote-api.jsx',import.meta.url),'utf8').replace(/^import .*\r?\n/,'');
 test('quote preserves personalization IDs and version, accepts parent-only display row',async()=>{
  let sent;
  const window={WSAuth:{authenticatedFetch:async(url,req)=>{

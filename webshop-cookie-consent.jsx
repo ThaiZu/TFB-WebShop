@@ -57,19 +57,21 @@ export function CookieConsent() {
     close();
   };
   return <>
-    {!open && <nav className="ws-policy-footer" aria-label={t('title')}><PolicyLinks configuration={configuration} preview={preview}/></nav>}
-    {!open && <button ref={trigger} className="ws-cookie-settings" type="button" onClick={show}>{t('settings')}</button>}
+    {!open && <nav className="ws-policy-footer" aria-label={t('title')}>
+      <PolicyLinks configuration={configuration} preview={preview}/>
+      <button ref={trigger} className="ws-cookie-settings" type="button" onClick={show}>{t('settings')}</button>
+    </nav>}
     {runtimeStatus?.reloadRequired && !open && <p className="ws-cookie-storage" role="alert">{t('reloadRequired')}</p>}
     {storageError && !runtimeStatus?.reloadRequired && !open && <p className="ws-cookie-storage" role="status">{t('storage')}</p>}
     {open && <section ref={panel} tabIndex={-1} className="ws-cookie-panel" role="dialog" aria-modal="false" aria-labelledby="ws-cookie-title"
       onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); close(); } }}>
       <div className="ws-cookie-heading"><h2 id="ws-cookie-title">{t('title')}</h2><button type="button" onClick={close} aria-label={t('close')}>×</button></div>
-      {controllerNotice && <p>{controllerNotice}</p>}
       <p>{t(analyticsAvailable ? 'intro' : 'inactive')}</p>
-      <p>{t('withdrawal')}</p>
       {runtimeStatus?.reloadRequired && <p role="alert">{t('reloadRequired')}</p>}
       {runtimeStatus?.cleanupIncomplete && <p role="status">{t('cleanupIncomplete')}</p>}
       {details && <div className="ws-cookie-details">
+        {controllerNotice && <p>{controllerNotice}</p>}
+        <p>{t('withdrawal')}</p>
         <p>{t('necessary')}</p>
         <label><input type="checkbox" disabled={!analyticsAvailable} checked={analyticsAvailable && analytics} onChange={e => setAnalytics(e.target.checked)}/><span>{t('analytics')}</span></label>
         <p>{t('duration')}</p>
@@ -78,7 +80,10 @@ export function CookieConsent() {
       {preview && <p>{t('policyPreview')}</p>}
       <p><PolicyLinks configuration={configuration} preview={preview}/></p>
       <div className="ws-cookie-actions" data-analytics={analyticsAvailable}>
-        {!analyticsAvailable ? <button type="button" onClick={() => save({analytics:false,advertising:false})}>{t('acknowledge')}</button> : <>
+        {!analyticsAvailable ? <>
+          {!details && <button type="button" onClick={() => setDetails(true)}>{t('choose')}</button>}
+          <button type="button" onClick={() => save({analytics:false,advertising:false})}>{t('acknowledge')}</button>
+        </> : <>
         <button type="button" onClick={() => save({ analytics: false, advertising: false })}>{t('reject')}</button>
         <button type="button" onClick={() => details ? save({ analytics, advertising: false }) : setDetails(true)}>{t(details ? 'save' : 'choose')}</button>
         <button type="button" onClick={() => save({ analytics: true, advertising: false })}>{t('accept')}</button>
