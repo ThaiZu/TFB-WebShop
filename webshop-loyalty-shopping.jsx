@@ -53,6 +53,7 @@ export function LoyaltyIcon({card, candidate, lineKeys, preview}) {
   if(!visible)return null;
   const state=lineKeys ? preview : result?.key===key ? result : null;
   const data=state?.status==='ready' ? loyaltyPreview(state.data) : null;
+  const pointSummary=data?.points?.cardId===card.id?data.points:null;
   const summary=data?.cards.find(item=>item.id===card.id);
   const ownKeys=lineKeys || [loyaltyLineKey({line:'fidelity-preview'})];
   const increment=summary ? data.lines.filter(line=>line.cardId===card.id && ownKeys.includes(line.lineKey)).reduce((sum,line)=>sum+line.increment,0) : null;
@@ -74,9 +75,9 @@ export function LoyaltyIcon({card, candidate, lineKeys, preview}) {
         : state.status==='choice' ? <p>{t('loyaltyShop.choose')}</p>
         : state.status==='error' || !data || data.status==='unavailable' ? <><p role="status">{t('loyaltyShop.unavailable')}</p>{!lineKeys && <button type="button" onClick={()=>setRevision(value=>value+1)}>{t('loyaltyShop.retry')}</button>}</>
         : data.status==='excluded' ? <p>{t('loyaltyShop.excluded')}</p>
-        : !summary ? <p>{t('loyaltyShop.notEligible')}</p>
+        : !summary ? <p>{pointSummary?t('loyaltyShop.pointsCart',{count:pointSummary.points}):t('loyaltyShop.notEligible')}</p>
         : <>
-          <p>{t('loyaltyShop.line',{count:increment})}</p><p>{t('loyaltyShop.cart',{count:summary.increment})}</p>
+          {pointSummary&&<p>{t('loyaltyShop.pointsCart',{count:pointSummary.points})}</p>}<p>{t('loyaltyShop.line',{count:increment})}</p><p>{t('loyaltyShop.cart',{count:summary.increment})}</p>
           {data.status==='signIn' ? <p>{t('loyaltyShop.signIn')}</p> : <>
             <p className="ws-loyalty-popover__balance">{t('loyaltyShop.balance',{before:summary.before,after:summary.after,required:summary.required})}</p>
             {summary.newRewards>0 && <p>{t('loyaltyShop.gifts',{count:summary.newRewards})}</p>}

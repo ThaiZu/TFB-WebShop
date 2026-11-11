@@ -1,0 +1,4 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';import {pointsBoard,validatePointsPage} from '../webshop-loyalty-points.js';
+test('tiers have increasing anchors and last tier is last cell',()=>{const cells=pointsBoard([100,250,500,1000].map(points=>({points,voucher_cents:500})),300);assert.equal(cells.length,30);const anchors=cells.filter(c=>c.tier);assert.deepEqual(anchors.map(c=>c.points),[100,250,500,1000]);assert.equal(anchors.at(-1).index,29);assert.equal(cells.filter(c=>c.current).length,1);assert(cells.find(c=>c.current).points<=300);});
+test('nearby tiers do not collide',()=>{const cells=pointsBoard([998,999,1000].map(points=>({points,voucher_cents:500})),0);assert.deepEqual(cells.filter(c=>c.tier).map(c=>c.index),[27,28,29]);});
+test('invalid balance or duplicate tiers never rendered',()=>{assert.throws(()=>pointsBoard([{points:1},{points:1}],0));assert.throws(()=>validatePointsPage({status:'available',card_id:1,balance:-1},1));});

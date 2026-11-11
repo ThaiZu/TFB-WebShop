@@ -1152,5 +1152,13 @@
   "loyaltyWallet.showCard": "Afficher ma carte",
   "loyaltyWallet.scanExpand": "Agrandir pour scanner",
   "loyaltyWallet.scanBack": "Revenir à la carte",
-  "loyaltyWallet.scanHint": "Pour faciliter la lecture, tournez le téléphone à l’horizontale."
+  "loyaltyWallet.scanHint": "Pour faciliter la lecture, tournez le téléphone à l’horizontale.",
+  "loyalty.pointsTitle": "Carte à points",
+  "loyalty.stampsTitle": "Carte produit",
+  "loyalty.pointsBalance": "Solde : {count} pts",
+  "loyalty.pointsChoice": "Échangez vos points maintenant ou continuez pour un bon supérieur.",
+  "loyalty.pointsExchange": "Échanger",
+  "loyalty.pointsExpiry": "Validité des points : {days} jours (0 = sans expiration).",
+  "loyalty.pointsError": "Impossible de charger les points ou de les échanger. Réessayez.",
+  "loyaltyShop.pointsCart": "Points estimés pour le panier : {count}. Crédités après confirmation du paiement."
 }

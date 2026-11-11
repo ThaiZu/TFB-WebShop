@@ -98,9 +98,9 @@ export function LoyaltyWallet({identity,shopId,user,onClose,onUseVoucher,activeV
       {programs.error&&<div role="alert"><p>{t('loyalty.unavailable')}</p><button type="button" className="ws-linkbtn" onClick={programs.retry}>{t('loyalty.retry')}</button></div>}
       {programs.status==='ready'&&!activePrograms.length&&<p>{t('loyalty.empty')}</p>}
       {activePrograms.map(card=><button type="button" key={card.id} className="ws-loyalty-wallet__program" onClick={()=>navigate(card)} style={{'--wallet-fill':/^#[0-9a-f]{6}$/i.test(card.colorFill)?card.colorFill:'#8d142c'}}>
-        <span className="ws-loyalty-wallet__program-title"><strong>{card.name}</strong><span>{card.progress}/{card.required} <span aria-hidden="true">›</span></span></span>
-        <span className="ws-loyalty-wallet__stamps" aria-hidden="true">{Array.from({length:Math.min(card.required,10)},(_,index)=><span key={index} className={index<card.progress?'is-filled':''}>{index<card.progress?'✓':index+1}</span>)}</span>
-        <small>{card.required} {t('loyalty.cardStamps')} = {card.rewardLabel}</small>
+        <span className="ws-loyalty-wallet__program-title"><strong>{card.name}</strong><span>{card.stampsEnabled===false?t('loyalty.pointsTitle'):`${card.progress}/${card.required}`} <span aria-hidden="true">›</span></span></span>
+        {card.stampsEnabled!==false&&<span className="ws-loyalty-wallet__stamps" aria-hidden="true">{Array.from({length:Math.min(card.required,10)},(_,index)=><span key={index} className={index<card.progress?'is-filled':''}>{index<card.progress?'✓':index+1}</span>)}</span>}
+        {card.stampsEnabled!==false&&<small>{card.required} {t('loyalty.cardStamps')} = {card.rewardLabel}</small>}
         {card.readyRewards>0&&<span className="ws-loyalty-wallet__reward-badge">{t('loyaltyHub.readyRewards',{count:card.readyRewards})}</span>}
         {!card.accepting&&<small>{t('loyalty.closed')}</small>}
         {card.debt>0&&<small>{t('loyalty.debt',{count:card.debt})}</small>}

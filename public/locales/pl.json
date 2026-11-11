@@ -1152,5 +1152,13 @@
   "loyaltyWallet.showCard": "Pokaż moją kartę",
   "loyaltyWallet.scanExpand": "Powiększ do skanowania",
   "loyaltyWallet.scanBack": "Wróć do karty",
-  "loyaltyWallet.scanHint": "Dla wygodnego skanowania obróć telefon poziomo."
+  "loyaltyWallet.scanHint": "Dla wygodnego skanowania obróć telefon poziomo.",
+  "loyalty.pointsTitle": "Karta punktowa",
+  "loyalty.stampsTitle": "Pieczątki",
+  "loyalty.pointsBalance": "Saldo: {count} pkt",
+  "loyalty.pointsChoice": "Możesz wymienić punkty teraz albo zbierać na wyższy bon.",
+  "loyalty.pointsExchange": "Wymień",
+  "loyalty.pointsExpiry": "Ważność punktów: {days} dni (0 = bez terminu).",
+  "loyalty.pointsError": "Nie udało się pobrać punktów lub wykonać wymiany. Spróbuj ponownie.",
+  "loyaltyShop.pointsCart": "Szacowane punkty za koszyk: {count}. Naliczane po potwierdzeniu płatności."
 }

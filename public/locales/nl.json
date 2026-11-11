@@ -1152,5 +1152,13 @@
   "loyaltyWallet.showCard": "Toon mijn kaart",
   "loyaltyWallet.scanExpand": "Vergroten om te scannen",
   "loyaltyWallet.scanBack": "Terug naar de kaart",
-  "loyaltyWallet.scanHint": "Draai de telefoon horizontaal om gemakkelijker te scannen."
+  "loyaltyWallet.scanHint": "Draai de telefoon horizontaal om gemakkelijker te scannen.",
+  "loyalty.pointsTitle": "Puntenkaart",
+  "loyalty.stampsTitle": "Productkaart",
+  "loyalty.pointsBalance": "Saldo: {count} punten",
+  "loyalty.pointsChoice": "Wissel punten in of spaar door voor een hogere bon.",
+  "loyalty.pointsExchange": "Inwisselen",
+  "loyalty.pointsExpiry": "Geldigheid punten: {days} dagen (0 = geen vervaldatum).",
+  "loyalty.pointsError": "Punten laden of inwisselen mislukt. Probeer opnieuw.",
+  "loyaltyShop.pointsCart": "Geschatte punten voor de mand: {count}. Toegekend na bevestiging van betaling."
 }
