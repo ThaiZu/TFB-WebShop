@@ -32,3 +32,8 @@
 .ws-loyalty .ws-loyalty__thanks {font:400 12px/1.5 Arial,sans-serif;color:#a38d78;margin:0;}
 .ws-loyalty .ws-loyalty__stamp-limit {font-size:10px;}
 @media(max-width:420px){.ws-loyalty .ws-loyalty__artwork{padding:22px 14px 18px;}.ws-loyalty .ws-loyalty__reward-band{margin-left:0;margin-right:0;font-size:16px;}.ws-loyalty__stamp{font-size:20px;}.ws-loyalty__stamp .ws-loyalty__croissant{width:28px;height:24px;}}
+.ws-points-board{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--space-2,8px);margin-block:var(--space-3,12px)}
+.ws-points-board span{border:1px solid var(--color-border-secondary);border-radius:var(--radius-sm);padding:var(--space-2,8px);text-align:center;transition:background .2s}
+.ws-points-board b{display:block;font-size:.8em}.ws-points-board .is-earned{background:var(--color-primary);color:var(--color-surface)}
+.ws-points-tier,.ws-points-tabs{display:flex;gap:var(--space-3,12px);align-items:center;justify-content:space-between}
+.ws-points-tabs [aria-pressed=true]{font-weight:bold;border-bottom:2px solid var(--color-primary)}

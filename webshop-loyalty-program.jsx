@@ -1,3 +1,4 @@
+import {LoyaltyProgramArtwork} from './webshop-loyalty-points.jsx';
 import {readLoyaltyProgram} from './webshop-loyalty-api.js';
 import {CardDetails,LoyaltyCardArtwork} from './webshop-loyalty.jsx';
 
@@ -22,8 +23,8 @@ export function LoyaltyProgram({card,shopId}) {
   return <div className="ws-loyalty ws-loyalty-wallet__detail">
     <details className="ws-loyalty-wallet__panel ws-loyalty-wallet__card" open>
     <summary>{card.name}</summary>
-    <LoyaltyCardArtwork card={card} t={t}/>
-    <p className="ws-loyalty-wallet__progress">{t('loyaltyHub.progress',{count:card.progress,required:card.required})}</p>
+    <LoyaltyProgramArtwork card={card} shopId={shopId} t={t} lang={lang} StampArtwork={LoyaltyCardArtwork}/>
+    {card.stampsEnabled!==false&&<p className="ws-loyalty-wallet__progress">{t('loyaltyHub.progress',{count:card.progress,required:card.required})}</p>}
     {!card.accepting&&<p>{t('loyalty.closed')}</p>}
     {card.debt>0&&<p>{t('loyalty.debt',{count:card.debt})}</p>}
     {card.pendingEvents>0&&<p role="status">{t('loyalty.pending')}</p>}
@@ -35,7 +36,7 @@ export function LoyaltyProgram({card,shopId}) {
       <details className="ws-loyalty-wallet__panel">
         <summary>{t('loyaltyHub.rules')}</summary>
         <section aria-label={t('loyaltyHub.rules')}>
-        <p>{t('loyaltyHub.earning')}</p><p>{t(data.rewardValidityDays===0?'loyaltyHub.rewardNoExpiry':'loyaltyHub.reward',{count:card.required,reward:card.rewardLabel,days:data.rewardValidityDays})}</p>
+        {card.stampsEnabled!==false&&<><p>{t('loyaltyHub.earning')}</p><p>{t(data.rewardValidityDays===0?'loyaltyHub.rewardNoExpiry':'loyaltyHub.reward',{count:card.required,reward:card.rewardLabel,days:data.rewardValidityDays})}</p></>}
         <p>{t('loyaltyHub.starts',{date:date(data.startsAt)})}<br/>{data.endsAt?t('loyaltyHub.ends',{date:date(data.endsAt)}):t('loyaltyHub.noEnd')}</p>
         <h4>{t('loyaltyHub.shops')}</h4><ul>{card.shops.map(shop=><li key={shop.id}>{shop.name}</li>)}</ul>
         </section>
@@ -62,6 +63,6 @@ export function LoyaltyProgram({card,shopId}) {
       </details>
     </>}
     <button type="button" className="ws-linkbtn" onClick={()=>window.dispatchEvent(new CustomEvent('ws:open-vouchers'))}>{t('vouchers.open')}</button>
-    <CardDetails card={card} shopId={shopId} revision={0} t={t} lang={lang} collapseHistory showRewards={false}/>
+    {card.stampsEnabled!==false&&<CardDetails card={card} shopId={shopId} revision={0} t={t} lang={lang} collapseHistory showRewards={false}/>}
   </div>;
 }

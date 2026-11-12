@@ -4,6 +4,7 @@ export function loyaltyPreview(value) {
   if (!value || !['available','signIn','excluded','unavailable'].includes(value.status)
       || !Array.isArray(value.cards) || !Array.isArray(value.lines)) return unavailable;
   if (['excluded','unavailable'].includes(value.status)) return {...unavailable,status:value.status};
+  if(value.points && (!integer(value.points.cardId)||value.points.cardId<=0||!integer(value.points.points)||value.points.points<0||typeof value.points.name!=='string'))return unavailable;
   const guest = value.status === 'signIn';
   const ids = new Set();
   for (const card of value.cards) {

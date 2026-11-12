@@ -12,7 +12,7 @@ export function validateLoyaltyPage(data, kind) {
     if (!item || seen.has(String(item.id))) invalid();
     seen.add(String(item.id));
     if (kind === 'cards') {
-      if (!integer(item.id) || item.id <= 0 || typeof item.name !== 'string' || !integer(item.required) || item.required <= 0
+      if ((item.pointsEnabled!==undefined&&typeof item.pointsEnabled!=='boolean')||(item.stampsEnabled!==undefined&&typeof item.stampsEnabled!=='boolean')||!integer(item.id) || item.id <= 0 || typeof item.name !== 'string' || !integer(item.required) || item.required <= 0
         || !integer(item.balance) || item.progress !== Math.max(0,item.balance) || item.debt !== Math.max(0,-item.balance)
         || !integer(item.pendingEvents) || item.pendingEvents < 0 || typeof item.accepting !== 'boolean'
         || (item.readyRewards!==undefined&&(!integer(item.readyRewards)||item.readyRewards<0))

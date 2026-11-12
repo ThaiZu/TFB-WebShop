@@ -1,3 +1,4 @@
+import {LoyaltyProgramArtwork} from './webshop-loyalty-points.jsx';
 import {readLoyaltyPage} from './webshop-loyalty-api.js';
 import './webshop-loyalty.css';
 import fidelityLogo from './assets/fidelity/logo.jpg';
@@ -55,8 +56,8 @@ export function More({page,t}) {
 export function CardDetails({card,shopId,revision,t,lang,collapseHistory=false,showRewards=true}) {
   const [historyOpen,setHistoryOpen] = React.useState(!collapseHistory);
   const HistoryContainer=collapseHistory?'details':'div';
-  const rewards = useLoyaltyPage('rewards',shopId,card.id,revision,showRewards);
-  const history = useLoyaltyPage('history',shopId,card.id,revision,historyOpen);
+  const rewards = useLoyaltyPage('rewards',shopId,card.id,revision,showRewards&&card.stampsEnabled!==false);
+  const history = useLoyaltyPage('history',shopId,card.id,revision,historyOpen&&card.stampsEnabled!==false);
   const [now,setNow] = React.useState(Date.now());
   React.useEffect(() => { if (!showRewards) return; const timer = setInterval(() => setNow(Date.now()),1000); return () => clearInterval(timer); },[showRewards]);
   const date = value => new Intl.DateTimeFormat(lang,{dateStyle:'medium',timeStyle:'long'}).format(new Date(value));
@@ -138,16 +139,16 @@ function LoyaltyCards({shopId,shopName,revision,selected,setSelected,t,lang,onRe
     {page.status === 'ready' && !page.items.length && <p>{t('loyalty.empty')}</p>}
     {card && <button type="button" className="ws-linkbtn" onClick={() => setSelected(null)}>{t('loyalty.back')}</button>}
     {(card ? [card] : page.items).map(item => <article className="ws-loyalty__card" key={item.id}>
-      <LoyaltyCardArtwork card={item} t={t}/>
+      <LoyaltyProgramArtwork card={item} shopId={shopId} t={t} lang={lang} compact={!card} StampArtwork={LoyaltyCardArtwork}/>
       <div className="ws-loyalty__card-meta">
       <p>{item.scope === 'NETWORK' ? t('loyalty.network') + ' · ' : ''}{item.shops.map(shop => shop.name).join(', ')}</p>
       {!item.accepting && <p className="ws-loyalty__note">{t('loyalty.closed')}</p>}
-      <strong className="ws-loyalty__balance">{t('loyalty.progress',{count:item.progress,required:item.required})}</strong>
+      {item.stampsEnabled!==false&&<strong className="ws-loyalty__balance">{t('loyalty.progress',{count:item.progress,required:item.required})}</strong>}
       {item.debt > 0 && <p className="ws-loyalty__note">{t('loyalty.debt',{count:item.debt})}</p>}
       {item.pendingEvents > 0 && <p role="status">{t('loyalty.pending')}</p>}
       {!card && <button type="button" className="ws-linkbtn" onClick={() => setSelected(item.id)}>{t('loyalty.details')}</button>}
       </div>
     </article>)}
-    {card ? <CardDetails key={`${card.id}:${revision}`} {...{card,shopId,revision,t,lang}}/> : <More page={page} t={t}/>}
+    {card && card.stampsEnabled!==false ? <CardDetails key={`${card.id}:${revision}`} {...{card,shopId,revision,t,lang}}/> : <More page={page} t={t}/>}
   </section>;
 }
