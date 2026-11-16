@@ -1931,7 +1931,7 @@ function wsBasketDisplayRows(basket, quote) {
 
   const promotionByGroup = new Map();
   lines.forEach((line, index) => {
-    const promotion = line.promotion_display || promotionByLineKey.get(wsQuoteLineKey(line, index));
+    const promotion = promotionByLineKey.get(wsQuoteLineKey(line, index)) || line.promotion_display;
     if (line.promotion_group && promotion) promotionByGroup.set(line.promotion_group, promotion);
   });
 
@@ -1960,6 +1960,8 @@ function wsBasketDisplayRows(basket, quote) {
       0,
     ),
     weekdayPercent,
+    promotionDiscount: row.quotedItems.reduce((total, item) => total + wsMoney(item?.item_discount_value), 0)
+      - row.quotedItems.reduce((total, item) => total + (weekdayDiscountByLineKey.get(item?.line_key) || 0), 0),
   }));
 }
 
@@ -2172,6 +2174,7 @@ function Basket({ hidePrices, contextLabel, officeName, shop, mode, basket, quot
                 ? row.lines.map((line) => <div key={line.line} className="ws-line__opt" hidden>×{line.qty} {line.portion_label || (line.options || []).map(option => option.label).join(', ')} {line.name}</div>)
                 : l.options.map((o, i) => (<div key={i} className="ws-line__opt">{o.label}</div>))}
               {promotionNote && <div className="ws-line__offer">{promotionNote}</div>}
+              {groupedPromotion && pricesReady && row.promotionDiscount > 0 && <div className="ws-line__offer">{t('cart.promotionDiscount', { amount: wsCurrency(row.promotionDiscount) })}</div>}
               {row.weekdayDiscount > 0 && (
                 <div className="ws-line__offer">
                   {t('sum.weekdayDiscount')} {row.weekdayPercent > 0 && `(${wsNumber(row.weekdayPercent)}%)`} · −€{wsNumber(row.weekdayDiscount)}
@@ -4345,7 +4348,7 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
         slot: typeof slot === 'object' && slot
           ? { slotId: slot.id, label: slot.label, date: deliveryDate }
           : { slotId: slot, label: slot, date: deliveryDate },
-        basket: basket.map((l) => ({ shopping_context: normaliseShoppingContext(l.shopping_context), productId: l.productId, qty: l.qty, portion: l.portion || null, id_product_portion: l.id_product_portion ?? null, ...(l.weight_grams != null ? { weight_grams: l.weight_grams } : {}), note: l.note || null, options: l.options || [], bundleId: l.bundleId || null, bundleOfferId: l.bundleOfferId || null, bundleSlots: l.bundleSlots || {}, ...(l.promotion_group && Number(l.promotion_id) > 0 ? { promotion_group: l.promotion_group, promotion_id: Number(l.promotion_id) } : {}), ...(l.personalization_selection ? {personalization_selection:l.personalization_selection} : {}), ...(l.menu_selection ? {menu_selection:l.menu_selection} : {}) })),
+        basket: basket.map((l, index) => ({ line_key: wsQuoteLineKey(l, index), shopping_context: normaliseShoppingContext(l.shopping_context), productId: l.productId, qty: l.qty, portion: l.portion || null, id_product_portion: l.id_product_portion ?? null, ...(l.weight_grams != null ? { weight_grams: l.weight_grams } : {}), note: l.note || null, options: l.options || [], bundleId: l.bundleId || null, bundleOfferId: l.bundleOfferId || null, bundleSlots: l.bundleSlots || {}, ...(l.promotion_group && Number(l.promotion_id) > 0 ? { promotion_group: l.promotion_group, promotion_id: Number(l.promotion_id) } : {}), ...(l.personalization_selection ? {personalization_selection:l.personalization_selection} : {}), ...(l.menu_selection ? {menu_selection:l.menu_selection} : {}) })),
         voucher: voucherApplied && voucherApplied.ok ? voucherApplied.voucher.code : null,
         note: orderNote || null,
         companyId: officeContext ? null : (companyId || null),
@@ -5220,7 +5223,24 @@ function ShopFrame({ variant }) {
   const [cat, setCat] = useState(_deep.cat || 'home');
   const [subCat, setSubCat] = useState(_deep.sub != null ? _deep.sub : null);
   const [date, setDate] = useState(() => { const t = new Date(); t.setHours(0,0,0,0); return t; });
-  const [basket, setBasket] = useState([]);
+  const [basket, setBasket] = useState(() => {
+    try {
+      const saved = JSON.parse(window.WSSessionStorage?.getItem('ws.promotionBasket') || 'null');
+      if (String(saved?.shopId) !== String(shopId) || !Array.isArray(saved?.basket)
+          || !saved.basket.some(line => line?.promotion_group)
+          || saved.basket.some(line => !line || !Array.isArray(line.options) || !Number.isFinite(Number(line.qty))
+            || Number(line.qty) <= 0 || normaliseShoppingContext(line.shopping_context).mode !== 'standard')) return [];
+      return saved.basket;
+    } catch (_) { return []; }
+  });
+  React.useEffect(() => {
+    // Only composition is restored. Every price and eligibility decision requires a fresh API quote.
+    try {
+      if (basket.some(line => line.promotion_group) && basketShoppingContext(basket).mode === 'standard') {
+        window.WSSessionStorage?.setItem('ws.promotionBasket', JSON.stringify({shopId: basket[0]?.shop_id || shopId, basket}));
+      } else window.WSSessionStorage?.removeItem('ws.promotionBasket');
+    } catch (_) {}
+  }, [basket, shopId]);
   const [browseContext, setBrowseContext] = useState(() => normaliseShoppingContext(null));
   const [officeMemberships, setOfficeMemberships] = useState([]);
   const manualMenuChoice = React.useRef(false);
@@ -5285,7 +5305,6 @@ function ShopFrame({ variant }) {
     return () => window.removeEventListener('ws:session-ended',clear);
   }, []);
   const [quoteRevision, setQuoteRevision] = useState(0);
-  const cartHasPromotionSelection = wsHasPromotionSelection(basket);
   const quoteKey = JSON.stringify([cartShopId, mode, basket, date, user?.id, loyaltyEnabled, rewardKey, quoteRevision, voucherApplied?.ok ? voucherApplied.voucher?.code : '']);
   // Invalidate synchronously: effects run after rendering, so a previous ready
   // quote must not enable checkout for a basket which has just changed.
@@ -6119,14 +6138,14 @@ function ShopFrame({ variant }) {
   async function handleAddConfigured(line, selectedPromotion = null) {
     const product = allProducts.find((p) => p.id === line.productId);
     if (!canAddProduct(line.productId, line.qty || 1, line.portion)) return false;
-    const lineId = line.line != null ? line.line : Date.now();
+    const lineId = line.line != null ? line.line : `${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
     const candidate = {
       ...line,
       line: lineId,
       lead_time: line.lead_time ?? product?.lead_time ?? 0,
       no_delivery: line.no_delivery ?? !!product?.no_delivery,
     };
-    if (selectedPromotion && (wsHasPromotionSelection(latestBasket.current) || browseContext.mode !== 'standard'
+    if (selectedPromotion && (loyaltyReward || voucherApplied?.ok || browseContext.mode !== 'standard'
         || needsCartReplacement(latestBasket.current, normaliseShoppingContext(browseContext), shopId))) {
       throw new Error('error.promotionConditions');
     }
@@ -6630,7 +6649,7 @@ function ShopFrame({ variant }) {
       <ProductDetail open={!!detailProduct} product={detailProduct} mode={mode} activeVoucher={browseContext.mode==='standard'?activeVoucher:null} onClose={closeProductDetail} onAdd={handleAddConfigured}
         onPromotionPreview={previewPromotionsForDetail} promotionSuggestions={Number(detailPromotionPreview.productId) === Number(detailProduct?.id) ? detailPromotionPreview.suggestions : []}
         upcomingPromotionSuggestions={Number(detailPromotionPreview.productId) === Number(detailProduct?.id) ? detailPromotionPreview.upcomingSuggestions : []}
-        promotionProducts={allProducts} promotionLocked={cartHasPromotionSelection}
+        promotionProducts={allProducts}
         promotionPreviewPending={Number(detailPromotionPreview.productId) === Number(detailProduct?.id) && detailPromotionPreview.status === 'loading'}
         optionsLoading={Number(detailOptionsState.productId) === Number(detailProduct?.id) && (!detailOptionsState.menuReady || !detailOptionsState.promotionsReady || detailOptionsState.personalizationReady===false)}
         stock={detailProduct ? allProducts.find(p => p.id === detailProduct.id)?.availability : null} basketUnits={detailProduct && Number(cartShopId) === Number(shopId) && sameShoppingContext(cartContext, browseContext) ? basketProductUnits(basket, detailProduct.id) : 0}/>

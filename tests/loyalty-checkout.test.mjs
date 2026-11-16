@@ -23,7 +23,7 @@ function setup({method='shop',rejectFirst=true}={}) {
  const context={React,useState,useEffect:()=>{},window,basketShoppingContext,normaliseShoppingContext,
   wsUseT:()=>({t:key=>key}),wsText:key=>key,wsMessage:v=>v,wsCurrency:String,wsNumber:String,
   wsQuoteTotals:q=>q?{bon:0,sousTotal:Number(q.totals.gross_after_discount),total:Number(q.totals.gross_after_discount)}:null,
-  wsCheckoutQuoteComparable:q=>q,wsSelectedAutomaticPromotionId:()=>null,wsTap:fn=>({onClick:fn}),usePaymentMethods:()=>[{id:'stripe',method:'stripe',family:'stripe',label:'Card'}],
+  wsQuoteLineKey:line=>'web-'+line.line,wsCheckoutQuoteComparable:q=>q,wsSelectedAutomaticPromotionId:()=>null,wsTap:fn=>({onClick:fn}),usePaymentMethods:()=>[{id:'stripe',method:'stripe',family:'stripe',label:'Card'}],
   CheckoutStep1:'CheckoutStep1',CheckoutStep2:'CheckoutStep2',CheckoutStep3:'CheckoutStep3',Pict:'Pict'};
  vm.createContext(context);vm.runInContext(code,context);
  const render=()=>{index=0;return context.CheckoutWizard(props);};

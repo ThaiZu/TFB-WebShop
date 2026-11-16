@@ -72,3 +72,13 @@ reproduced against the unchanged workspace. Those tests are outside this change.
 Actual MySQL integration, live reverse proxy, payment-provider and deployed PWA
 upgrade tests have not been run. Public storage disclosures must describe this
 new retention when this implementation is published.
+
+
+## Selected promotion baskets
+
+Standard baskets containing a manually selected promotion survive a reload in
+this tab using `WSSessionStorage` key `ws.promotionBasket` (the existing 12-hour
+expiry). The saved shop must match the active shop. Removing the last selected
+promotion or completing the order removes this record. Office carts are not
+restored. Cached product labels and prices are display data only: a fresh API
+quote is required before showing payable totals or enabling checkout.
