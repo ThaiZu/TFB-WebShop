@@ -10,6 +10,8 @@ import { basketShoppingContext, normaliseShoppingContext } from './webshop-offic
       if (!/^\d+$/.test(String(shopId || ''))) throw new Error('A numeric shop ID is required.');
       const date = deliveryDate instanceof Date ? `${deliveryDate.getFullYear()}-${String(deliveryDate.getMonth() + 1).padStart(2, '0')}-${String(deliveryDate.getDate()).padStart(2, '0')}` : deliveryDate;
       const context = shoppingContext ? normaliseShoppingContext(shoppingContext) : basketShoppingContext(basket);
+      // Per-line group identity is authoritative for multiple selections. The scalar
+      // remains only for compatibility with older single-selection consumers.
       const promotionIds = new Set((Array.isArray(basket) ? basket : []).map((line) => {
         const direct = Number(line?.promotion_id || 0);
         if (direct > 0) return direct;

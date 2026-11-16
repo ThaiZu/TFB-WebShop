@@ -1070,6 +1070,7 @@
   "personalization.invalid": "Sprawdź wybrane opcje personalizacji.",
   "personalization.changed": "Konfiguracja produktu zmieniła się. Otwórz produkt ponownie i wybierz opcje.",
   "error.promotionAddFailed": "Nie udało się potwierdzić tego zestawu. Koszyk nie został zmieniony. Sprawdź warunki promocji i spróbuj ponownie.",
+  "cart.promotionDiscount": "Rabat zestawu: −{amount}",
   "error.promotionConditions": "Koszyk nie spełnia warunków wybranego zestawu promocyjnego. Sprawdź jego skład i minimalną wartość paragonu.",
   "promotion.inline.chooseReward": "Wybierz produkt w promocji",
   "promotion.inline.rewardHint": "Wybierz gratis lub produkt w cenie promocyjnej do tego zestawu.",

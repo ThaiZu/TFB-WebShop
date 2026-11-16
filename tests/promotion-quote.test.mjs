@@ -106,7 +106,7 @@ test('selected promotion price takes precedence over the one-product CTA price',
   assert.equal(context.wsPromotionDisplayTotal({ total_gross_after_discount: '15.00' }, 0.9), 15);
   assert.equal(context.wsPromotionDisplayTotal(null, 0.9), 0.9);
 });
-test('a selected promotion locks further promotion selection in the cart', () => {
+test('selected group detection supports legacy and current baskets', () => {
   assert.equal(context.wsHasPromotionSelection([{ promotion_group: 'promotion-10-13' }]), true);
   assert.equal(context.wsHasPromotionSelection([{ productId: 10 }]), false);
 });
@@ -196,8 +196,8 @@ test('quote and order preserve the same weight without sending client prices', a
   const { api, calls } = apiFixture(quote(null));
   await api.quote({ shopId: 2, basket });
   const quotedLine = JSON.parse(calls[0].request.body).products[0];
-  const mapping = source.match(/basket: (basket\.map\(\(l\) => .*\)),/)[1];
-  const [orderedLine] = vm.runInNewContext(mapping, { basket, normaliseShoppingContext });
+  const mapping = source.match(/basket: (basket\.map\(\(l, index\) => .*\)),/)[1];
+  const [orderedLine] = vm.runInNewContext(mapping, { basket, normaliseShoppingContext, wsQuoteLineKey: context.wsQuoteLineKey });
   assert.equal(quotedLine.weight_grams, 375);
   assert.equal(orderedLine.weight_grams, quotedLine.weight_grams);
   assert.equal(orderedLine.price, undefined);
@@ -407,4 +407,27 @@ test('reward discount is counted once and changes invalidate checkout even at eq
   assert.equal(total.reward,1.50); assert.equal(total.remise,0); assert.equal(total.total,8.50);
   const changed = {...original,loyalty_reward:{...original.loyalty_reward,id:2}};
   assert.notDeepEqual(context.wsCheckoutQuoteComparable(original),context.wsCheckoutQuoteComparable(changed));
+});
+
+
+test('multiple selections retain group and line identity in quote, checkout and removal', async () => {
+  const basket = [
+    {line:'a',productId:10,qty:4,promotion_id:56,promotion_group:'cookies',options:[]},
+    {line:'b',productId:10,qty:5,promotion_id:57,promotion_group:'cougnou',options:[]},
+  ];
+  const result={items:basket.map(l=>({line_key:'web-'+l.line,total_gross_value_after_discount:'12.00',item_discount_value:'3.00'})),
+    totals:{gross_before_discount:'30.00',gross_after_discount:'24.00',discount:'6.00'},applied_promotions:[
+      {source:'AUTOMATIC',display_name:'Cookies',items:[{line_key:'web-a'}]},
+      {source:'AUTOMATIC',display_name:'Cougnou',items:[{line_key:'web-b'}]}]};
+  const {api,calls}=apiFixture(result);await api.quote({shopId:2,basket});
+  const body=JSON.parse(calls[0].request.body);
+  assert.equal(body.selected_automatic_promotion_id,undefined);
+  assert.deepEqual(body.products.map(l=>[l.line_key,l.promotion_group,l.promotion_id]),[['web-a','cookies',56],['web-b','cougnou',57]]);
+  const mapping=source.match(/basket: (basket\.map\(\(l, index\) => .*\)),/)[1];
+  const ordered=vm.runInNewContext(mapping,{basket,normaliseShoppingContext,wsQuoteLineKey:context.wsQuoteLineKey});
+  assert.deepEqual(JSON.parse(JSON.stringify(ordered.map(l=>[l.line_key,l.promotion_group,l.promotion_id]))),body.products.map(l=>[l.line_key,l.promotion_group,l.promotion_id]));
+  const rows=context.wsBasketDisplayRows(basket,result);
+  assert.equal(rows.length,2);assert.equal(rows[0].promotion.display_name,'Cookies');assert.equal(rows[1].promotion.display_name,'Cougnou');
+  assert.equal(rows[0].promotionDiscount,3);assert.equal(context.wsQuoteTotals(result).total,24);
+  assert.deepEqual(JSON.parse(JSON.stringify(context.wsRemoveBasketLines(basket,['a']))),[basket[1]]);
 });

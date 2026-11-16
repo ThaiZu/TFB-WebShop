@@ -1070,6 +1070,7 @@
   "personalization.invalid": "Controleer de geselecteerde personalisatieopties.",
   "personalization.changed": "De configuratie is gewijzigd. Open het product opnieuw en selecteer de opties.",
   "error.promotionAddFailed": "Deze set kon niet worden bevestigd. Uw mandje is niet gewijzigd. Controleer de actievoorwaarden en probeer opnieuw.",
+  "cart.promotionDiscount": "Korting op de aanbieding: −{amount}",
   "error.promotionConditions": "Het winkelmandje voldoet niet aan de voorwaarden van de gekozen aanbieding. Controleer de samenstelling en de minimale kassabonwaarde.",
   "promotion.inline.chooseReward": "Kies het promotieproduct",
   "promotion.inline.rewardHint": "Kies het gratis product of het product met korting voor deze set.",
