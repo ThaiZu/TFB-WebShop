@@ -18,6 +18,7 @@ import { ProfileOffices } from './webshop-profile-offices.jsx';
 import { defaultShoppingContext, normaliseShoppingContext, sameShoppingContext, basketShoppingContext, needsCartReplacement, shoppingContextLabel, hasUnsupportedOfficeConfiguration } from './webshop-office-context.js';
 import { StripeReturnDialog, StripeRetryButton } from './webshop-stripe-return.jsx';
 import { PurchaseDetails } from './webshop-purchase-details.jsx';
+import { BillingCompanies } from './webshop-billing.jsx';
 import { OfficeMembershipModal } from './webshop-office-membership.jsx';
 import { OfficeDeliveryModal } from './webshop-office-delivery.jsx';
 import { createPortal } from 'react-dom';
@@ -3940,100 +3941,7 @@ function AccountModal({ open, requestedTab, requestedLoyaltyCard, user, onClose,
         </div>
       </form>
 
-      {/* ── Sociétés de facturation ─────────────────────────────────────
-          Données IMPORTÉES (VIES ou saisie encadrée à l'AJOUT) : jamais de
-          champs de saisie pour une société existante : présentation en
-          lecture seule, règle appliquée aussi côté serveur (PATCH /auth/me
-          ignore ces clés). Retrait = archivage, la fiche reste en base. */}
-      <div className="ws-acc__section">
-        <div className="ws-acc__section-h">{t('acc.companies')}</div>
-        {companyStep === 'idle' && companyErr && <p className="ws-acc__vat-msg ws-acc__vat-msg--err" role="alert">{wsMessage(companyErr)}</p>}
-        {companyUnlinked && <p className="ws-acc__saved" role="status">{t('co2.unlinked')}</p>}
-        {(user.companyClientId || user.company) && (
-          <div className="ws-acc__card ws-acc__card--ok">
-            <div className="ws-acc__card-row"><span className="ws-acc__k">{t('co2.legalName')}</span><span className="ws-acc__v">{user.invoice?.name || user.company}</span></div>
-            <div className="ws-acc__card-row"><span className="ws-acc__k">{t('co2.vat')}</span><span className="ws-acc__v">{user.invoice?.vat || wsText("ui.noVat")}</span></div>
-            {(user.invoice?.address || user.invoice?.city) && (
-              <div className="ws-acc__card-row"><span className="ws-acc__k">{t('co2.address')}</span>
-                <span className="ws-acc__v">{[user.invoice?.address, [user.invoice?.postalCode, user.invoice?.city].filter(Boolean).join(' ')].filter(Boolean).join(', ')}</span></div>
-            )}
-            {user.invoice?.viesVerified && <div className="ws-acc__badge">{t('co2.viesOk')}</div>}
-            <p className="ws-acc__hint">{t('co2.defaultHint')}</p>
-            <div className="ws-acc__row-foot">
-              <button type="button" className="ws-fid__cancel" onClick={() => { setCompanyStep('vies'); setCompanyErr(''); }} disabled={companyBusy}>{t('co2.viesRecheck')}</button>
-              <button type="button" className="ws-acc__unplug" onClick={removeCompany} disabled={companyBusy}>{t('common.remove')}</button>
-            </div>
-          </div>
-        )}
-        {!(user.companyClientId || user.company) && companyStep === 'idle' && (
-          <div className="ws-acc__card ws-acc__card--empty">
-            <p className="ws-acc__note">{t('co2.none')}</p>
-            <button className="ws-cta ws-cta--block" onClick={() => { setCompanyStep('vies'); setCompanyErr(''); }}>{t('co2.add')}</button>
-          </div>
-        )}
-        {companyStep === 'vies' && (
-          <div className="ws-acc__card">
-            <div className="ws-acc__row-title" style={{ marginBottom: 6 }}>{t('co2.addByVat')}</div>
-            <div className="ws-acc__form ws-acc__form--vat">
-              <label className="ws-acc__field ws-acc__field--country">
-                <span className="ws-acc__field-label">{t('co2.country')}</span>
-                <select className="ws-acc__input" value={addVat.country}
-                  onChange={(e) => setAddVat((v) => ({ ...v, country: e.target.value }))}>
-                  {['BE','NL','FR','DE','LU','IT','ES','AT','PT','IE','FI','SE','DK','PL','CZ'].map((c) => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </label>
-              <label className="ws-acc__field ws-acc__field--vat">
-                <span className="ws-acc__field-label">{t('co2.vatNumber')}</span>
-                <input type="text" className="ws-acc__input" value={addVat.vat}
-                  onChange={(e) => setAddVat((v) => ({ ...v, vat: e.target.value }))}
-                  placeholder="0123456789" autoComplete="off" />
-              </label>
-            </div>
-            <p className="ws-acc__hint">{t('co2.viesImport')}</p>
-            {companyErr && <p className="ws-acc__vat-msg ws-acc__vat-msg--err">⚠ {wsMessage(companyErr)}</p>}
-            <div className="ws-acc__row-foot">
-              <button type="button" className="ws-fid__cancel" onClick={() => { setCompanyStep('idle'); setCompanyErr(''); }}>{t('common.cancel2')}</button>
-              <button type="button" className="ws-fid__cancel" onClick={() => { setCompanyStep('novat'); setCompanyErr(''); }}>{t('co2.noVat')}</button>
-              <button type="button" className="ws-cta" disabled={companyBusy || !addVat.vat} onClick={addByVies}>
-                {companyBusy ? wsText("ui.verifying") : wsText("ui.verifyImport")}
-              </button>
-            </div>
-          </div>
-        )}
-        {companyStep === 'novat' && (
-          <div className="ws-acc__card">
-            <div className="ws-acc__row-title" style={{ marginBottom: 6 }}>{t('co2.addNoVat')}</div>
-            <div className="ws-acc__form">
-              <label className="ws-acc__field ws-acc__field--full">
-                <span className="ws-acc__field-label">{t('co2.legalName')}</span>
-                <input type="text" className="ws-acc__input" value={addNo.name}
-                  onChange={(e) => setAddNo((v) => ({ ...v, name: e.target.value }))} />
-              </label>
-              <label className="ws-acc__field ws-acc__field--full">
-                <span className="ws-acc__field-label">{t('co2.address')}</span>
-                <input type="text" className="ws-acc__input" value={addNo.address}
-                  onChange={(e) => setAddNo((v) => ({ ...v, address: e.target.value }))} />
-              </label>
-              <label className="ws-acc__field">
-                <span className="ws-acc__field-label">{t('co2.zip')}</span>
-                <input type="text" className="ws-acc__input" value={addNo.postalCode}
-                  onChange={(e) => setAddNo((v) => ({ ...v, postalCode: e.target.value }))} />
-              </label>
-              <label className="ws-acc__field">
-                <span className="ws-acc__field-label">{t('co2.city')}</span>
-                <input type="text" className="ws-acc__input" value={addNo.city}
-                  onChange={(e) => setAddNo((v) => ({ ...v, city: e.target.value }))} />
-              </label>
-            </div>
-            <p className="ws-acc__hint">{t('co2.noVatHint')}</p>
-            {companyErr && <p className="ws-acc__vat-msg ws-acc__vat-msg--err">⚠ {wsMessage(companyErr)}</p>}
-            <div className="ws-acc__row-foot">
-              <button type="button" className="ws-fid__cancel" onClick={() => { setCompanyStep('idle'); setCompanyErr(''); }}>{t('common.cancel2')}</button>
-              <button type="button" className="ws-cta" disabled={companyBusy || !addNo.name} onClick={addNoVat}>{t('common.add')}</button>
-            </div>
-          </div>
-        )}
-      </div>
+      <BillingCompanies key={user.id}/>
 
       {/* ── Sécurité ── */}
       <div className="ws-acc__section">

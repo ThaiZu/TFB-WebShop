@@ -1,0 +1,24 @@
+.ws-purchase-invoice form,
+.ws-billing-companies form {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+.ws-purchase-invoice .ws-acc__field,
+.ws-billing-companies .ws-acc__field {
+  min-width: 0;
+}
+.ws-purchase-invoice textarea.ws-acc__input {
+  min-height: 80px;
+  height: auto;
+  padding: 10px 12px;
+  resize: vertical;
+}
+.ws-purchase-invoice .ws-cta,
+.ws-billing-companies .ws-cta {
+  min-height: 44px;
+}
+.ws-purchase-invoice .ws-acc__card,
+.ws-billing-companies .ws-acc__card {
+  overflow-wrap: anywhere;
+}

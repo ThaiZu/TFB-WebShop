@@ -573,6 +573,14 @@
       return { response, data };
     },
 
+    async authenticatedBlob(url, options = {}) {
+      const generation = sessionGeneration;
+      const response = await api.authenticatedFetch(url, options);
+      const data = response.ok ? await response.blob() : await response.json().catch(() => ({}));
+      assertSession(generation);
+      return {response, data};
+    },
+
     async refresh() {
       if (refreshPending) return refreshPending;
       const generation = sessionGeneration;
