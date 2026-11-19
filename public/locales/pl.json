@@ -1161,5 +1161,9 @@
   "loyalty.pointsExchange": "Wymień",
   "loyalty.pointsExpiry": "Ważność punktów: {days} dni (0 = bez terminu).",
   "loyalty.pointsError": "Nie udało się pobrać punktów lub wykonać wymiany. Spróbuj ponownie.",
-  "loyaltyShop.pointsCart": "Szacowane punkty za koszyk: {count}. Naliczane po potwierdzeniu płatności."
+  "loyaltyShop.pointsCart": "Szacowane punkty za koszyk: {count}. Naliczane po potwierdzeniu płatności.",
+  "loyaltyBingo.intro": "Dołącz do programu punktowego i osobistego Bingo.",
+  "loyaltyBingo.join": "Dołącz",
+  "loyaltyBingo.threshold": "Tygodniowy próg zakupów",
+  "loyaltyBingo.rewards": "Nagrody po zamknięciu tygodnia"
 }

@@ -1161,5 +1161,9 @@
   "loyalty.pointsExchange": "Inwisselen",
   "loyalty.pointsExpiry": "Geldigheid punten: {days} dagen (0 = geen vervaldatum).",
   "loyalty.pointsError": "Punten laden of inwisselen mislukt. Probeer opnieuw.",
-  "loyaltyShop.pointsCart": "Geschatte punten voor de mand: {count}. Toegekend na bevestiging van betaling."
+  "loyaltyShop.pointsCart": "Geschatte punten voor de mand: {count}. Toegekend na bevestiging van betaling.",
+  "loyaltyBingo.intro": "Doe mee aan het puntenprogramma en je persoonlijke Bingo.",
+  "loyaltyBingo.join": "Meedoen",
+  "loyaltyBingo.threshold": "Wekelijks aankoopbedrag",
+  "loyaltyBingo.rewards": "Beloningen na afloop van de week"
 }
