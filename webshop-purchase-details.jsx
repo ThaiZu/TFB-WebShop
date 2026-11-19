@@ -1,6 +1,7 @@
 import { orderStatusName, paymentStatusName } from './webshop-order-status.js';
 import { StripePaymentStatus } from './webshop-stripe-return.jsx';
 import { useEffect, useState } from 'react';
+import { PurchaseInvoice } from './webshop-billing.jsx';
 
 // Read saved order lines, never reconstruct historical prices from today's catalogue.
 export function PurchaseDetails({ order, onBack }) {
@@ -52,6 +53,7 @@ export function PurchaseDetails({ order, onBack }) {
       {detail.pricing?.voucher?.code && <p>{t('sum.code')}: {detail.pricing.voucher.code}</p>}
       {orderStatusName(detail.status) !== 'cancelled' && detail.payment?.method === 'stripe' && <StripePaymentStatus orderRef={order.orderRef} onUpdated={setDetail}/>}
       <div className="ws-acc__card-row"><strong>{t('acc.orders.total')}</strong><strong>{money(detail.pricing?.totals?.gross_after_discount ?? order.total)}</strong></div>
+      <PurchaseInvoice key={order.orderRef} orderRef={order.orderRef} refreshKey={String(detail.status)+':'+String(detail.payment?.status)}/>
     </>}
   </section>;
 }
