@@ -1162,6 +1162,10 @@
   "loyalty.pointsExpiry": "Ważność punktów: {days} dni (0 = bez terminu).",
   "loyalty.pointsError": "Nie udało się pobrać punktów lub wykonać wymiany. Spróbuj ponownie.",
   "loyaltyShop.pointsCart": "Szacowane punkty za koszyk: {count}. Naliczane po potwierdzeniu płatności.",
+  "loyaltyBingo.intro": "Dołącz do programu punktowego i osobistego Bingo.",
+  "loyaltyBingo.join": "Dołącz",
+  "loyaltyBingo.threshold": "Tygodniowy próg zakupów",
+  "loyaltyBingo.rewards": "Nagrody po zamknięciu tygodnia"
   "billing.companyHelp": "Dodaj firmę po numerze VAT, aby otrzymywać faktury za swoje zakupy.",
   "billing.default": "Firma domyślna",
   "billing.setDefault": "Ustaw jako domyślną",

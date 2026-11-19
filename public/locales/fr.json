@@ -1162,6 +1162,10 @@
   "loyalty.pointsExpiry": "Validité des points : {days} jours (0 = sans expiration).",
   "loyalty.pointsError": "Impossible de charger les points ou de les échanger. Réessayez.",
   "loyaltyShop.pointsCart": "Points estimés pour le panier : {count}. Crédités après confirmation du paiement.",
+  "loyaltyBingo.intro": "Rejoignez le programme de points et le Bingo personnel.",
+  "loyaltyBingo.join": "Participer",
+  "loyaltyBingo.threshold": "Seuil d’achats hebdomadaire",
+  "loyaltyBingo.rewards": "Récompenses après la clôture de la semaine"
   "billing.companyHelp": "Ajoutez une société par son numéro de TVA pour recevoir une facture de vos achats.",
   "billing.default": "Société par défaut",
   "billing.setDefault": "Définir par défaut",

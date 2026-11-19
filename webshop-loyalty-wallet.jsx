@@ -33,8 +33,61 @@ export function useLoyaltyIdentity(clientId,enabled) {
   return {...(enabled&&state?.clientId===clientId?state:{status:'loading'}),retry:()=>setRevision(value=>value+1)};
 }
 
+function BingoCard({t, lang}) {
+  const [progress, setProgress] = React.useState(null);
+  const [busy, setBusy] = React.useState(false);
+  const [failed, setFailed] = React.useState(false);
+  const abort = React.useRef(null);
+
+  async function load(join = false) {
+    abort.current?.abort();
+    const controller = new AbortController();
+    abort.current = controller;
+    setBusy(true);
+    setFailed(false);
+    try {
+      const path = join ? '/webshop/loyalty/bingo/join' : '/webshop/loyalty/bingo';
+      const {response, data} = await window.WSAuth.authenticatedJson(__WS_API_BASE_URL__ + path, {
+        method: join ? 'POST' : 'GET', cache: 'no-store', signal: controller.signal,
+      });
+      if (!response.ok || typeof data?.joined !== 'boolean' || !Array.isArray(data.weeks) || data.weeks.length !== 13) {
+        throw new Error('Bingo unavailable');
+      }
+      if (!controller.signal.aborted) setProgress(data);
+    } catch {
+      if (!controller.signal.aborted) setFailed(true);
+    } finally {
+      if (!controller.signal.aborted) setBusy(false);
+    }
+  }
+
+  React.useEffect(() => {
+    load();
+    return () => abort.current?.abort();
+  }, []);
+
+  if (failed) return <div role="alert"><p>{t('loyalty.unavailable')}</p>
+    <button type="button" className="ws-linkbtn" onClick={() => load()}>{t('loyalty.retry')}</button></div>;
+  if (!progress) return <p role="status">{t('loyalty.loading')}</p>;
+  if (!progress.joined) return <div><p>{t('loyaltyBingo.intro')}</p>
+    <button type="button" className="ws-linkbtn" disabled={busy} onClick={() => load(true)}>{t('loyaltyBingo.join')}</button></div>;
+
+  const money = cents => new Intl.NumberFormat(lang, {style:'currency',currency:'EUR'}).format(cents / 100);
+  const completed = progress.weeks.filter(week => week.complete).length;
+  return <section className="ws-bingo">
+    <p>{progress.starts_at} – {progress.ends_at} · <strong>{completed}/13</strong></p>
+    <p>{t('loyaltyBingo.threshold')} {money(progress.threshold_cents)}</p>
+    <ol>{progress.weeks.map(week => <li key={week.start} className={week.complete ? 'is-complete' : ''}>
+      <time dateTime={week.start}>{week.start}</time>
+      <strong>{week.complete ? '✓ ' + money(week.amount_cents) : week.state === 'future' ? '—' : money(week.amount_cents)}</strong>
+    </li>)}</ol>
+    <p>{t('loyaltyBingo.rewards')} {Object.entries(progress.rewards || {}).map(([milestone, cents]) =>
+      milestone + '/13 → ' + money(cents)).join(' · ')}</p>
+  </section>;
+}
+
 export function LoyaltyWallet({identity,shopId,user,onClose,onUseVoucher,activeVoucherCode,onClearVoucher,onVouchersViewed,onBrowseVoucher}) {
-  const {t}=window.useT();
+  const {t,lang}=window.useT();
   const dialog=React.useRef(null);
   const [selected,setSelected]=React.useState(null);
   const [view,setView]=React.useState('programs');
@@ -47,7 +100,7 @@ export function LoyaltyWallet({identity,shopId,user,onClose,onUseVoucher,activeV
     dialog.current?.querySelector(selected?'.ws-loyalty-wallet__back':'.ws-loyalty-wallet__identity')?.focus({preventScroll:true});
   },[selected]);
   const programs=useLoyaltyPage('cards',shopId,null,0);
-  const activePrograms=programs.items.filter(card=>card.accepting);
+  const activePrograms=programs.items.filter(card=>card.accepting && card.pointsEnabled).map(card=>({...card, stampsEnabled:false}));
   const svg=React.useMemo(()=>{
     if(identity.status!=='ready')return null;
     try{return codeFormat==='barcode'?renderLoyaltyBarcode(identity.code):window.QR?.render(identity.code,{size:260,margin:4,branded:false,color:'#000000',bg:'#ffffff'})||null;}catch{return null;}
@@ -90,10 +143,11 @@ export function LoyaltyWallet({identity,shopId,user,onClose,onUseVoucher,activeV
     </section>
     <div className="ws-loyalty-wallet__section-head">
       <button id="ws-wallet-programs" type="button" aria-pressed={view==='programs'} aria-controls="ws-wallet-content" onClick={()=>setView('programs')}>{t('loyaltyWallet.programs')}</button>
+      <button id="ws-wallet-bingo" type="button" aria-pressed={view==='bingo'} aria-controls="ws-wallet-content" onClick={()=>setView('bingo')}>Bingo</button>
       <button id="ws-wallet-vouchers" type="button" aria-pressed={view==='vouchers'} aria-controls="ws-wallet-content" onClick={()=>setView('vouchers')}>{t('loyaltyWallet.vouchers')}</button>
     </div>
-    <section id="ws-wallet-content" className="ws-loyalty-wallet__programs" aria-labelledby={view==='programs'?'ws-wallet-programs':'ws-wallet-vouchers'}>
-      {view==='vouchers'?<AccountVouchers shopId={shopId} onUse={onUseVoucher} activeCode={activeVoucherCode} onClear={onClearVoucher} onViewed={onVouchersViewed} onBrowse={onBrowseVoucher}/>:<>
+    <section id="ws-wallet-content" className="ws-loyalty-wallet__programs" aria-labelledby={'ws-wallet-' + view}>
+      {view==='bingo'?<BingoCard t={t} lang={lang}/>:view==='vouchers'?<AccountVouchers shopId={shopId} onUse={onUseVoucher} activeCode={activeVoucherCode} onClear={onClearVoucher} onViewed={onVouchersViewed} onBrowse={onBrowseVoucher}/>:<>
       {programs.status==='loading'&&<p role="status">{t('loyalty.loading')}</p>}
       {programs.error&&<div role="alert"><p>{t('loyalty.unavailable')}</p><button type="button" className="ws-linkbtn" onClick={programs.retry}>{t('loyalty.retry')}</button></div>}
       {programs.status==='ready'&&!activePrograms.length&&<p>{t('loyalty.empty')}</p>}
