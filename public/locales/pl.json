@@ -1165,7 +1165,7 @@
   "loyaltyBingo.intro": "Dołącz do programu punktowego i osobistego Bingo.",
   "loyaltyBingo.join": "Dołącz",
   "loyaltyBingo.threshold": "Tygodniowy próg zakupów",
-  "loyaltyBingo.rewards": "Nagrody po zamknięciu tygodnia"
+  "loyaltyBingo.rewards": "Nagrody po zamknięciu tygodnia",
   "billing.companyHelp": "Dodaj firmę po numerze VAT, aby otrzymywać faktury za swoje zakupy.",
   "billing.default": "Firma domyślna",
   "billing.setDefault": "Ustaw jako domyślną",
@@ -1191,5 +1191,10 @@
   "billing.error.VIES_VAT_INVALID": "Ten numer VAT nie jest poprawny w VIES.",
   "billing.error.VIES_UNAVAILABLE": "VIES jest chwilowo niedostępny. Spróbuj później.",
   "billing.error.BILLING_EMAIL_FAILED": "Faktura jest wystawiona, ale nie udało się jej wysłać. Spróbuj ponownie lub skontaktuj się ze sklepem.",
-  "billing.error.BILLING_COMPANY_REVIEW_REQUIRED": "To konto ma numer VAT, ale jest oznaczone jako klient prywatny. Sklep musi poprawić te dane."
+  "billing.error.BILLING_COMPANY_REVIEW_REQUIRED": "To konto ma numer VAT, ale jest oznaczone jako klient prywatny. Sklep musi poprawić te dane.",
+  "productSearch.label": "Szukaj produktów",
+  "productSearch.placeholder": "Szukaj produktu…",
+  "productSearch.results": "Znalezione produkty: {count}",
+  "productSearch.empty": "Nie znaleziono produktów.",
+  "serviceProblem.message": "Wystąpił problem. Odśwież stronę. Jeśli to nie pomoże, spróbuj ponownie za chwilę. Usługa wróci jak najszybciej."
 }

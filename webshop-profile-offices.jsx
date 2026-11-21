@@ -24,6 +24,6 @@ export function ProfileOffices({ currentShopName, onManage }) {
       <strong>{office.name}</strong>
       <p>{t('acc.offices.shop', { name: office.shop_name || '' })}</p>
     </div>) : <p>{t('officeAccess.none')}</p>)}
-    <button type="button" className="ws-cta" onClick={onManage}>{t('acc.offices.manageShop', { name: currentShopName || '' })}</button>
+    {onManage && <button type="button" className="ws-cta" onClick={onManage}>{t('acc.offices.manageShop', { name: currentShopName || '' })}</button>}
   </section>;
 }

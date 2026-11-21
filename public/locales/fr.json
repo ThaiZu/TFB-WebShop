@@ -1165,7 +1165,7 @@
   "loyaltyBingo.intro": "Rejoignez le programme de points et le Bingo personnel.",
   "loyaltyBingo.join": "Participer",
   "loyaltyBingo.threshold": "Seuil d’achats hebdomadaire",
-  "loyaltyBingo.rewards": "Récompenses après la clôture de la semaine"
+  "loyaltyBingo.rewards": "Récompenses après la clôture de la semaine",
   "billing.companyHelp": "Ajoutez une société par son numéro de TVA pour recevoir une facture de vos achats.",
   "billing.default": "Société par défaut",
   "billing.setDefault": "Définir par défaut",
@@ -1191,5 +1191,10 @@
   "billing.error.VIES_VAT_INVALID": "Ce numéro de TVA n’est pas valide dans VIES.",
   "billing.error.VIES_UNAVAILABLE": "VIES est temporairement indisponible. Réessayez plus tard.",
   "billing.error.BILLING_EMAIL_FAILED": "La facture existe, mais son envoi a échoué. Réessayez ou contactez le magasin.",
-  "billing.error.BILLING_COMPANY_REVIEW_REQUIRED": "Ce compte contient un numéro de TVA mais est enregistré comme particulier. Le magasin doit corriger ces données."
+  "billing.error.BILLING_COMPANY_REVIEW_REQUIRED": "Ce compte contient un numéro de TVA mais est enregistré comme particulier. Le magasin doit corriger ces données.",
+  "productSearch.label": "Rechercher un produit",
+  "productSearch.placeholder": "Rechercher un produit…",
+  "productSearch.results": "Produits trouvés : {count}",
+  "productSearch.empty": "Aucun produit trouvé.",
+  "serviceProblem.message": "Un problème est survenu. Actualisez la page. Si le problème persiste, réessayez dans quelques instants. Le service sera rétabli dès que possible."
 }

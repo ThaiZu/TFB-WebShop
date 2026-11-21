@@ -73,7 +73,7 @@ export function OfficeDeliveryModal({ open, shopId, officeId, selectedOfficeId, 
       <p>{t('officeDelivery.intro')}</p>
       {busy && <p role="status">{t('common.loading2')}</p>}
       {error && <p role="alert" className="ws-co-error">{t(error)} <button type="button" onClick={() => setRetry(n => n + 1)}>{t('co.slot.retry')}</button></p>}
-      {!busy && !error && !offices.length && <p>{t('officeDelivery.noOffices')} <button type="button" className="ws-office-manage-action" onClick={onManageOffices}>{t('officeAccess.title')}</button></p>}
+      {!busy && !error && !offices.length && <p>{t('officeDelivery.noOffices')} {onManageOffices && <button type="button" className="ws-office-manage-action" onClick={onManageOffices}>{t('officeAccess.title')}</button>}</p>}
       {offices.length > 0 && <label className="ws-field"><span>{t('officeDelivery.office')}</span><select value={chosen} disabled={busy || saving} onChange={e => { setData(null); setSiteId(''); setChosen(e.target.value); }}>{offices.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</select></label>}
       {!busy && data && !sites.length && <p role="status">{t('officeDelivery.noSites')}</p>}
       {sites.length > 0 && <label className="ws-field"><span>{t('co.delivery.address')}</span><select value={siteId} disabled={saving} onChange={e => setSiteId(e.target.value)}>{sites.map(s => <option key={s.id} value={s.id}>{s.name} — {s.address}</option>)}</select></label>}

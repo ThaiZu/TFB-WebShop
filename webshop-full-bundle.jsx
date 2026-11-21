@@ -1,3 +1,5 @@
+import { searchProducts } from './webshop-product-search.js';
+import './webshop-product-search.css';
 import {ShopPhoto} from './webshop-shop-photo.jsx';
 import {useVoucherActivation} from './webshop-voucher-activation.js';
 import {voucherProductPortions} from './webshop-voucher-targets.js';
@@ -2493,8 +2495,19 @@ function CategoryRow({ active, sub, onSelect, onSelectSub, onBack, accent, tint,
 
 // Variant A : Subtle: small shop chip after brand
 
+function ProductSearchField({ query, onChange, mobile = false }) {
+  const { t } = wsUseT();
+  return <label className={`ws-product-search ws-product-search--${mobile ? 'mobile' : 'desktop'}`}>
+    <Pict d={ICONS.search} s={17}/>
+    <input id={mobile ? 'ws-mobile-product-search' : undefined} type="search"
+      aria-label={t('productSearch.label')} placeholder={t('productSearch.placeholder')}
+      value={query} onChange={event => onChange(event.target.value)} maxLength={100}
+      autoFocus={mobile}/>
+  </label>;
+}
+
 function NavbarA({ shop, mode, onMode, onSwitchShop, cartCount, date, onDate, user, onAccount, onAllergens, loyaltyEnabled, onLoyalty, activeVoucher, newVouchers,
-                   collectCutoffPassed, collectCutoffLabel, deliveryCutoffPassed, deliveryCutoffLabel, minLeadDays, officeMenus }) {
+                   collectCutoffPassed, collectCutoffLabel, deliveryCutoffPassed, deliveryCutoffLabel, minLeadDays, officeMenus, productSearch, searchToggle }) {
   const { t } = wsUseT();
   return (
     <header className="ws-nav ws-nav--A">
@@ -2511,14 +2524,8 @@ function NavbarA({ shop, mode, onMode, onSwitchShop, cartCount, date, onDate, us
 
       </div>
       <div className="ws-nav__right">
-        {/* Desktop : sélecteur de langue. Mobile : masqué (voir .ws-nav__lang),
-            remplacé par l'icône « i » -> landing « Livraison au bureau ». */}
         {window.LangChip && <window.LangChip className="ws-nav__lang" />}
-        {/* Le « i » « pas encore de bureau ? » a quitté le bandeau permanent :
-            il ne concerne QUE l'utilisateur sans bureau relié, et sera reposé
-            dans le flux « Livraison au bureau », là où il a du sens. Le retirer
-            vide le bloc de droite sur mobile → le nom de la boutique récupère
-            toute la ligne (fin de la troncature « Atelier by Ber… »). */}
+        {searchToggle}
         {window.AllergenNavButton && <window.AllergenNavButton onClick={onAllergens}/>}
         {loyaltyEnabled && <button type="button" className="ws-nav__icon ws-nav__loyalty" aria-label={t('loyaltyWallet.open')} title={activeVoucher ? `${t('loyaltyWallet.open')} · ${t('vouchers.active')}` : t('loyaltyWallet.open')} aria-haspopup="dialog" onClick={onLoyalty}>
           <LoyaltyCardIcon size={22} active={!!activeVoucher} updated={newVouchers}/>
@@ -2537,6 +2544,7 @@ function NavbarA({ shop, mode, onMode, onSwitchShop, cartCount, date, onDate, us
         <ModePills shopId={shop.id} mode={mode} onChange={onMode}
           collectCutoffPassed={collectCutoffPassed} collectCutoffLabel={collectCutoffLabel}
           deliveryCutoffPassed={deliveryCutoffPassed} deliveryCutoffLabel={deliveryCutoffLabel}/>
+        {productSearch}
         {officeMenus}
       </div>
     </header>
@@ -2545,7 +2553,7 @@ function NavbarA({ shop, mode, onMode, onSwitchShop, cartCount, date, onDate, us
 
 // Variant B : Medium: full colored brand bar above navbar
 function NavbarB({ shop, mode, onMode, onSwitchShop, cartCount, date, onDate, onAllergens, loyaltyEnabled, onLoyalty, activeVoucher, newVouchers,
-                   collectCutoffPassed, collectCutoffLabel, deliveryCutoffPassed, deliveryCutoffLabel, minLeadDays }) {
+                   collectCutoffPassed, collectCutoffLabel, deliveryCutoffPassed, deliveryCutoffLabel, minLeadDays, productSearch, searchToggle }) {
   const { t } = wsUseT();
   return (
     <>
@@ -2570,9 +2578,11 @@ function NavbarB({ shop, mode, onMode, onSwitchShop, cartCount, date, onDate, on
           <ModePills shopId={shop.id} mode={mode} onChange={onMode}
             collectCutoffPassed={collectCutoffPassed} collectCutoffLabel={collectCutoffLabel}
             deliveryCutoffPassed={deliveryCutoffPassed} deliveryCutoffLabel={deliveryCutoffLabel}/>
+          {productSearch}
         </div>
         <div className="ws-nav__right">
-          {window.LangChip && <window.LangChip />}
+          {window.LangChip && <window.LangChip className="ws-nav__lang"/>}
+          {searchToggle}
           {window.AllergenNavButton && <window.AllergenNavButton onClick={onAllergens}/>}
           {loyaltyEnabled && <button type="button" className="ws-nav__icon ws-nav__loyalty" aria-label={t('loyaltyWallet.open')} title={activeVoucher ? `${t('loyaltyWallet.open')} · ${t('vouchers.active')}` : t('loyaltyWallet.open')} aria-haspopup="dialog" onClick={onLoyalty}>
             <LoyaltyCardIcon size={22} active={!!activeVoucher} updated={newVouchers}/>
@@ -2590,7 +2600,7 @@ function NavbarB({ shop, mode, onMode, onSwitchShop, cartCount, date, onDate, on
 
 // Variant C : Strong: full per-shop accent. Brand wordmark, navbar background, CTA, focus rings all picked up.
 function NavbarC({ shop, mode, onMode, onSwitchShop, cartCount, date, onDate, onAllergens, loyaltyEnabled, onLoyalty, activeVoucher, newVouchers,
-                   collectCutoffPassed, collectCutoffLabel, deliveryCutoffPassed, deliveryCutoffLabel, minLeadDays }) {
+                   collectCutoffPassed, collectCutoffLabel, deliveryCutoffPassed, deliveryCutoffLabel, minLeadDays, productSearch, searchToggle }) {
   const { t } = wsUseT();
   return (
     <header className="ws-nav ws-nav--C" style={{ '--shop-accent': shop.accent }}>
@@ -2611,9 +2621,11 @@ function NavbarC({ shop, mode, onMode, onSwitchShop, cartCount, date, onDate, on
         <ModePills shopId={shop.id} mode={mode} onChange={onMode}
           collectCutoffPassed={collectCutoffPassed} collectCutoffLabel={collectCutoffLabel}
           deliveryCutoffPassed={deliveryCutoffPassed} deliveryCutoffLabel={deliveryCutoffLabel}/>
+          {productSearch}
       </div>
       <div className="ws-nav__right">
-        {window.LangChip && <window.LangChip />}
+        {window.LangChip && <window.LangChip className="ws-nav__lang"/>}
+          {searchToggle}
         {window.AllergenNavButton && <window.AllergenNavButton onClick={onAllergens}/>}
         {loyaltyEnabled && <button type="button" className="ws-nav__icon ws-nav__loyalty" aria-label={t('loyaltyWallet.open')} title={activeVoucher ? `${t('loyaltyWallet.open')} · ${t('vouchers.active')}` : t('loyaltyWallet.open')} aria-haspopup="dialog" onClick={onLoyalty}>
           <LoyaltyCardIcon size={22} active={!!activeVoucher} updated={newVouchers}/>
@@ -3448,6 +3460,9 @@ if (typeof document !== 'undefined' && !document.getElementById('ws-bureau-style
   document.head.appendChild(_st);
 }
 
+// Temporarily pause new company and office links in WebShop.
+const allowAccountLinking = false;
+
 function AccountModal({ open, requestedTab, requestedLoyaltyCard, user, onClose, onLogout, onRequestOffice, onUpdateUser, shops, currentShopId, onChangePreferredShop, office, tour, onManageOffices, onUseVoucher, activeVoucherCode, onClearVoucher, onVouchersViewed, onBrowseVoucher }) {
   const { t } = wsUseT();
   const [form, setForm] = useState({
@@ -3941,7 +3956,7 @@ function AccountModal({ open, requestedTab, requestedLoyaltyCard, user, onClose,
         </div>
       </form>
 
-      <BillingCompanies key={user.id}/>
+      <BillingCompanies key={user.id} allowAdd={allowAccountLinking}/>
 
       {/* ── Sécurité ── */}
       <div className="ws-acc__section">
@@ -4004,11 +4019,11 @@ function AccountModal({ open, requestedTab, requestedLoyaltyCard, user, onClose,
         </div>}
       </div>
 
-      <div className="ws-acc__section">
+      {allowAccountLinking && <div className="ws-acc__section">
         <div className="ws-acc__section-h">{t('officeAccess.title')}</div>
         <p className="ws-acc__note">{t('officeAccess.intro')}</p>
         <button type="button" className="ws-cta" onClick={onManageOffices}>{t('officeAccess.manage')}</button>
-      </div>
+      </div>}
 
       {linkedCompanies.length > 0 && (
         <div className="ws-acc__section">
@@ -5325,7 +5340,7 @@ function ShopFrame({ variant }) {
   // Déclaré AVANT le slot-effect ci-dessous (qui lit `user` dans ses deps), sinon TDZ.
   const [sessionRestored, setSessionRestored] = useState(false);
   const officeHintHandled = React.useRef(false);
-  const [inviteToken, setInviteToken] = useState(() => new URLSearchParams(location.search).get('office_invite'));
+  const [inviteToken, setInviteToken] = useState(() => allowAccountLinking ? new URLSearchParams(location.search).get('office_invite') : null);
   const [invitation, setInvitation] = useState(null);
   const [inviteError, setInviteError] = useState(false);
   const [inviteBusy, setInviteBusy] = useState(false);
@@ -5385,7 +5400,7 @@ function ShopFrame({ variant }) {
     }).catch(()=>{if(alive)setMembershipsError(true);});
     return ()=>{alive=false;};
   }, [inviteTarget,shopId,user?.id]);
-  const officeHint = React.useMemo(() => { const query = new URLSearchParams(window.location.search); return query.get('open') === 'offices' ? (query.get('office_tax') || '') : null; }, []);
+  const officeHint = React.useMemo(() => { const query = new URLSearchParams(window.location.search); return allowAccountLinking && query.get('open') === 'offices' ? (query.get('office_tax') || '') : null; }, []);
   async function refreshOfficeMemberships() {
     if (!user?.id || !shopId) { setOfficeMemberships([]); setOfficeMembershipsReady(false); return; }
     try {
@@ -5727,7 +5742,12 @@ function ShopFrame({ variant }) {
     if (!background) { loadedCatalogueKey.current = null; setAllProducts([]); setCategories([]); setAssortments([]); setCatalogueContextData(null); }
     if (!shop || !window.WSCatalog) { loadedCatalogueKey.current = null; setCatalogueLoading(false); return; }
     setCatalogueLoading(!background);
-    window.WSCatalog.loadCatalogue({ shopId: shop.id, mode, date, shoppingContext: browseContext, includeLoyalty: loyaltyEnabled })
+    const load = () => window.WSCatalog.loadCatalogue({ shopId: shop.id, mode, date, shoppingContext: browseContext, includeLoyalty: loyaltyEnabled });
+    load()
+      .catch(error => {
+        if (alive && error?.code === 'SESSION_CHANGED') return load();
+        throw error;
+      })
       .then((catalogue) => {
         if (!alive) return;
         loadedCatalogueKey.current = contextKey;
@@ -5738,7 +5758,7 @@ function ShopFrame({ variant }) {
         setAssortments(catalogue.assortments);
       })
       .catch((error) => {
-        if (alive) { setCatalogueError(error?.message || wsText('error.catalogue')); bug('catalogue', wsText('error.catalogue'), error); }
+        if (alive) { setCatalogueError(true); console.warn('[catalogue]', error); }
       })
       .finally(() => { if (alive) setCatalogueLoading(false); });
     return () => { alive = false; };
@@ -5762,6 +5782,20 @@ function ShopFrame({ variant }) {
     }
     return src;
   }, [allProducts, mode, selectedSlot]);
+
+  const [productQuery, setProductQuery] = useState('');
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const searchingProducts = /[\p{L}\p{N}]/u.test(productQuery);
+  const searchResults = useMemo(() => {
+    if (!searchingProducts) return [];
+    const labels = new Map();
+    for (const category of categories || []) {
+      for (const item of [category, ...(category.subs || [])]) {
+        labels.set(String(item.categoryId ?? item.id), window.WSI18n.tCategory(item.id, item.label));
+      }
+    }
+    return searchProducts(slotFiltered, productQuery, product => labels.get(String(product.cat_id)) ?? product.cat);
+  }, [slotFiltered, searchingProducts, productQuery, categories, window.WSI18n.getLang()]);
 
   const products = useMemo(() => {
     let src = slotFiltered;
@@ -6326,7 +6360,7 @@ function ShopFrame({ variant }) {
                 </button>
                 {(office.offers || []).map(offer => <button type="button" key={offer.id} aria-pressed={browseContext.mode === 'office_offer' && Number(browseContext.offer_id) === Number(offer.id)} onClick={() => browseOfficeMenu({ mode: 'office_offer', office_id: office.id, offer_id: offer.id })}>{t('officeAccess.offer', { name: offer.name })}</button>)}
               </React.Fragment>)}
-              </div><button type="button" className="ws-office-manage" onClick={() => setOfficeAccessOpen(true)}><img src={hasOfficeMembership ? linkedOfficeIcon : noLinkedOfficeIcon} alt="" aria-hidden="true"/><span>{t('officeAccess.manage')}</span></button>
+              </div>{allowAccountLinking && <button type="button" className="ws-office-manage" onClick={() => setOfficeAccessOpen(true)}><img src={hasOfficeMembership ? linkedOfficeIcon : noLinkedOfficeIcon} alt="" aria-hidden="true"/><span>{t('officeAccess.manage')}</span></button>}
             </div>) : null;
   return (
     <LoyaltyShoppingContext.Provider value={{tap:wsTap,enabled:loyaltyEnabled && cartContext.mode==='standard' && browseContext.mode==='standard',
@@ -6337,7 +6371,14 @@ function ShopFrame({ variant }) {
 
     <div className={`ws ws--${variant}${hidePrices ? ' ws-noprice' : ''}`} data-mode={mode}>
       {invitationDialog}
-      <Nav officeMenus={officeMenus} shop={shop} mode={mode} onMode={handleMode} onSwitchShop={() => setSwitcherOpen(true)}
+      <Nav productSearch={<ProductSearchField query={productQuery} onChange={setProductQuery}/>}
+           searchToggle={<button type="button" className="ws-nav__icon ws-product-search-toggle"
+             aria-label={t('productSearch.label')} aria-expanded={mobileSearchOpen}
+             onClick={() => {
+               if (mobileSearchOpen) setProductQuery('');
+               setMobileSearchOpen(!mobileSearchOpen);
+             }}><Pict d={ICONS.search} s={20}/></button>}
+           officeMenus={officeMenus} shop={shop} mode={mode} onMode={handleMode} onSwitchShop={() => setSwitcherOpen(true)}
            cartCount={cartCount} date={date} onDate={handleDate} user={user} onAccount={handleAccount}
            loyaltyEnabled={loyaltyEnabled} onLoyalty={handleLoyalty} activeVoucher={!!activeVoucher} newVouchers={voucherNotifications.hasUnread}
            onAllergens={() => setAllergensOpen(true)}
@@ -6382,10 +6423,11 @@ function ShopFrame({ variant }) {
             <p className="ws-slot-ask">{t('evening.q')} <button type="button" className="ws-linkbtn" onClick={() => window.WSSlots && window.WSSlots.requestEvening && window.WSSlots.requestEvening({ officeId: (user && user.officeId) || null })}>{t('evening.tellUs')}</button></p>
           )}
 
+          {mobileSearchOpen && <ProductSearchField mobile query={productQuery} onChange={setProductQuery}/>}
           <CategoryRow active={cat} sub={subCat} onSelect={selectCat} onSelectSub={selectSub} onBack={backToCats} navIcons={navIcons} accent={mode === 'delivery' ? '#c17a2a' : 'var(--color-primary)'} tint={mode === 'delivery' ? 'invert(45%) sepia(60%) saturate(600%) hue-rotate(5deg)' : 'invert(15%) sepia(85%) saturate(2400%) hue-rotate(335deg)'} categories={navCats} assortments={hideOfficePeriods ? [] : seasonChips}/>
 
-          {catalogueError && <div className="pdm-delivery-notice" role="alert">
-            {wsMessage(catalogueError)}
+          {catalogueError && <div className="ws-catalogue-loading" role="alert">
+            <span>{t('serviceProblem.message')}</span>
             <button type="button" className="ws-linkbtn" onClick={() => setCatalogueRefresh(value => value + 1)}>{t('stock.refresh')}</button>
           </div>}
           {!catalogueLoading && allProducts.some(product => stockMessageKey(product.availability)) &&
@@ -6396,8 +6438,11 @@ function ShopFrame({ variant }) {
               <span>{t('common.loading2')}</span>
             </div>
           )}
+          {searchingProducts && !catalogueLoading && <p className="ws-product-search-empty" role="status">
+            {searchResults.length ? t('productSearch.results', { count: searchResults.length }) : t('productSearch.empty')}
+          </p>}
           <div className="ws-grid" aria-busy={catalogueLoading}>
-            {cat === 'home' ? navCats.map((category, index) => (
+            {cat === 'home' && !searchingProducts ? navCats.map((category, index) => (
               <button key={category.id} type="button" className="ws-card ws-category-card"
                 onClick={() => selectCat(category.id)}>
                 <span className="ws-card__photo">
@@ -6406,7 +6451,7 @@ function ShopFrame({ variant }) {
                 </span>
                 <span className="ws-card__body"><span className="ws-card__name">{window.WSI18n.tCategory(category.id, category.label)}</span></span>
               </button>
-            )) : products.map((p, index) => {
+            )) : (searchingProducts ? searchResults : products).map((p, index) => {
               const bqty = Number(cartShopId) === Number(shopId) && sameShoppingContext(cartContext, browseContext) ? basketProductUnits(basket, p.id) : 0;
               const stock = p.availability;
               return <ProductCard key={p.id} p={p} imagePriority={index < 4} onAdd={handleAdd} onOpen={openProductDetail} mode={mode} basketQty={bqty} stock={stock} platsBadge={mode === 'delivery' && selectedSlot === 'soir' && p.cat === 'plats'}/>;
@@ -6504,8 +6549,8 @@ function ShopFrame({ variant }) {
         onChangePreferredShop={requestShopChange}
         onClose={() => {setAccountOpen(false);setRequestedAccountTab(null);setRequestedLoyaltyCard(null);}}
         onLogout={handleLogout}
-        onRequestOffice={() => setOfficeAccessOpen(true)}
-        onManageOffices={() => { setAccountOpen(false); setOfficeAccessOpen(true); }}
+        onRequestOffice={allowAccountLinking ? () => setOfficeAccessOpen(true) : undefined}
+        onManageOffices={allowAccountLinking ? () => { setAccountOpen(false); setOfficeAccessOpen(true); } : undefined}
         onUseVoucher={handleUseVoucher}
         activeVoucherCode={activeVoucher?.code}
         onClearVoucher={clearActiveVoucher}
@@ -6518,13 +6563,13 @@ function ShopFrame({ variant }) {
       {officeDeliveryOpen && !!user && <OfficeDeliveryModal open={true} shopId={shopId} officeId={basket.length ? requiredDeliveryOffice : null}
         selectedOfficeId={userOffice?.id} selectedSiteId={userOffice ? selectedSiteId : null} clearBasket={basket.length > 0}
         onClose={() => setOfficeDeliveryOpen(false)} onConfirm={confirmOfficeDelivery}
-        onManageOffices={() => { setOfficeDeliveryOpen(false); setOfficeAccessOpen(true); }}/>}
+        onManageOffices={allowAccountLinking ? () => { setOfficeDeliveryOpen(false); setOfficeAccessOpen(true); } : undefined}/>}
       {defaultDeliveryBusy && <div className="ws-toast" role="status">{t('common.loading2')}</div>}
       {pendingDefaultDelivery && <div className="ws-office-overlay"><section className="ws-office-modal" role="alertdialog" aria-modal="true" aria-labelledby="ws-default-delivery-title">
         <h2 id="ws-default-delivery-title">{t('officeAccess.replaceTitle')}</h2><p>{t('officeAccess.menuChange')}</p>
         <div className="ws-office-confirm-actions"><button type="button" className="ws-office-secondary" onClick={()=>setPendingDefaultDelivery(null)}>{t('officeAccess.cancel')}</button><button type="button" className="ws-cta" onClick={()=>{const pending=pendingDefaultDelivery;setPendingDefaultDelivery(null);confirmOfficeDelivery(pending.result,pending.siteId);}}>{t('officeAccess.menuConfirm')}</button></div>
       </section></div>}
-      <OfficeMembershipModal open={officeAccessOpen && !!user} shopId={shopId} initialTax={officeHint || ''} offices={officeMemberships} onClose={() => setOfficeAccessOpen(false)} onChanged={refreshOfficeMemberships}/>
+      <OfficeMembershipModal open={allowAccountLinking && officeAccessOpen && !!user} shopId={shopId} initialTax={officeHint || ''} offices={officeMemberships} onClose={() => setOfficeAccessOpen(false)} onChanged={refreshOfficeMemberships}/>
       {pendingMenu && <div className="ws-office-overlay"><section className="ws-office-modal" role="alertdialog" aria-modal="true" aria-labelledby="ws-menu-title">
         <h2 id="ws-menu-title">{t('officeAccess.replaceTitle')}</h2><p>{t('officeAccess.menuChange')}</p>
         <div className="ws-office-confirm-actions"><button type="button" className="ws-office-secondary" onClick={() => setPendingMenu(null)}>{t('officeAccess.cancel')}</button><button type="button" className="ws-cta" onClick={confirmMenuChange}>{t('officeAccess.menuConfirm')}</button></div>
