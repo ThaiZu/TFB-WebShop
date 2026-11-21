@@ -4,7 +4,7 @@ import './webshop-billing.css';
 
 const countries = ['AT','BE','BG','CY','CZ','DE','DK','EE','EL','ES','FI','FR','HR','HU','IE','IT','LT','LU','LV','MT','NL','PL','PT','RO','SE','SI','SK','XI'];
 
-export function BillingCompanies() {
+export function BillingCompanies({allowAdd = true}) {
   const t = window.WSI18n.t;
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,7 +31,7 @@ export function BillingCompanies() {
   }
   return <section className="ws-acc__section ws-billing-companies" aria-busy={busy || loading}>
     <h3 className="ws-acc__section-h">{t('acc.companies')}</h3>
-    <p className="ws-acc__hint">{t('billing.companyHelp')}</p>
+    {allowAdd && <p className="ws-acc__hint">{t('billing.companyHelp')}</p>}
     {loading && <p role="status">{t('common.loading2')}</p>}
     {companies.map(company => <div className="ws-acc__card" key={company.id}>
       <strong>{company.name}</strong><p>{company.vat}</p><p>{company.address}</p>
@@ -43,7 +43,7 @@ export function BillingCompanies() {
           onClick={() => change('/companies/'+company.id, {method:'DELETE'})}>{t('common.remove')}</button>
       </div>
     </div>)}
-    <form className="ws-acc__card" onSubmit={e => {e.preventDefault(); change('/companies', {method:'POST', body:{country, vat}});}}>
+    {allowAdd && <form className="ws-acc__card" onSubmit={e => {e.preventDefault(); change('/companies', {method:'POST', body:{country, vat}});}}>
       <div className="ws-acc__form ws-acc__form--vat">
         <label className="ws-acc__field"><span>{t('co2.country')}</span>
           <select className="ws-acc__input" value={country} onChange={e => setCountry(e.target.value)} disabled={busy}>
@@ -54,7 +54,7 @@ export function BillingCompanies() {
         </label>
       </div>
       <button type="submit" className="ws-cta" disabled={busy || loading || !vat.trim()}>{t(busy ? 'ui.verifying' : 'co2.add')}</button>
-    </form>
+    </form>}
     {error && <p role="alert" className="ws-acc__vat-msg ws-acc__vat-msg--err">{error}</p>}
   </section>;
 }

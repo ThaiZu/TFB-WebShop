@@ -1165,7 +1165,7 @@
   "loyaltyBingo.intro": "Doe mee aan het puntenprogramma en je persoonlijke Bingo.",
   "loyaltyBingo.join": "Meedoen",
   "loyaltyBingo.threshold": "Wekelijks aankoopbedrag",
-  "loyaltyBingo.rewards": "Beloningen na afloop van de week"
+  "loyaltyBingo.rewards": "Beloningen na afloop van de week",
   "billing.companyHelp": "Voeg een bedrijf toe met het btw-nummer om een factuur voor uw aankopen te ontvangen.",
   "billing.default": "Standaardbedrijf",
   "billing.setDefault": "Als standaard instellen",
@@ -1191,5 +1191,10 @@
   "billing.error.VIES_VAT_INVALID": "Dit btw-nummer is niet geldig in VIES.",
   "billing.error.VIES_UNAVAILABLE": "VIES is tijdelijk niet beschikbaar. Probeer het later opnieuw.",
   "billing.error.BILLING_EMAIL_FAILED": "De factuur bestaat, maar het verzenden is mislukt. Probeer opnieuw of neem contact op met de winkel.",
-  "billing.error.BILLING_COMPANY_REVIEW_REQUIRED": "Dit account heeft een btw-nummer maar is geregistreerd als particulier. De winkel moet deze gegevens corrigeren."
+  "billing.error.BILLING_COMPANY_REVIEW_REQUIRED": "Dit account heeft een btw-nummer maar is geregistreerd als particulier. De winkel moet deze gegevens corrigeren.",
+  "productSearch.label": "Product zoeken",
+  "productSearch.placeholder": "Zoek een product…",
+  "productSearch.results": "Gevonden producten: {count}",
+  "productSearch.empty": "Geen producten gevonden.",
+  "serviceProblem.message": "Er is een probleem opgetreden. Vernieuw de pagina. Blijft het probleem zich voordoen, probeer het dan even later opnieuw. We herstellen de dienst zo snel mogelijk."
 }
