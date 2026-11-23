@@ -16,7 +16,9 @@ export function PurchaseDetails({ order, onBack }) {
   useEffect(() => {
     let alive = true;
     setLoading(true); setError(false); setDetail(null);
-    Promise.resolve().then(() => window.WSOrders.get(order.orderRef)).then(result => {
+    Promise.resolve().then(() => order.source === 'store'
+      ? window.WSOrders.getStoreOrder(order.orderId)
+      : window.WSOrders.get(order.orderRef)).then(result => {
       if (!result || !Array.isArray(result.items)) throw new Error('Invalid order details');
       if (alive) setDetail(result);
     }).catch(() => { if (alive) setError(true); }).finally(() => { if (alive) setLoading(false); });
@@ -29,10 +31,11 @@ export function PurchaseDetails({ order, onBack }) {
     {error && <div role="alert"><p>{t('acc.orders.detailError')}</p><button type="button" className="ws-cta ws-payment-refresh" onClick={() => setRevision(value => value + 1)}>{t('stock.refresh')}</button></div>}
     {detail && <>
       <div className={'ws-acc__card' + (orderStatusName(detail.status) === 'cancelled' ? ' ws-purchase--cancelled' : paymentStatusName(detail.payment?.status) === 'paid' ? ' ws-purchase--paid' : '')}>
+        <p>{t('acc.orders.source.' + (order.source === 'store' ? 'store' : 'webshop'))}</p>
         <p>{t('acc.orders.status.' + orderStatusName(detail.status))}</p>
         <p>{t(detail.mode === 'delivery' ? 'acc.orders.delivery' : 'acc.orders.pickup')}: {date(detail.slot?.dateTime)}</p>
         <p>{t('acc.orders.payment')}: {orderStatusName(detail.status) === 'cancelled' ? '-' : t('acc.orders.payment.' + paymentStatusName(detail.payment?.status))}</p>
-        <p>{detail.billing?.mode === 'company' ? t('officeAccess.companyPays', { name: detail.billing?.company?.company_name || detail.billing?.company?.name || '' }) : t('officeAccess.personPays')}</p>
+        {order.source !== 'store' && <p>{detail.billing?.mode === 'company' ? t('officeAccess.companyPays', { name: detail.billing?.company?.company_name || detail.billing?.company?.name || '' }) : t('officeAccess.personPays')}</p>}
       </div>
       {detail.items.map(line => <article key={line.id} className="ws-acc__card">
         <strong>{line.name}</strong>

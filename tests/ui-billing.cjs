@@ -61,7 +61,7 @@ const fs = require('node:fs');
       if(await mobile.count())await mobile.click();else await page.getByRole('button',{name:'Konto',exact:true}).first().click();
     }
     async function purchase(){
-      const purchases=page.getByRole('button',{name:'Moje zakupy',exact:true});
+      const purchases=page.getByRole('button',{name:'Moje zamówienia',exact:true});
       if(await purchases.count())await purchases.click();
       await page.locator('.ws-purchase-actions button').first().click();
       await page.locator('.ws-purchase-invoice').waitFor();

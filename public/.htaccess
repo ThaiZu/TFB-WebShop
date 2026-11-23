@@ -37,6 +37,12 @@
     Header set Cache-Control "no-cache, must-revalidate, max-age=0"
   </FilesMatch>
 
+  <Files "receipt.html">
+    Header set Cache-Control "no-store"
+    Header set Referrer-Policy "no-referrer"
+    Header set X-Robots-Tag "noindex, nofollow, noarchive"
+  </Files>
+
   # Fichiers hachés : le nom change avec le contenu, donc cache long.
   <FilesMatch "^index-[A-Za-z0-9_-]+\.(js|css)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
@@ -55,6 +61,7 @@
   RewriteRule ^inscription/?$ inscription.html [L,QSA]
   # Lien de l'e-mail « mot de passe oublié » (CLIENT_PASSWORD_RESET_URL côté ERP).
   RewriteRule ^reset-password/?$ reset-password.html [L,QSA]
+  RewriteRule ^t/[^/]+/?$ receipt.html [L]
 </IfModule>
 
 # Photos produit : le serveur servait les .webp SANS Content-Type (Apache ne le

@@ -908,7 +908,7 @@
   "co.slot.retry": "Actualiser les créneaux",
   "co.slot.tooLate": "Délai dépassé",
   "acc.orders.details": "Détails de la commande",
-  "acc.orders.back": "Mes achats",
+  "acc.orders.back": "Mes commandes",
   "acc.orders.detailError": "Impossible de charger les détails. Réessayez.",
   "acc.orders.quantity": "Quantité",
   "acc.orders.unitPrice": "Prix unitaire",
@@ -1196,5 +1196,15 @@
   "productSearch.placeholder": "Rechercher un produit…",
   "productSearch.results": "Produits trouvés : {count}",
   "productSearch.empty": "Aucun produit trouvé.",
-  "serviceProblem.message": "Un problème est survenu. Actualisez la page. Si le problème persiste, réessayez dans quelques instants. Le service sera rétabli dès que possible."
+  "serviceProblem.message": "Un problème est survenu. Actualisez la page. Si le problème persiste, réessayez dans quelques instants. Le service sera rétabli dès que possible.",
+  "acc.orders.title": "Mes commandes",
+  "acc.orders.source.store": "En boutique",
+  "acc.orders.source.webshop": "En ligne",
+  "acc.transactions.title": "Mes transactions",
+  "acc.transactions.receipt": "Voir le ticket",
+  "acc.transactions.back": "Retour aux transactions",
+  "acc.transactions.empty": "Aucune transaction sur ce compte.",
+  "acc.transactions.error": "Impossible de charger les transactions.",
+  "acc.transactions.unavailable": "Ce ticket n’est pas disponible dans ce compte.",
+  "acc.transactions.more": "Voir plus de transactions"
 }

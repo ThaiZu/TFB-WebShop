@@ -37,6 +37,16 @@ export default defineConfig(({ command, mode }) => {
   const useSameOriginApi = isDevelopment || env.VITE_SAME_ORIGIN_API === '1';
   const browserApiBase = useSameOriginApi ? '/api/v1' : apiBase;
   const runtimeConfig = 'window.WS_API_BASE_URL = ' + JSON.stringify(browserApiBase) + ';';
+  const rewriteReceipt = (request, response, next) => {
+    const pathname = (request.url || '').split('?')[0];
+    if (['GET', 'HEAD'].includes(request.method) && pathname.startsWith(base + 't/') &&
+        /^[^/]+\/?$/.test(pathname.slice((base + 't/').length))) {
+      request.url = base + 'receipt.html';
+      response.setHeader('Cache-Control', 'no-store');
+      response.setHeader('Referrer-Policy', 'no-referrer');
+    }
+    next();
+  };
   const standaloneI18n = () => readFileSync(new URL('./webshop-i18n.jsx', import.meta.url), 'utf8').replace("import.meta.env.BASE_URL + 'locales/'", "new URL('locales/', document.currentScript.src).href");
   // Temporary local catalogue images. Preserve paths for the same deployment layout.
   const catalogueImages = {};
@@ -92,6 +102,11 @@ export default defineConfig(({ command, mode }) => {
     jsxInject: "import React from 'react';import * as ReactDOM from 'react-dom/client';",
   },
   plugins: [
+    {
+      name: 'webshop-receipt-page',
+      configureServer(server) { server.middlewares.use(rewriteReceipt); },
+      configurePreviewServer(server) { server.middlewares.use(rewriteReceipt); },
+    },
     privacyPagesPlugin({root: new URL('./', import.meta.url), base, preview: policyPreview}),
     {
       name: 'webshop-local-catalogue-images',
@@ -200,6 +215,10 @@ export default defineConfig(({ command, mode }) => {
       },
     },
   ],
-  build: { outDir: 'dist', chunkSizeWarningLimit: 2500 },
+  build: {
+    outDir: 'dist',
+    chunkSizeWarningLimit: 2500,
+    rollupOptions: { input: { index: 'index.html', receipt: 'receipt.html' } },
+  },
   };
 });

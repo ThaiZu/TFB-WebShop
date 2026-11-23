@@ -908,7 +908,7 @@
   "co.slot.retry": "Tijdvakken vernieuwen",
   "co.slot.tooLate": "Termijn verstreken",
   "acc.orders.details": "Bestelgegevens",
-  "acc.orders.back": "Mijn aankopen",
+  "acc.orders.back": "Mijn bestellingen",
   "acc.orders.detailError": "De bestelgegevens kunnen niet worden geladen. Probeer opnieuw.",
   "acc.orders.quantity": "Aantal",
   "acc.orders.unitPrice": "Eenheidsprijs",
@@ -1196,5 +1196,15 @@
   "productSearch.placeholder": "Zoek een product…",
   "productSearch.results": "Gevonden producten: {count}",
   "productSearch.empty": "Geen producten gevonden.",
-  "serviceProblem.message": "Er is een probleem opgetreden. Vernieuw de pagina. Blijft het probleem zich voordoen, probeer het dan even later opnieuw. We herstellen de dienst zo snel mogelijk."
+  "serviceProblem.message": "Er is een probleem opgetreden. Vernieuw de pagina. Blijft het probleem zich voordoen, probeer het dan even later opnieuw. We herstellen de dienst zo snel mogelijk.",
+  "acc.orders.title": "Mijn bestellingen",
+  "acc.orders.source.store": "In de winkel",
+  "acc.orders.source.webshop": "Online",
+  "acc.transactions.title": "Mijn transacties",
+  "acc.transactions.receipt": "Bekijk het kasticket",
+  "acc.transactions.back": "Terug naar transacties",
+  "acc.transactions.empty": "Er staan geen transacties op dit account.",
+  "acc.transactions.error": "De transacties konden niet worden geladen.",
+  "acc.transactions.unavailable": "Dit kasticket is niet beschikbaar in dit account.",
+  "acc.transactions.more": "Meer transacties bekijken"
 }
