@@ -14,9 +14,9 @@ function setup({method='shop',rejectFirst=true}={}) {
  let failure=rejectFirst ? new Error('Connection lost') : null;
  const useState=initial=>{const i=index++;if(!(i in states)) states[i]=typeof initial==='function'?initial():initial;return [states[i],v=>{states[i]=typeof v==='function'?v(states[i]):v;}];};
  const React={useState,useEffect:()=>{},createElement:(type,props,...children)=>({type,props:props||{},children})};
- const quote={loyalty_reward:{id:4,line_index:0,discount:'4.00'},totals:{gross_after_discount:method==='shop'?'0.00':'1.00'}};
+ const quote={voucher:{code:'FULL',valid:true,matches_cart:true},totals:{gross_after_discount:method==='shop'?'0.00':'1.00'}};
  const props={open:true,shop:{id:1,name:'Shop A'},mode:'collect',basket:[{line:'a',productId:1,qty:1}],quoteState:{status:'ready',quote},
-  user:{id:10,email:'customer@example.invalid'},loyaltyReward:{id:4,line_index:0},onPlaced:result=>confirmed.push(result),onLogin:()=>{},onClose:()=>{}};
+  user:{id:10,email:'customer@example.invalid'},voucherApplied:{ok:true,voucher:{code:'FULL'}},onPlaced:result=>confirmed.push(result),onLogin:()=>{},onClose:()=>{}};
  const window={WSI18n:{getLang:()=> 'pl'},WSQuote:{quote:async()=>{quotes++;return quote;}},WSOrders:{
   place:async payload=>{calls.push(JSON.parse(JSON.stringify(payload)));if(failure){const error=failure;failure=null;throw error;}return {orderRef:'WEB-TEST',total:method==='shop'?0:1,paymentType:method};},
   pay:async ref=>{payments.push(ref);return {status:'paid'};}}};
@@ -32,8 +32,8 @@ function setup({method='shop',rejectFirst=true}={}) {
  async function submit(){next();find(n=>n.type==='CheckoutStep2').props.setSlot({id:'slot1',label:'10:00–11:00'});next();find(n=>n.type==='CheckoutStep3').props.setPayment(method);next();await flush();}
  return {props,calls,confirmed,payments,submit,find,render,quotes:()=>quotes,setFailure:e=>{failure=e;}};
 }
-test('lost creation response replays exact reward request without quoting a reserved reward',async()=>{
- const h=setup();await h.submit();assert.equal(h.calls.length,1);assert.equal(h.quotes(),1);
+test('lost creation response replays exact voucher request without requoting',async()=>{
+ const h=setup();await h.submit();assert.equal(h.calls.length,1);assert.equal(h.quotes(),1);assert.equal('loyalty_reward' in h.calls[0],false);
  h.props.basket[0].qty=5;h.props.shop={id:2,name:'Shop B'};h.props.quoteState={status:'error',quote:null};
  const retry=h.find(n=>n.children.includes('loyaltyUse.retryOrder'));assert.ok(retry);await retry.props.onClick();
  assert.equal(h.quotes(),1);assert.deepEqual(h.calls[1],h.calls[0]);assert.equal(h.calls[1].basket[0].qty,1);

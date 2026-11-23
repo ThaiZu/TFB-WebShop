@@ -1,14 +1,12 @@
+import {PersonalLoyalty} from './webshop-personal-loyalty.jsx';
 import { searchProducts } from './webshop-product-search.js';
 import './webshop-product-search.css';
 import {ShopPhoto} from './webshop-shop-photo.jsx';
 import {useVoucherActivation} from './webshop-voucher-activation.js';
 import {voucherProductPortions} from './webshop-voucher-targets.js';
 import {useVoucherNotifications} from './webshop-voucher-notifications.js';
-import {LoyaltyShoppingContext, LoyaltyIcon, LoyaltyBasketIcons} from './webshop-loyalty-shopping.jsx';
-import {AccountLoyalty} from './webshop-loyalty.jsx';
 import {LoyaltyWallet,LoyaltyCardIcon,useLoyaltyIdentity} from './webshop-loyalty-wallet.jsx';
 import {AccountVouchers} from './webshop-vouchers.jsx';
-import {rewardSelection} from './webshop-loyalty-reward.js';
 import {PolicyLinks} from './webshop-policy-links.jsx';
 import { analyticsEvent } from './webshop-analytics.js';
 import { CookieConsent } from './webshop-cookie-consent.jsx';
@@ -1400,9 +1398,6 @@ function ProductDetail({ open, product, mode, activeVoucher, onClose, onAdd, onP
             <div className="pdm-head">
               <p className="pdm-eyebrow">{product.cat === 'sandwiches' ? t('pd.eyebrow.sandwich') : product.cat === 'plats' ? t('pd.eyebrow.dish') : t('pd.eyebrow.selection')}</p>
               <h2 className="pdm-title">{product.name}</h2>
-              {!activeBundle && !offerPicked && !selectedPromotion && !portOpt?.id_product_portion && !product.is_weighted && <LoyaltyIcon card={product.loyaltyCard}
-                candidate={valid ? {productId:product.id,qty,
-                  ...(personalEnabled && personalChoices.length>0 ? {personalization_selection:{version:product.personalization.version,option_ids:personalChoices}} : {})} : null}/>}
 
               {product.description ? <p className="pdm-desc">{product.description}</p> : null}
               {product.is_weighted ? <p className="pdm-desc">{t('pd.weightedUnavailable')}</p> : null}
@@ -1797,7 +1792,6 @@ const ProductCard = React.memo(function ProductCard({ p, onAdd, onOpen, mode, ba
       <div className="ws-card__metaStrip">
         <Allergens list={p.allergens}/>
         <div className="ws-card__icons">
-          <LoyaltyIcon card={p.is_weighted ? null : p.loyaltyCard} candidate={p.has_personalization ? null : {productId:p.id,qty:1}}/>
           <button className="ws-iconcircle" aria-label={t('pd.info')} {...wsTap(() => onOpen(p), { stop: true, open: true })}><Pict d={ICONS.info} s={11}/></button>
           <button className="ws-add" {...wsTap(() => { if (!addDisabled) onOpen(p); }, { stop: true, open: true })} aria-label={t('pd.addToCart')}
             disabled={addDisabled} title={deliveryBlocked ? wsText("ui.noDelivery") : stockExhausted ? wsText("ui.deliverySoldOut") : undefined}>
@@ -2173,7 +2167,6 @@ function Basket({ hidePrices, contextLabel, officeName, shop, mode, basket, quot
             <div className="ws-line__qty">×{groupedPromotion ? 1 : row.quantity}</div>
             <div className="ws-line__body">
               <div className="ws-line__name">{displayName}</div>
-              <LoyaltyBasketIcons rows={row.lines} quoteState={quoteState}/>
               {groupedPromotion
                 ? row.lines.map((line) => <div key={line.line} className="ws-line__opt" hidden>×{line.qty} {line.portion_label || (line.options || []).map(option => option.label).join(', ')} {line.name}</div>)
                 : l.options.map((o, i) => (<div key={i} className="ws-line__opt">{o.label}</div>))}
@@ -2244,6 +2237,8 @@ function Basket({ hidePrices, contextLabel, officeName, shop, mode, basket, quot
             <span>−€{wsNumber(T.remise)}</span>
           </div>
         )}
+        {pricesReady && quoteState.quote?.loyalty_preview?.status === 'available' && Number.isInteger(quoteState.quote.loyalty_preview.points?.points) &&
+          <div className="ws-basket__row"><span>{t('personal.estimated')}</span><strong>{quoteState.quote.loyalty_preview.points.points}</strong></div>}
         {T.reward > 0 && <div className="ws-basket__row ws-basket__row--promo"><span>{t('loyaltyUse.title')}</span><span>−€{wsNumber(T.reward)}</span></div>}
         {T.bon > 0 && <div className="ws-basket__row ws-basket__row--promo">
           <span>{t('sum.code')} {quoteState.quote.voucher.code}</span><span>−€{wsNumber(T.bon)}</span>
@@ -3258,9 +3253,7 @@ function LoginModal({ open, onClose, onLogin, onRegister, onGoToAccount, shopId,
 
 // =========================================================================
 // MON COMPTE : onglets. Le toggle DÉRIVE ses positions de cette liste (jamais
-// en dur) : un onglet s'ajoute sans refonte. La visibilité de « Fidélité » est
-// pilotée par ws_param.fidelity_tab_enabled (GET /config) : masquable en prod
-// et révélable sans redéploiement. L'onglet actif survit au rafraîchissement.
+// en dur). L'onglet actif survit au rafraîchissement.
 // =========================================================================
 const ACCOUNT_TABS = [
   { key: 'profil',   get label() { return wsText("nav.profile"); } },
@@ -3268,7 +3261,7 @@ const ACCOUNT_TABS = [
   { key: 'transactions', get label() { return wsText('acc.transactions.title'); } },
   { key: 'vouchers', get label() { return wsText('vouchers.title'); } },
   { key: 'offices', get label() { return wsText('acc.offices.title'); } },
-  { key: 'fidelite', get label() { return wsText("ui.loyalty"); }, configFlag: 'fidelityTabEnabled' },
+  { key: 'fidelite', get label() { return wsText("ui.loyalty"); } },
 ];
 const ACCOUNT_TAB_LS = 'ws.accountTab';
 
@@ -3465,7 +3458,7 @@ if (typeof document !== 'undefined' && !document.getElementById('ws-bureau-style
 const allowBillingCompanyLinking = true;
 const allowOfficeLinking = true;
 
-function AccountModal({ open, requestedTab, requestedLoyaltyCard, requestedReceipt, onReceiptHandled, user, onClose, onLogout, onRequestOffice, onUpdateUser, shops, currentShopId, onChangePreferredShop, office, tour, onManageOffices, onUseVoucher, activeVoucherCode, onClearVoucher, onVouchersViewed, onBrowseVoucher }) {
+function AccountModal({ open, requestedTab, requestedReceipt, onReceiptHandled, user, onClose, onLogout, onRequestOffice, onUpdateUser, shops, currentShopId, onChangePreferredShop, office, tour, onManageOffices, onUseVoucher, activeVoucherCode, onClearVoucher, onVouchersViewed, onBrowseVoucher }) {
   const { t } = wsUseT();
   const [form, setForm] = useState({
     firstName: user?.firstName || '',
@@ -3531,11 +3524,6 @@ function AccountModal({ open, requestedTab, requestedLoyaltyCard, requestedRecei
   const [sitePicked, setSitePicked] = useState('');
   const [siteBusy, setSiteBusy] = useState(false);
   const [siteErr, setSiteErr] = useState('');
-  // Onglets (l'actif survit au rafraîchissement) + config serveur (flags).
-  // Vide au départ : aucun flag n'est supposé activé tant que le serveur ne
-  // l'a pas dit (l'ancien défaut fidelityTabEnabled:true affichait l'onglet
-  // même pour une boutique qui l'a désactivé).
-  const [cfg, setCfg] = useState({});
   const [purchaseRevision, setPurchaseRevision] = useState(0);
   const [purchaseDetailsOpen, setPurchaseDetailsOpen] = useState(false);
   const [tab, setTab] = useState(() => {
@@ -3558,17 +3546,7 @@ function AccountModal({ open, requestedTab, requestedLoyaltyCard, requestedRecei
   const [pwBusy, setPwBusy] = useState(false);
   const [pwMsg, setPwMsg]   = useState(null);
 
-  // Config serveur (liste blanche ws_param) à l'ouverture de la modale.
-  useEffect(() => {
-    let alive = true;
-    setCfg({});
-    if (!open || !window.WSAuth || typeof window.WSAuth.config !== 'function') return;
-    Promise.resolve(window.WSAuth.config())
-      .then((c) => { if (alive && c) setCfg(c); })
-      .catch(() => {});
-    return () => { alive = false; };
-  }, [open]);
-  const visibleTabs = ACCOUNT_TABS.filter((t) => !t.configFlag || cfg[t.configFlag] === true);
+  const visibleTabs = user?.isBusiness ? ACCOUNT_TABS.filter(item => item.key !== 'fidelite') : ACCOUNT_TABS;
   const activeTab = visibleTabs.some((t) => t.key === tab) ? tab : 'profil';
   function selectTab(k) {
     setTab(k); setPurchaseDetailsOpen(false);
@@ -3916,7 +3894,7 @@ function AccountModal({ open, requestedTab, requestedLoyaltyCard, requestedRecei
       {activeTab === 'transactions' && <AccountTransactions key={user.id} t={t} locale={wsLocale()}
         receiptToken={requestedReceipt} onReceiptHandled={onReceiptHandled} />}
       {activeTab === 'vouchers' && <AccountVouchers key={`${user.id}:${currentShopId}`} shopId={currentShopId} onUse={onUseVoucher} activeCode={activeVoucherCode} onClear={onClearVoucher} onViewed={onVouchersViewed} onBrowse={onBrowseVoucher}/>}
-      {activeTab === 'fidelite' && <AccountLoyalty initialCardId={requestedLoyaltyCard} key={`${user.id}:${currentShopId}`} shopId={currentShopId} shopName={shops?.find(item => String(item.id) === String(currentShopId))?.name} />}
+      {activeTab === 'fidelite' && <PersonalLoyalty key={user.id} />}
       {activeTab === 'offices' && <ProfileOffices currentShopName={shops?.find(item => String(item.id) === String(currentShopId))?.name} onManage={onManageOffices}/>}
 
 
@@ -4018,7 +3996,7 @@ function AccountModal({ open, requestedTab, requestedLoyaltyCard, requestedRecei
           </div>
         </div>
 
-        {cfg.fidelityTabEnabled === true && <div className="ws-acc__row">
+        {!user.isBusiness && <div className="ws-acc__row">
           <button type="button" className="ws-linkbtn" onClick={() => selectTab('fidelite')}>{t('loyalty.title')}</button>
         </div>}
       </div>
@@ -4095,7 +4073,7 @@ function usePaymentMethods(shopId, mode, deliveryFeeResult, profile, companyId) 
 
 function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, onLogin, onPlaced,
                           voucherInput, setVoucherInput, voucherApplied, setVoucherApplied,
-                          loyaltyEnabled, loyaltyReward, onRewardSelect, office, tour, date, onDate,
+                          office, tour, date, onDate,
                           deliveryFeeResult, deliveryFeeErr, officeSites, selectedSiteId, setSelectedSiteId, onQuoteChanged }) {
   const { t } = wsUseT();
   const [step, setStep] = useState(1);
@@ -4190,8 +4168,8 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
     companyId ? 'company' : (user ? 'registered' : 'guest'),
     companyId || null,
   ).filter((method) => method.method !== 'shop' && method.family !== 'shop');
-  const freeRewardOrder = mode === 'collect' && (!!quoteState.quote?.loyalty_reward || (quoteState.quote?.voucher?.valid === true && quoteState.quote?.voucher?.matches_cart === true)) && Number(quoteState.quote?.totals?.gross_after_discount) === 0;
-  const paymentMethods = freeRewardOrder ? [{id:'shop',method:'shop',family:'shop',label:t('loyaltyUse.noPayment'),sub:t('loyaltyUse.collect')}] : companyBilling
+  const freeVoucherOrder = mode === 'collect' && (quoteState.quote?.voucher?.valid === true && quoteState.quote?.voucher?.matches_cart === true) && Number(quoteState.quote?.totals?.gross_after_discount) === 0;
+  const paymentMethods = freeVoucherOrder ? [{id:'shop',method:'shop',family:'shop',label:t('loyaltyUse.noPayment'),sub:t('loyaltyUse.collect')}] : companyBilling
     ? [{ id: 'company_invoice', method: 'company_invoice', label: t('payment.method.company_invoice'), family: 'deferred', sub: t('officeAccess.companyNote') }]
     : ordinaryPaymentMethods;
   React.useEffect(() => {
@@ -4248,7 +4226,7 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
     setPaying(true); setPayErr(null);
     try {
       const freshQuote = await window.WSQuote.quote({ shopId: shop.id, mode, basket, shoppingContext, deliveryDate: date,
-        voucherCode: voucherApplied?.ok ? voucherApplied.voucher?.code : null, loyaltyReward });
+        voucherCode: voucherApplied?.ok ? voucherApplied.voucher?.code : null });
       if (voucherApplied?.ok && (freshQuote.voucher?.valid !== true || freshQuote.voucher?.matches_cart !== true)) {
         onQuoteChanged?.(freshQuote); setPayErr(t('error.codeInvalid')); return;
       }
@@ -4269,7 +4247,6 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
         shopping_context: shoppingContext,
         selected_automatic_promotion_id: wsSelectedAutomaticPromotionId(basket),
         expected_total: freshQuote.totals.gross_after_discount,
-        loyalty_reward: loyaltyReward,
         mode,
         deliveryDate,
         slot: typeof slot === 'object' && slot
@@ -4281,7 +4258,7 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
         companyId: officeContext ? null : (companyId || null),
         onAccount: officeContext ? companyBilling : !!onAccount,
         customer: user ? { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, phone: user.phone || null, officeId: user.officeId || null } : { ...contact },
-        payment: { method: freeRewardOrder ? 'shop' : companyBilling ? 'company_invoice' : payment },
+        payment: { method: freeVoucherOrder ? 'shop' : companyBilling ? 'company_invoice' : payment },
         delivery: mode === 'delivery' && office ? {
           office_client_id:            office.id,
           office_delivery_site_id:     selectedSiteId || null,
@@ -4305,7 +4282,7 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
       // confirmation inventée.
       if (!window.WSOrders) throw new Error(wsText("error.orderUnavailable"));
       const attempt = JSON.parse(JSON.stringify({ payload, client: String(user.id), shopName: shop.name,
-        slot, payment: payload.payment.method, total, paymentMethods, freeRewardOrder }));
+        slot, payment: payload.payment.method, total, paymentMethods, freeVoucherOrder }));
       setPendingOrder(attempt);
       let result;
       try { result = await window.WSOrders.place(attempt.payload); }
@@ -4340,7 +4317,7 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
   }
 
   async function finishOrder(attempt, result) {
-    const {slot, payment, total, paymentMethods, freeRewardOrder} = attempt;
+    const {slot, payment, total, paymentMethods, freeVoucherOrder} = attempt;
     /* PAIEMENT EN LIGNE (famille « stripe », servie par /payment-methods).
        La commande vient d'être ENREGISTRÉE ; l'encaissement se fait sur la
        page Stripe hébergée, créée par POST /payments/checkout, et seul le
@@ -4351,7 +4328,7 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
        suit) et paiement en boutique (encaissé au comptoir). */
     const payFam = (paymentMethods.find((x) => x.id === payment) || {}).family || payment;
     const differe = Boolean(result && (result.paymentType === 'deferred' || result.paymentType === 'company_invoice' || result.onAccount));
-    if (!freeRewardOrder && (payment === 'stripe' || payFam === 'stripe') && !differe && window.WSOrders.pay) {
+    if (!freeVoucherOrder && (payment === 'stripe' || payFam === 'stripe') && !differe && window.WSOrders.pay) {
       let sess;
       try {
         sess = await window.WSOrders.pay(result.orderRef);
@@ -4451,7 +4428,6 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
             voucherInput={voucherInput} setVoucherInput={setVoucherInput}
             voucherApplied={voucherApplied} setVoucherApplied={setVoucherApplied}
             voucherDiscount={voucherDiscount}
-            loyaltyEnabled={loyaltyEnabled} loyaltyReward={loyaltyReward} onRewardSelect={onRewardSelect}
             giftEmail={user ? (user.email || null) : ((contact && contact.email) || null)}
             customerId={user ? user.id : null}
           />
@@ -4851,9 +4827,9 @@ function CheckoutStep2({ mode, shop, office, tour, slot, setSlot, date, onDate, 
 function CheckoutStep3({ basket, subtotal, totaux, total, payment, setPayment, isOffice, isB2B, invoice, setInvoice, vat, setVat, shop,
                          shopId, mode, voucherInput, setVoucherInput, voucherApplied, setVoucherApplied, voucherDiscount,
                          deliveryFee, deliveryFeeResult, deliveryFeeErr, profile, companyId, customerId, quoteState,
-                         paymentMethods, shoppingContext, companyBilling, deliveryDate, loyaltyEnabled, loyaltyReward, onRewardSelect }) {
+                         paymentMethods, shoppingContext, companyBilling, deliveryDate }) {
   const { t } = wsUseT();
-  const allowVoucher = shoppingContext?.mode !== 'office_offer' && !loyaltyReward;
+  const allowVoucher = shoppingContext?.mode !== 'office_offer';
   const isOfficeContext = shoppingContext?.mode !== 'standard';
   const voucherLoading = quoteState?.status === 'loading';
   const voucherErr = quoteState?.status === 'error' ? quoteState.error : null;
@@ -4895,7 +4871,7 @@ function CheckoutStep3({ basket, subtotal, totaux, total, payment, setPayment, i
       <h3 className="ws-co-step__title">{t('sum.payment')}</h3>
       <p className="ws-co-step__lede">{t('co.pay.subtitle')}</p>
 
-      {!allowVoucher && !loyaltyReward && <p className="ws-office-context">{t('officeAccess.noVoucher')}</p>}
+      {!allowVoucher && <p className="ws-office-context">{t('officeAccess.noVoucher')}</p>}
       {allowVoucher && <div className="ws-co-voucher">
         <div className="ws-co-voucher__head">
           <span className="ws-co-voucher__lbl">{t('co.promo.title')}</span>
@@ -5187,8 +5163,6 @@ function ShopFrame({ variant }) {
 
   // The cart is priced by the API after every material change. Nothing from
   // this state is used to decide a product price in the browser.
-  const [loyaltyConfig, setLoyaltyConfig] = useState(null);
-  const loyaltyEnabled = loyaltyConfig?.shopId === shopId && loyaltyConfig.enabled === true;
   const [quoteResult, setQuoteState] = useState({ status: 'idle', quote: null, error: '' });
   const [detailPromotionPreview, setDetailPromotionPreview] = useState({ key: null, productId: null, suggestions: [], upcomingSuggestions: [] });
   const [detailOptionsState, setDetailOptionsState] = useState({ productId: null, menuReady: true, promotionsReady: true });
@@ -5203,10 +5177,10 @@ function ShopFrame({ variant }) {
     return()=>window.removeEventListener('ws:open-vouchers',open);
   },[]);
   const [user, setUser] = useState(null);
+  const loyaltyEnabled = !!user?.id && !user.isBusiness;
   const activation = useVoucherActivation(user?.id,cartShopId,value=>{
     setVoucherAppliedLocal(value?.code ? {ok:true,voucher:{code:value.code,name:value.name}} : null);
     setVoucherInput(value?.code || '');
-    if(value?.code)setRewardChoice(null);
   },error=>setNotice({titre:wsText(error.code==='VOUCHER_ACTIVATION_RESERVED'?'vouchers.activationReserved':error.code==='VOUCHER_ACTIVATION_CHANGED'?'vouchers.activationChanged':'vouchers.activationError'),texte:''}));
   const setVoucherApplied = value => {
     if(user?.id) return activation.select(value?.ok ? value.voucher.code : null).then(applied=>{
@@ -5218,21 +5192,13 @@ function ShopFrame({ variant }) {
     setVoucherAppliedLocal(value);
   };
   const voucherNotifications=useVoucherNotifications(user?.id);
-  const [rewardChoice, setRewardChoice] = useState(null);
-  const loyaltyReward = rewardSelection(rewardChoice,basket,user?.id,cartShopId,loyaltyEnabled,mode,cartContext.mode);
-  const rewardKey = JSON.stringify(loyaltyReward);
-  const selectReward = value => {
-    setRewardChoice(value ? {id:value.id,line:String(basket[value.line_index].line),client:user.id,shop:cartShopId} : null);
-    if (value) { if(voucherApplied?.ok)activation.select(null); setVoucherInput(''); }
-  };
-  useEffect(() => { if (rewardChoice && !loyaltyReward) setRewardChoice(null); }, [rewardKey,rewardChoice]);
   useEffect(() => {
-    const clear = () => { setRewardChoice(null); setVoucherAppliedLocal(null); setVoucherInput(''); };
+    const clear = () => { setVoucherAppliedLocal(null); setVoucherInput(''); };
     window.addEventListener('ws:session-ended',clear);
     return () => window.removeEventListener('ws:session-ended',clear);
   }, []);
   const [quoteRevision, setQuoteRevision] = useState(0);
-  const quoteKey = JSON.stringify([cartShopId, mode, basket, date, user?.id, loyaltyEnabled, rewardKey, quoteRevision, voucherApplied?.ok ? voucherApplied.voucher?.code : '']);
+  const quoteKey = JSON.stringify([cartShopId, mode, basket, date, user?.id, loyaltyEnabled, quoteRevision, voucherApplied?.ok ? voucherApplied.voucher?.code : '']);
   // Invalidate synchronously: effects run after rendering, so a previous ready
   // quote must not enable checkout for a basket which has just changed.
   const quoteState = quoteResult.status === 'ready' && quoteResult.key !== quoteKey
@@ -5249,7 +5215,7 @@ function ShopFrame({ variant }) {
     const key = JSON.stringify([contextKey, quantity]);
     const empty = { key, contextKey, productId: Number(productId), suggestions: [], upcomingSuggestions: [] };
     const standardCart = basket.length === 0 || (cartContext.mode === 'standard' && Number(cartShopId) === Number(shopId));
-    if (!shopId || context.mode !== 'standard' || loyaltyReward || voucherApplied?.ok || !standardCart || !window.WSQuote || typeof window.WSQuote.quote !== 'function') {
+    if (!shopId || context.mode !== 'standard' || voucherApplied?.ok || !standardCart || !window.WSQuote || typeof window.WSQuote.quote !== 'function') {
       setDetailPromotionPreview({ ...empty, status: 'ready' });
       markDetailOptionReady(productId, 'promotionsReady');
       return;
@@ -5295,7 +5261,7 @@ function ShopFrame({ variant }) {
       controller.abort();
       if (requestId === detailPromotionRequest.current) ++detailPromotionRequest.current;
     };
-  }, [shopId, mode, basket, date, browseContext, cartContext.mode, cartShopId, user?.id, rewardKey, voucherApplied?.ok, markDetailOptionReady]);
+  }, [shopId, mode, basket, date, browseContext, cartContext.mode, cartShopId, user?.id, voucherApplied?.ok, markDetailOptionReady]);
   React.useEffect(() => {
     if (!basket.length) { setQuoteState({ status: 'idle', quote: null, error: '' }); return; }
     if (!shopId || !window.WSQuote || typeof window.WSQuote.quote !== 'function') {
@@ -5305,7 +5271,7 @@ function ShopFrame({ variant }) {
     const controller = new AbortController();
     setQuoteState((current) => ({ status: 'loading', quote: current.quote, error: '' }));
     const voucherCode = voucherApplied?.ok ? voucherApplied.voucher?.code : null;
-    window.WSQuote.quote({ shopId: cartShopId, mode, basket, voucherCode, shoppingContext: cartContext, deliveryDate: date, includeLoyalty: loyaltyEnabled, loyaltyReward, signal: controller.signal })
+    window.WSQuote.quote({ shopId: cartShopId, mode, basket, voucherCode, shoppingContext: cartContext, deliveryDate: date, includeLoyalty: loyaltyEnabled && cartContext.mode === 'standard', signal: controller.signal })
       .then((quote) => {
         if (controller.signal.aborted) return;
         const valid = !voucherCode || (quote.voucher?.valid === true && quote.voucher?.matches_cart === true);
@@ -5317,7 +5283,7 @@ function ShopFrame({ variant }) {
         setQuoteState((current) => ({ status: 'error', quote: current.quote, error: error?.message || wsText("error.quote"), key: quoteKey }));
       });
     return () => controller.abort();
-  }, [cartShopId, mode, basket, date, user?.id, loyaltyEnabled, rewardKey, quoteRevision, voucherApplied?.ok ? voucherApplied.voucher?.code : '']);
+  }, [cartShopId, mode, basket, date, user?.id, loyaltyEnabled, quoteRevision, voucherApplied?.ok ? voucherApplied.voucher?.code : '']);
   React.useEffect(() => {
     if (quoteResult.status !== 'ready' || !quoteResult.quote?.next_recalculation_at) return;
     const delay = Date.parse(quoteResult.quote.next_recalculation_at) - Date.parse(quoteResult.quote.server_time);
@@ -5566,7 +5532,6 @@ function ShopFrame({ variant }) {
     setAuthOpen(false);
     setAccountOpen(true);
   }, [pendingReceipt, sessionRestored, user?.id]);
-  const [requestedLoyaltyCard,setRequestedLoyaltyCard]=useState(null);
   const [loyaltyWalletOpen,setLoyaltyWalletOpen]=useState(false);
   const handleLoyalty = () => { if(user) setLoyaltyWalletOpen(true); else setAuthOpen(true); };
   const loyaltyIdentity=useLoyaltyIdentity(user?.id,loyaltyEnabled);
@@ -5764,7 +5729,7 @@ function ShopFrame({ variant }) {
     if (!background) { loadedCatalogueKey.current = null; setAllProducts([]); setCategories([]); setAssortments([]); setCatalogueContextData(null); }
     if (!shop || !window.WSCatalog) { loadedCatalogueKey.current = null; setCatalogueLoading(false); return; }
     setCatalogueLoading(!background);
-    const load = () => window.WSCatalog.loadCatalogue({ shopId: shop.id, mode, date, shoppingContext: browseContext, includeLoyalty: loyaltyEnabled });
+    const load = () => window.WSCatalog.loadCatalogue({ shopId: shop.id, mode, date, shoppingContext: browseContext });
     load()
       .catch(error => {
         if (alive && error?.code === 'SESSION_CHANGED') return load();
@@ -5784,7 +5749,7 @@ function ShopFrame({ variant }) {
       })
       .finally(() => { if (alive) setCatalogueLoading(false); });
     return () => { alive = false; };
-  }, [shop?.id, mode, date, lang, user?.id, user?.officeId, catalogueRefresh, JSON.stringify(browseContext), loyaltyEnabled]);
+  }, [shop?.id, mode, date, lang, user?.id, user?.officeId, catalogueRefresh, JSON.stringify(browseContext)]);
   // Source commune GRILLE + LIGNE DE NAV : le catalogue restreint au créneau
   // et à la date en cours. La règle d'affichage de la nav (« n'afficher que ce
   // qui contient au moins un produit disponible ») est ainsi exactement celle
@@ -5875,10 +5840,9 @@ function ShopFrame({ variant }) {
   const [navIcons, setNavIcons] = React.useState({ all: null, back: null });
   React.useEffect(() => {
     let alive = true;
-    setLoyaltyConfig(null);
     if (window.WSAuth && typeof window.WSAuth.config === 'function') {
       window.WSAuth.config().then((c) => {
-        if (alive && c) { setNavIcons({ all: c.categoryNavAllIcon || null, back: c.categoryNavBackIcon || null }); setLoyaltyConfig({shopId,enabled:c.fidelityTabEnabled === true}); }
+        if (alive && c) setNavIcons({ all: c.categoryNavAllIcon || null, back: c.categoryNavBackIcon || null });
       }).catch(() => {});
     }
     return () => { alive = false; };
@@ -6109,7 +6073,7 @@ function ShopFrame({ variant }) {
       lead_time: line.lead_time ?? product?.lead_time ?? 0,
       no_delivery: line.no_delivery ?? !!product?.no_delivery,
     };
-    if (selectedPromotion && (loyaltyReward || voucherApplied?.ok || browseContext.mode !== 'standard'
+    if (selectedPromotion && (voucherApplied?.ok || browseContext.mode !== 'standard'
         || needsCartReplacement(latestBasket.current, normaliseShoppingContext(browseContext), shopId))) {
       throw new Error('error.promotionConditions');
     }
@@ -6287,9 +6251,9 @@ function ShopFrame({ variant }) {
     shopId={shopId}/>;
   const accountProps = {
     open: accountOpen, user, shops, currentShopId: shopId,
-    requestedTab: requestedAccountTab, requestedLoyaltyCard, requestedReceipt,
+    requestedTab: requestedAccountTab, requestedReceipt,
     onReceiptHandled: () => setRequestedReceipt(null),
-    onClose: () => { setAccountOpen(false); setRequestedAccountTab(null); setRequestedLoyaltyCard(null); setRequestedReceipt(null); },
+    onClose: () => { setAccountOpen(false); setRequestedAccountTab(null);  setRequestedReceipt(null); },
     onChangePreferredShop: requestShopChange, onLogout: handleLogout, onUpdateUser: setUser,
     office: userOffice, tour: userTour,
   };
@@ -6372,7 +6336,7 @@ function ShopFrame({ variant }) {
   const activeVoucher = voucherApplied?.ok ? voucherApplied.voucher : null;
   const handleUseVoucher = (code,name,targets) => {
     if(activeVoucher)return;
-    setRewardChoice(null); setVoucherApplied({ok:true,voucher:{code,name,targets}});
+    setVoucherApplied({ok:true,voucher:{code,name,targets}});
   };
   const clearActiveVoucher = () => {setVoucherApplied(null);setVoucherInput('');};
   const browseVoucherTarget = target => {
@@ -6382,7 +6346,7 @@ function ShopFrame({ variant }) {
     if(browseContext.mode!=='standard'||(target.kind==='product'&&!product)||(target.kind==='category'&&!root)) {
       setNotice({titre:wsText('vouchers.unavailableProduct'),texte:''});return;
     }
-    setLoyaltyWalletOpen(false);setAccountOpen(false);setRequestedAccountTab(null);setRequestedLoyaltyCard(null);
+    setLoyaltyWalletOpen(false);setAccountOpen(false);setRequestedAccountTab(null);
     const sub=(root?.subs||[]).find(item=>Number(item.categoryId)===Number(categoryId));
     setCat(root?.id||'all');setSubCat(sub?.id||null);syncCatUrl(root?.id||'all',sub?.id||null,true);
     if(product)openProductDetail(product);
@@ -6402,12 +6366,6 @@ function ShopFrame({ variant }) {
               </div>{allowOfficeLinking && <button type="button" className="ws-office-manage" onClick={() => setOfficeAccessOpen(true)}><img src={hasOfficeMembership ? linkedOfficeIcon : noLinkedOfficeIcon} alt="" aria-hidden="true"/><span>{t('officeAccess.manage')}</span></button>}
             </div>) : null;
   return (
-    <LoyaltyShoppingContext.Provider value={{tap:wsTap,enabled:loyaltyEnabled && cartContext.mode==='standard' && browseContext.mode==='standard',
-      userId:user?.id ?? null, identity:JSON.stringify([user?.id,shopId]),
-      scope:JSON.stringify([quoteKey,shopId,browseContext]), canPreview:Number(cartShopId)===Number(shopId),
-      basket, request:{shopId,mode,deliveryDate:date,shoppingContext:browseContext,loyaltyReward,voucherCode:voucherApplied?.ok?voucherApplied.voucher?.code:null},
-      onOpenCards:()=>{if(detailProduct) closeProductDetail();setCartDrawerOpen(false);if(user){setRequestedAccountTab('fidelite');setAccountOpen(true);}else setAuthOpen(true);}}}>
-
     <div className={`ws ws--${variant}${hidePrices ? ' ws-noprice' : ''}`} data-mode={mode}>
       {invitationDialog}
       <Nav productSearch={<ProductSearchField query={productQuery} onChange={setProductQuery}/>}
@@ -6639,7 +6597,6 @@ function ShopFrame({ variant }) {
       <CheckoutWizard open={checkoutOpen} onClose={() => setCheckoutOpen(false)} shop={cartShop} mode={mode} basket={basket} quoteState={quoteState} user={user} onLogin={() => setAuthOpen(true)} onPlaced={handlePlaced} onQuoteChanged={() => setQuoteRevision(value => value + 1)}
         voucherInput={voucherInput} setVoucherInput={setVoucherInput}
         voucherApplied={voucherApplied} setVoucherApplied={setVoucherApplied}
-        loyaltyEnabled={loyaltyEnabled} loyaltyReward={loyaltyReward} onRewardSelect={selectReward}
         office={userOffice} tour={userTour} date={date} onDate={setDate}
         deliveryFeeResult={deliveryFeeResult} deliveryFeeErr={wsMessage(deliveryFeeErr)}
         officeSites={officeSites} selectedSiteId={selectedSiteId} setSelectedSiteId={setSelectedSiteId}
@@ -6693,7 +6650,6 @@ function ShopFrame({ variant }) {
       {orderToast && <OrderConfirmation orderRef={orderToast.orderRef} total={orderToast.total} shop={cartShop} onClose={() => setOrderToast(null)}/>}
       <PwaInstallPrompt />
     </div>
-    </LoyaltyShoppingContext.Provider>
   );
 }
 
