@@ -1,0 +1,70 @@
+name: Deploy Webshop TEST
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-webshop-test
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    environment: test
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build for test Webshop
+        env:
+          SITE_BASE: /
+          VITE_API_BASE_URL: https://test.tfbuddy.com/api/v1
+          VITE_SAME_ORIGIN_API: '1'
+        run: |
+          npm run build
+          test -s dist/index.html
+          grep -Fxq 'window.WS_API_BASE_URL = "/api/v1";' dist/api-runtime-config.js
+
+      - name: Configure verified SSH connection
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.TEST_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.TEST_SSH_KNOWN_HOSTS }}
+        run: |
+          : "${SSH_PRIVATE_KEY:?Set TEST_SSH_PRIVATE_KEY}"
+          : "${SSH_KNOWN_HOSTS:?Set TEST_SSH_KNOWN_HOSTS}"
+          install -d -m 700 "$HOME/.ssh"
+          umask 077
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/webshop-test"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+
+      - name: Publish static build
+        env:
+          SSH_HOST: ${{ secrets.TEST_SSH_HOST }}
+          SSH_USER: ${{ secrets.TEST_SSH_USER }}
+        run: |
+          : "${SSH_HOST:?Set TEST_SSH_HOST}"
+          : "${SSH_USER:?Set TEST_SSH_USER}"
+          rsync -rz --delay-updates --chmod=D755,F644 \
+            -e 'ssh -i ~/.ssh/webshop-test -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes' \
+            dist/ "$SSH_USER@$SSH_HOST:/opt/tfbuddy/apps/test-webshop/"
+
+      - name: Verify deployed frontend and API over HTTPS
+        run: |
+          origin=https://test-webshop.tfbuddy.com
+          curl -fsS --max-time 20 "$origin/" -o "$RUNNER_TEMP/webshop-index.html"
+          cmp dist/index.html "$RUNNER_TEMP/webshop-index.html"
+          curl -fsS --max-time 20 "$origin/api-runtime-config.js" -o "$RUNNER_TEMP/webshop-runtime.js"
+          cmp dist/api-runtime-config.js "$RUNNER_TEMP/webshop-runtime.js"
+          curl -fsS --max-time 20 "$origin/api/v1/shops" | jq -e 'type == "array"' >/dev/null
