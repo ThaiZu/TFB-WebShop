@@ -39,11 +39,11 @@ jobs:
 
       - name: Configure verified SSH connection
         env:
-          SSH_PRIVATE_KEY: ${{ secrets.TEST_SSH_PRIVATE_KEY }}
-          SSH_KNOWN_HOSTS: ${{ secrets.TEST_SSH_KNOWN_HOSTS }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
         run: |
-          : "${SSH_PRIVATE_KEY:?Set TEST_SSH_PRIVATE_KEY}"
-          : "${SSH_KNOWN_HOSTS:?Set TEST_SSH_KNOWN_HOSTS}"
+          : "${SSH_PRIVATE_KEY:?Set SSH_PRIVATE_KEY}"
+          : "${SSH_KNOWN_HOSTS:?Set SSH_KNOWN_HOSTS}"
           install -d -m 700 "$HOME/.ssh"
           umask 077
           printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/webshop-test"
@@ -51,11 +51,11 @@ jobs:
 
       - name: Publish static build
         env:
-          SSH_HOST: ${{ secrets.TEST_SSH_HOST }}
-          SSH_USER: ${{ secrets.TEST_SSH_USER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
         run: |
-          : "${SSH_HOST:?Set TEST_SSH_HOST}"
-          : "${SSH_USER:?Set TEST_SSH_USER}"
+          : "${SSH_HOST:?Set SSH_HOST}"
+          : "${SSH_USER:?Set SSH_USER}"
           rsync -rz --delay-updates --chmod=D755,F644 \
             -e 'ssh -i ~/.ssh/webshop-test -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes' \
             dist/ "$SSH_USER@$SSH_HOST:/opt/tfbuddy/apps/test-webshop/"
