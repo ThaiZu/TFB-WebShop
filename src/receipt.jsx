@@ -1,8 +1,9 @@
 import './receipt.css';
+import { normalizeReceiptToken } from '../webshop-receipt-token.js';
 
 const { BASE_URL } = import.meta.env;
 const { useEffect, useRef, useState } = React;
-const token = window.location.pathname.match(/\/t\/([a-f0-9]{64})\/?$/)?.[1];
+const token = normalizeReceiptToken(window.location.pathname.match(/\/t\/([^/]+)\/?$/)?.[1]);
 const allergenLabels = {
   cereals_gluten: ['Gluten', 'Gluten'], crustaceans: ['Crustacés', 'Schaaldieren'],
   eggs: ['Œufs', 'Eieren'], fish: ['Poisson', 'Vis'], peanuts: ['Arachides', 'Pinda’s'],

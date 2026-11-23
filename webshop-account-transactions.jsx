@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
+import { normalizeReceiptToken } from './webshop-receipt-token.js';
 
 export function receiptIntent() {
   const token = new URLSearchParams(location.hash.slice(1)).get('receipt');
-  return typeof token === 'string' && /^[a-f0-9]{64}$/.test(token) ? token : null;
+  return normalizeReceiptToken(token);
 }
 
 export function AccountTransactions({ receiptToken, t, locale, onReceiptHandled }) {
