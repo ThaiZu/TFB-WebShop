@@ -908,7 +908,7 @@
   "co.slot.retry": "Odśwież terminy",
   "co.slot.tooLate": "Termin minął",
   "acc.orders.details": "Szczegóły zamówienia",
-  "acc.orders.back": "Moje zakupy",
+  "acc.orders.back": "Moje zamówienia",
   "acc.orders.detailError": "Nie można pobrać szczegółów zamówienia. Spróbuj ponownie.",
   "acc.orders.quantity": "Ilość",
   "acc.orders.unitPrice": "Cena jednostkowa",
@@ -1196,5 +1196,15 @@
   "productSearch.placeholder": "Szukaj produktu…",
   "productSearch.results": "Znalezione produkty: {count}",
   "productSearch.empty": "Nie znaleziono produktów.",
-  "serviceProblem.message": "Wystąpił problem. Odśwież stronę. Jeśli to nie pomoże, spróbuj ponownie za chwilę. Usługa wróci jak najszybciej."
+  "serviceProblem.message": "Wystąpił problem. Odśwież stronę. Jeśli to nie pomoże, spróbuj ponownie za chwilę. Usługa wróci jak najszybciej.",
+  "acc.orders.title": "Moje zamówienia",
+  "acc.orders.source.store": "W sklepie stacjonarnym",
+  "acc.orders.source.webshop": "W sklepie internetowym",
+  "acc.transactions.title": "Moje transakcje",
+  "acc.transactions.receipt": "Wyświetl paragon",
+  "acc.transactions.back": "Wróć do transakcji",
+  "acc.transactions.empty": "Na tym koncie nie ma transakcji.",
+  "acc.transactions.error": "Nie udało się wczytać transakcji.",
+  "acc.transactions.unavailable": "Ten paragon jest niedostępny na tym koncie.",
+  "acc.transactions.more": "Pokaż więcej transakcji"
 }

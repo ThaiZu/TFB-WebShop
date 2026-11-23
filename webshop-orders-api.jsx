@@ -34,6 +34,16 @@
     catch (_) { return {}; }
   };
 
+  async function accountJson(path, options, notFound = false) {
+    const url = api.endpoint?.replace(/\/orders\/?$/, '') + path;
+    if (!api.endpoint || !window.WSAuth?.authenticatedJson) throw new Error('Account API is unavailable.');
+    const { response, data } = await window.WSAuth.authenticatedJson(url, { credentials: 'include', ...options });
+    if (response.status === 404 && notFound) return null;
+    if (!response.ok) throw new Error('Account history could not be loaded.');
+    return data;
+  }
+
+
   const api = {
     endpoint: null,
     payEndpoint: null,   // POST /payments/checkout, session de paiement hébergée
@@ -157,17 +167,29 @@
 
     /* List the current customer's orders. */
     async listMine() {
-      if (!api.endpoint) throw new Error('Order API is unavailable.');
-      let r;
-      try {
-        r = await fetch(`${api.endpoint}/me`, { credentials: 'include', headers: authHeaders() });
-      } catch (_) {
-        throw new Error('Order history could not be loaded.');
-      }
-      if (!r.ok) throw new Error('Order history could not be loaded (HTTP ' + r.status + ').');
-      const payload = await r.json().catch(() => null);
-      if (!Array.isArray(payload)) throw new Error('Order history response is invalid.');
-      return payload;
+      const orders = await accountJson('/orders/me');
+      if (!Array.isArray(orders)) throw new Error('Order history response is invalid.');
+      return orders;
+    },
+
+    getStoreOrder(id) {
+      return accountJson('/orders/store/' + encodeURIComponent(id));
+    },
+
+    listTransactions(before, signal) {
+      const query = before ? '?before=' + encodeURIComponent(before) : '';
+      return accountJson('/transactions/me' + query, { signal });
+    },
+
+    getTransaction(id) {
+      return accountJson('/transactions/me/' + encodeURIComponent(id));
+    },
+
+    resolveReceipt(token, signal) {
+      return accountJson('/transactions/me/resolve-receipt', {
+        method: 'POST', signal, headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      }, true);
     },
 
     /* Cancel an order (server enforces cutoff rules). */

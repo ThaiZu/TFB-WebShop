@@ -20,6 +20,7 @@ import { ProfileOffices } from './webshop-profile-offices.jsx';
 import { defaultShoppingContext, normaliseShoppingContext, sameShoppingContext, basketShoppingContext, needsCartReplacement, shoppingContextLabel, hasUnsupportedOfficeConfiguration } from './webshop-office-context.js';
 import { StripeReturnDialog, StripeRetryButton } from './webshop-stripe-return.jsx';
 import { PurchaseDetails } from './webshop-purchase-details.jsx';
+import { AccountTransactions, receiptIntent } from './webshop-account-transactions.jsx';
 import { BillingCompanies } from './webshop-billing.jsx';
 import { OfficeMembershipModal } from './webshop-office-membership.jsx';
 import { OfficeDeliveryModal } from './webshop-office-delivery.jsx';
@@ -3263,7 +3264,8 @@ function LoginModal({ open, onClose, onLogin, onRegister, onGoToAccount, shopId,
 // =========================================================================
 const ACCOUNT_TABS = [
   { key: 'profil',   get label() { return wsText("nav.profile"); } },
-  { key: 'achats',   get label() { return wsText("ui.purchases"); } },
+  { key: 'achats',   get label() { return wsText('acc.orders.title'); } },
+  { key: 'transactions', get label() { return wsText('acc.transactions.title'); } },
   { key: 'vouchers', get label() { return wsText('vouchers.title'); } },
   { key: 'offices', get label() { return wsText('acc.offices.title'); } },
   { key: 'fidelite', get label() { return wsText("ui.loyalty"); }, configFlag: 'fidelityTabEnabled' },
@@ -3337,7 +3339,7 @@ function AccountPurchases({ refreshRevision = 0, onDetailsChange }) {
   if (selectedOrder) return <PurchaseDetails order={selectedOrder} onBack={() => { setSelectedOrder(null); onDetailsChange?.(false); setRevision(value => value + 1); }} />;
   return (
     <div className="ws-acc__section">
-      <div className="ws-acc__section-h">{t('acc.purchases')}</div>
+      <div className="ws-acc__section-h">{t('acc.orders.title')}</div>
       <div className="ws-toggle ws-purchase-filters" role="tablist" aria-label={t('acc.filterPurchases')}>
         {ORDER_FILTERS.map((item) => (
           <button key={item.key} type="button" role="tab" aria-selected={filter === item.key}
@@ -3355,7 +3357,7 @@ function AccountPurchases({ refreshRevision = 0, onDetailsChange }) {
       {visibleOrders.map((order) => (
         <div key={order.orderRef} className={'ws-acc__card' + (statusKey(order.status) === 'cancelled' ? ' ws-purchase--cancelled' : paymentStatusName(order.payment?.status) === 'paid' ? ' ws-purchase--paid' : '')}>
           <div className="ws-acc__card-head">
-            <span className="ws-acc__k">{order.orderRef}</span>
+            <span className="ws-acc__k">{order.orderRef} · {t('acc.orders.source.' + (order.source === 'store' ? 'store' : 'webshop'))}</span>
             <span className="ws-acc__badge ws-acc__badge--pending">{statusText(order.status)}</span>
           </div>
           <div className="ws-acc__card-row">
@@ -3378,7 +3380,7 @@ function AccountPurchases({ refreshRevision = 0, onDetailsChange }) {
           )}
           <div className="ws-purchase-actions">
           <button type="button" className="ws-linkbtn" onClick={() => { setSelectedOrder(order); onDetailsChange?.(true); }}>{t('acc.orders.details')}</button>
-          {statusKey(order.status) === 'new' && String(order.payment?.status || '').toLowerCase() === 'pending' && (
+          {order.source !== 'store' && statusKey(order.status) === 'new' && String(order.payment?.status || '').toLowerCase() === 'pending' && (
             <button type="button" className="ws-acc__inv-cancel" disabled={cancellingRef === order.orderRef}
               onClick={() => cancelOrder(order)}>
               {cancellingRef === order.orderRef ? t('common.loading2') : t('acc.orders.cancel')}
@@ -3463,7 +3465,7 @@ if (typeof document !== 'undefined' && !document.getElementById('ws-bureau-style
 const allowBillingCompanyLinking = true;
 const allowOfficeLinking = true;
 
-function AccountModal({ open, requestedTab, requestedLoyaltyCard, user, onClose, onLogout, onRequestOffice, onUpdateUser, shops, currentShopId, onChangePreferredShop, office, tour, onManageOffices, onUseVoucher, activeVoucherCode, onClearVoucher, onVouchersViewed, onBrowseVoucher }) {
+function AccountModal({ open, requestedTab, requestedLoyaltyCard, requestedReceipt, onReceiptHandled, user, onClose, onLogout, onRequestOffice, onUpdateUser, shops, currentShopId, onChangePreferredShop, office, tour, onManageOffices, onUseVoucher, activeVoucherCode, onClearVoucher, onVouchersViewed, onBrowseVoucher }) {
   const { t } = wsUseT();
   const [form, setForm] = useState({
     firstName: user?.firstName || '',
@@ -3911,13 +3913,15 @@ function AccountModal({ open, requestedTab, requestedLoyaltyCard, user, onClose,
       </div>
 
       {activeTab === 'achats' && <AccountPurchases refreshRevision={purchaseRevision} onDetailsChange={setPurchaseDetailsOpen} />}
+      {activeTab === 'transactions' && <AccountTransactions key={user.id} t={t} locale={wsLocale()}
+        receiptToken={requestedReceipt} onReceiptHandled={onReceiptHandled} />}
       {activeTab === 'vouchers' && <AccountVouchers key={`${user.id}:${currentShopId}`} shopId={currentShopId} onUse={onUseVoucher} activeCode={activeVoucherCode} onClear={onClearVoucher} onViewed={onVouchersViewed} onBrowse={onBrowseVoucher}/>}
       {activeTab === 'fidelite' && <AccountLoyalty initialCardId={requestedLoyaltyCard} key={`${user.id}:${currentShopId}`} shopId={currentShopId} shopName={shops?.find(item => String(item.id) === String(currentShopId))?.name} />}
       {activeTab === 'offices' && <ProfileOffices currentShopName={shops?.find(item => String(item.id) === String(currentShopId))?.name} onManage={onManageOffices}/>}
 
 
       {activeTab === 'profil' && <>
-      <button type="button" className="ws-cta ws-cta--block ws-account-purchases-link" onClick={() => selectTab('achats')}>{t('acc.purchases')}</button>
+      <button type="button" className="ws-cta ws-cta--block ws-account-purchases-link" onClick={() => selectTab('achats')}>{t('acc.orders.title')}</button>
       <form className="ws-acc__section" onSubmit={saveProfile}>
         <div className="ws-acc__section-h">{t('acc.contact')}</div>
         <div className="ws-acc__form">
@@ -5544,6 +5548,24 @@ function ShopFrame({ variant }) {
   }, [officeHint, user?.id, sessionRestored]);
   const [accountOpen, setAccountOpen] = useState(false);
   const [requestedAccountTab, setRequestedAccountTab] = useState(null);
+  const [pendingReceipt, setPendingReceipt] = useState(receiptIntent);
+  const [requestedReceipt, setRequestedReceipt] = useState(null);
+  useEffect(() => {
+    if (!pendingReceipt) return;
+    if (receiptIntent() === pendingReceipt) {
+      history.replaceState(history.state, '', location.pathname + location.search);
+    }
+    if (!sessionRestored) return;
+    if (!user?.id) {
+      setAuthOpen(true);
+      return;
+    }
+    setRequestedReceipt(pendingReceipt);
+    setPendingReceipt(null);
+    setRequestedAccountTab('transactions');
+    setAuthOpen(false);
+    setAccountOpen(true);
+  }, [pendingReceipt, sessionRestored, user?.id]);
   const [requestedLoyaltyCard,setRequestedLoyaltyCard]=useState(null);
   const [loyaltyWalletOpen,setLoyaltyWalletOpen]=useState(false);
   const handleLoyalty = () => { if(user) setLoyaltyWalletOpen(true); else setAuthOpen(true); };
@@ -6224,7 +6246,7 @@ function ShopFrame({ variant }) {
     if (!inviteToken && officeHint === null && u && u.preferredShopId && shopId == null) {
       setShopId(u.preferredShopId);
     }
-    if (!inviteToken && officeHint === null) setShopConfirmationPending(true);
+    if (!inviteToken && officeHint === null && !pendingReceipt) setShopConfirmationPending(true);
     // If freshly logged-in user already has delivery enabled & was on collect, leave mode alone (don't surprise the user).
   }
   function handleLogout() {
@@ -6233,7 +6255,7 @@ function ShopFrame({ variant }) {
   }
   function clearAccountContext() {
     setUser(null); setPendingContextLine(null); setOfficeAccessOpen(false);
-    setAccountOpen(false); setCheckoutOpen(false);
+    setAccountOpen(false); setRequestedReceipt(null); setCheckoutOpen(false);
     setQuoteState({status:'idle',quote:null,error:''});
     setBrowseContext(normaliseShoppingContext(null)); setPendingMenu(null);
     // La livraison au bureau exige un compte : à la déconnexion, le mode revient
@@ -6256,6 +6278,21 @@ function ShopFrame({ variant }) {
     window.addEventListener('ws:session-ended', clearAccountContext);
     return () => window.removeEventListener('ws:session-ended', clearAccountContext);
   }, [mode, cartContext.mode, basket.length]);
+
+  const loginDialog = <LoginModal open={authOpen} initialTab={authInitialTab}
+    invitationRegistration={!!inviteToken && inviteAuthPending}
+    onClose={() => { setAuthOpen(false); setAuthInitialTab('login'); }}
+    onLogin={handleLogin} onRegister={handleLogin}
+    onGoToAccount={u => { handleLogin(u); if (inviteToken) inviteAccountAfterJoin.current = true; else setAccountOpen(true); }}
+    shopId={shopId}/>;
+  const accountProps = {
+    open: accountOpen, user, shops, currentShopId: shopId,
+    requestedTab: requestedAccountTab, requestedLoyaltyCard, requestedReceipt,
+    onReceiptHandled: () => setRequestedReceipt(null),
+    onClose: () => { setAccountOpen(false); setRequestedAccountTab(null); setRequestedLoyaltyCard(null); setRequestedReceipt(null); },
+    onChangePreferredShop: requestShopChange, onLogout: handleLogout, onUpdateUser: setUser,
+    office: userOffice, tour: userTour,
+  };
 
   // Go-live : sans boutique resolue (API /shops en echec ou vide), on affiche
   const invitationDialog = inviteToken && !authOpen && <div className="ws-office-overlay"><section className="ws-office-modal" role="dialog" aria-modal="true" aria-labelledby="ws-invitation-title">
@@ -6322,6 +6359,8 @@ function ShopFrame({ variant }) {
           <CookieConsent />
         </main>
         <footer className="ws-shopselect__footer">© {new Date().getFullYear()} L'Atelier By</footer>
+        {loginDialog}
+        <AccountModal {...accountProps}/>
       </div><PwaInstallPrompt /></>
     );
   }
@@ -6535,20 +6574,13 @@ function ShopFrame({ variant }) {
         onPick={requestShopChange}
         onClose={() => setSwitcherOpen(false)}
       />
-      <LoginModal open={authOpen} initialTab={authInitialTab} invitationRegistration={!!inviteToken && inviteAuthPending} onClose={() => { setAuthOpen(false); setAuthInitialTab('login'); }} onLogin={handleLogin} onRegister={handleLogin} onGoToAccount={(u) => { handleLogin(u); if (inviteToken) inviteAccountAfterJoin.current = true; else setAccountOpen(true); }} shopId={shopId}/>
+      {loginDialog}
       {/* Rattrapage CP : s'affiche seule après toute connexion (login, handoff
           PWA, session restaurée) tant que le code postal manque en base. */}
-      <PostcodeCatchupModal user={user} onUpdateUser={(u) => setUser(u)}/>
+      <PostcodeCatchupModal user={accountOpen && requestedAccountTab === 'transactions' ? null : user} onUpdateUser={(u) => setUser(u)}/>
       <StripeReturnDialog />
       {loyaltyWalletOpen && user && loyaltyEnabled && <LoyaltyWallet key={`${user.id}:${shopId}`} identity={loyaltyIdentity} user={user} shopId={shopId} onUseVoucher={handleUseVoucher} activeVoucherCode={activeVoucher?.code} onClearVoucher={clearActiveVoucher} onVouchersViewed={voucherNotifications.markViewed} onBrowseVoucher={browseVoucherTarget} onClose={()=>setLoyaltyWalletOpen(false)}/>}
-      <AccountModal requestedLoyaltyCard={requestedLoyaltyCard} requestedTab={requestedAccountTab}
-        open={accountOpen}
-        user={user}
-        shops={shops}
-        currentShopId={shopId}
-        onChangePreferredShop={requestShopChange}
-        onClose={() => {setAccountOpen(false);setRequestedAccountTab(null);setRequestedLoyaltyCard(null);}}
-        onLogout={handleLogout}
+      <AccountModal {...accountProps}
         onRequestOffice={allowOfficeLinking ? () => setOfficeAccessOpen(true) : undefined}
         onManageOffices={allowOfficeLinking ? () => { setAccountOpen(false); setOfficeAccessOpen(true); } : undefined}
         onUseVoucher={handleUseVoucher}
@@ -6556,9 +6588,6 @@ function ShopFrame({ variant }) {
         onClearVoucher={clearActiveVoucher}
         onVouchersViewed={voucherNotifications.markViewed}
         onBrowseVoucher={browseVoucherTarget}
-        onUpdateUser={(u) => setUser(u)}
-        office={userOffice}
-        tour={userTour}
       />
       {officeDeliveryOpen && !!user && <OfficeDeliveryModal open={true} shopId={shopId} officeId={basket.length ? requiredDeliveryOffice : null}
         selectedOfficeId={userOffice?.id} selectedSiteId={userOffice ? selectedSiteId : null} clearBasket={basket.length > 0}

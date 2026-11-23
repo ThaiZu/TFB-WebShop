@@ -211,7 +211,7 @@ const reward=(id,status='READY',changes={})=>({id,status,code:status==='READY' ?
     const before=loyaltyRequests.length;
     const loaded=page.waitForResponse(response=>response.url().endsWith('/webshop/config'));
     await account.click();await loaded;
-    await page.getByRole('button',{name:'Moje zakupy',exact:true}).waitFor();
+    await page.getByRole('button',{name:'Moje zamówienia',exact:true}).waitFor();
     assert.equal(await fidelity.count(),0,'Disabled or absent flag hides the tab');
     assert.equal(loyaltyRequests.length,before,'Hidden tab never requests private cards');
    }
