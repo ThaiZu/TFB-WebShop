@@ -3460,8 +3460,8 @@ if (typeof document !== 'undefined' && !document.getElementById('ws-bureau-style
   document.head.appendChild(_st);
 }
 
-// Temporarily pause new company and office links in WebShop.
-const allowAccountLinking = false;
+const allowBillingCompanyLinking = true;
+const allowOfficeLinking = true;
 
 function AccountModal({ open, requestedTab, requestedLoyaltyCard, user, onClose, onLogout, onRequestOffice, onUpdateUser, shops, currentShopId, onChangePreferredShop, office, tour, onManageOffices, onUseVoucher, activeVoucherCode, onClearVoucher, onVouchersViewed, onBrowseVoucher }) {
   const { t } = wsUseT();
@@ -3956,7 +3956,7 @@ function AccountModal({ open, requestedTab, requestedLoyaltyCard, user, onClose,
         </div>
       </form>
 
-      <BillingCompanies key={user.id} allowAdd={allowAccountLinking}/>
+      <BillingCompanies key={user.id} allowAdd={allowBillingCompanyLinking}/>
 
       {/* ── Sécurité ── */}
       <div className="ws-acc__section">
@@ -4019,7 +4019,7 @@ function AccountModal({ open, requestedTab, requestedLoyaltyCard, user, onClose,
         </div>}
       </div>
 
-      {allowAccountLinking && <div className="ws-acc__section">
+      {allowOfficeLinking && <div className="ws-acc__section">
         <div className="ws-acc__section-h">{t('officeAccess.title')}</div>
         <p className="ws-acc__note">{t('officeAccess.intro')}</p>
         <button type="button" className="ws-cta" onClick={onManageOffices}>{t('officeAccess.manage')}</button>
@@ -5340,7 +5340,7 @@ function ShopFrame({ variant }) {
   // Déclaré AVANT le slot-effect ci-dessous (qui lit `user` dans ses deps), sinon TDZ.
   const [sessionRestored, setSessionRestored] = useState(false);
   const officeHintHandled = React.useRef(false);
-  const [inviteToken, setInviteToken] = useState(() => allowAccountLinking ? new URLSearchParams(location.search).get('office_invite') : null);
+  const [inviteToken, setInviteToken] = useState(() => allowOfficeLinking ? new URLSearchParams(location.search).get('office_invite') : null);
   const [invitation, setInvitation] = useState(null);
   const [inviteError, setInviteError] = useState(false);
   const [inviteBusy, setInviteBusy] = useState(false);
@@ -5400,7 +5400,7 @@ function ShopFrame({ variant }) {
     }).catch(()=>{if(alive)setMembershipsError(true);});
     return ()=>{alive=false;};
   }, [inviteTarget,shopId,user?.id]);
-  const officeHint = React.useMemo(() => { const query = new URLSearchParams(window.location.search); return allowAccountLinking && query.get('open') === 'offices' ? (query.get('office_tax') || '') : null; }, []);
+  const officeHint = React.useMemo(() => { const query = new URLSearchParams(window.location.search); return allowOfficeLinking && query.get('open') === 'offices' ? (query.get('office_tax') || '') : null; }, []);
   async function refreshOfficeMemberships() {
     if (!user?.id || !shopId) { setOfficeMemberships([]); setOfficeMembershipsReady(false); return; }
     try {
@@ -6360,7 +6360,7 @@ function ShopFrame({ variant }) {
                 </button>
                 {(office.offers || []).map(offer => <button type="button" key={offer.id} aria-pressed={browseContext.mode === 'office_offer' && Number(browseContext.offer_id) === Number(offer.id)} onClick={() => browseOfficeMenu({ mode: 'office_offer', office_id: office.id, offer_id: offer.id })}>{t('officeAccess.offer', { name: offer.name })}</button>)}
               </React.Fragment>)}
-              </div>{allowAccountLinking && <button type="button" className="ws-office-manage" onClick={() => setOfficeAccessOpen(true)}><img src={hasOfficeMembership ? linkedOfficeIcon : noLinkedOfficeIcon} alt="" aria-hidden="true"/><span>{t('officeAccess.manage')}</span></button>}
+              </div>{allowOfficeLinking && <button type="button" className="ws-office-manage" onClick={() => setOfficeAccessOpen(true)}><img src={hasOfficeMembership ? linkedOfficeIcon : noLinkedOfficeIcon} alt="" aria-hidden="true"/><span>{t('officeAccess.manage')}</span></button>}
             </div>) : null;
   return (
     <LoyaltyShoppingContext.Provider value={{tap:wsTap,enabled:loyaltyEnabled && cartContext.mode==='standard' && browseContext.mode==='standard',
@@ -6549,8 +6549,8 @@ function ShopFrame({ variant }) {
         onChangePreferredShop={requestShopChange}
         onClose={() => {setAccountOpen(false);setRequestedAccountTab(null);setRequestedLoyaltyCard(null);}}
         onLogout={handleLogout}
-        onRequestOffice={allowAccountLinking ? () => setOfficeAccessOpen(true) : undefined}
-        onManageOffices={allowAccountLinking ? () => { setAccountOpen(false); setOfficeAccessOpen(true); } : undefined}
+        onRequestOffice={allowOfficeLinking ? () => setOfficeAccessOpen(true) : undefined}
+        onManageOffices={allowOfficeLinking ? () => { setAccountOpen(false); setOfficeAccessOpen(true); } : undefined}
         onUseVoucher={handleUseVoucher}
         activeVoucherCode={activeVoucher?.code}
         onClearVoucher={clearActiveVoucher}
@@ -6563,13 +6563,13 @@ function ShopFrame({ variant }) {
       {officeDeliveryOpen && !!user && <OfficeDeliveryModal open={true} shopId={shopId} officeId={basket.length ? requiredDeliveryOffice : null}
         selectedOfficeId={userOffice?.id} selectedSiteId={userOffice ? selectedSiteId : null} clearBasket={basket.length > 0}
         onClose={() => setOfficeDeliveryOpen(false)} onConfirm={confirmOfficeDelivery}
-        onManageOffices={allowAccountLinking ? () => { setOfficeDeliveryOpen(false); setOfficeAccessOpen(true); } : undefined}/>}
+        onManageOffices={allowOfficeLinking ? () => { setOfficeDeliveryOpen(false); setOfficeAccessOpen(true); } : undefined}/>}
       {defaultDeliveryBusy && <div className="ws-toast" role="status">{t('common.loading2')}</div>}
       {pendingDefaultDelivery && <div className="ws-office-overlay"><section className="ws-office-modal" role="alertdialog" aria-modal="true" aria-labelledby="ws-default-delivery-title">
         <h2 id="ws-default-delivery-title">{t('officeAccess.replaceTitle')}</h2><p>{t('officeAccess.menuChange')}</p>
         <div className="ws-office-confirm-actions"><button type="button" className="ws-office-secondary" onClick={()=>setPendingDefaultDelivery(null)}>{t('officeAccess.cancel')}</button><button type="button" className="ws-cta" onClick={()=>{const pending=pendingDefaultDelivery;setPendingDefaultDelivery(null);confirmOfficeDelivery(pending.result,pending.siteId);}}>{t('officeAccess.menuConfirm')}</button></div>
       </section></div>}
-      <OfficeMembershipModal open={allowAccountLinking && officeAccessOpen && !!user} shopId={shopId} initialTax={officeHint || ''} offices={officeMemberships} onClose={() => setOfficeAccessOpen(false)} onChanged={refreshOfficeMemberships}/>
+      <OfficeMembershipModal open={allowOfficeLinking && officeAccessOpen && !!user} shopId={shopId} initialTax={officeHint || ''} offices={officeMemberships} onClose={() => setOfficeAccessOpen(false)} onChanged={refreshOfficeMemberships}/>
       {pendingMenu && <div className="ws-office-overlay"><section className="ws-office-modal" role="alertdialog" aria-modal="true" aria-labelledby="ws-menu-title">
         <h2 id="ws-menu-title">{t('officeAccess.replaceTitle')}</h2><p>{t('officeAccess.menuChange')}</p>
         <div className="ws-office-confirm-actions"><button type="button" className="ws-office-secondary" onClick={() => setPendingMenu(null)}>{t('officeAccess.cancel')}</button><button type="button" className="ws-cta" onClick={confirmMenuChange}>{t('officeAccess.menuConfirm')}</button></div>
