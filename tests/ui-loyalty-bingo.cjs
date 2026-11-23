@@ -18,18 +18,17 @@ const {chromium} = require('playwright');
         window.joinRequests = 0;
         window.WSAuth = {
           authenticatedJson: async (url, options) => {
-            if (url.includes('/loyalty/cards')) {
-              return {response: {ok: true}, data: {status: 'available', asOf: new Date().toISOString(), items: [], nextCursor: null}};
+            if (url.endsWith('/personal/join')) {
+              if (options.method !== 'POST' || JSON.parse(options.body).campaign_id !== 2) throw new Error('Unexpected enrollment');
+              window.joinRequests++;
+              return {response: {ok:true}, data:{}};
             }
-            if (url.endsWith('/bingo/join') && options.method === 'POST') window.joinRequests++;
-            return {response: {ok: true}, data: {
-              joined: window.joinRequests > 0, starts_at: '2026-11-23', ends_at: '2027-02-21',
-              threshold_cents: 1000, rewards: {3: 200, 13: 1000},
-              weeks: Array.from({length: 13}, (_, i) => ({
-                start: new Date(Date.UTC(2026, 10, 23 + i * 7)).toISOString().slice(0, 10),
-                amount_cents: i === 0 ? 1050 : 0, complete: i === 0, state: i === 0 ? 'current' : 'future',
-              })),
-            }};
+            if (!url.endsWith('/personal/wallet')) throw new Error('Unexpected path');
+            return {response:{ok:true}, data:{balance:12,history:[],
+              bingo:window.noCampaign ? null : {id:2,name:'Listopad',joined:window.joinRequests > 0,
+                starts_at:'2026-11-01 00:00:00', ends_at:'2026-12-01 00:00:00',
+                tasks:['PURCHASES','QUANTITY','SPEND','DAYS'].map((type,i)=>({id:i+1,name:'Zadanie '+(i+1),type,
+                  progress:window.joinRequests ? 1 : 0, target:2, points:3, complete:i===0 && window.joinRequests>0}))}}};
           },
         };
         createRoot(document.getElementById('root')).render(<LoyaltyWallet identity={{status:'loading'}}
@@ -53,12 +52,18 @@ const {chromium} = require('playwright');
     await page.addScriptTag({content: bundle.outputFiles.find(file => file.path.endsWith('.js')).text});
     await page.getByRole('button', {name: 'Bingo', exact: true}).click();
     await page.getByRole('button', {name: 'Dołącz', exact: true}).click({timeout: 5000}).catch(async error => { throw new Error((await page.locator('body').innerText()) + '\n' + errors.join(' | '), {cause: error}); });
-    await page.getByText('1/13', {exact: true}).waitFor();
-    assert.equal(await page.locator('.ws-bingo li').count(), 13);
+    await page.getByText('✓ Ukończono', {exact:true}).waitFor();
+    assert.equal(await page.locator('.ws-bingo li').count(), 4);
     assert.equal(await page.locator('.ws-bingo li.is-complete').count(), 1);
     assert.equal(await page.evaluate(() => window.joinRequests), 1);
+    await page.reload();
+    await page.setContent('<div id="root"></div>');
+    await page.evaluate(() => {window.noCampaign = true;});
+    await page.addScriptTag({content: bundle.outputFiles.find(file => file.path.endsWith('.js')).text});
+    await page.getByRole('button', {name:'Bingo', exact:true}).click();
+    await page.getByText('Obecnie nie trwa żadna edycja Bingo.').waitFor();
     assert.deepEqual(errors, []);
-    console.log('PASS: Fidelity wallet, explicit enrollment, 13 weeks and completed week at 390 px');
+    console.log('PASS: Fidelity wallet, explicit enrollment, four task types, progress and a gap between editions at 390 px');
   } finally {
     await browser.close();
   }

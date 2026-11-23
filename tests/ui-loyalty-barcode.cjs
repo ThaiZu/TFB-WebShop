@@ -6,8 +6,7 @@ const wallet=fs.readFileSync(path.join(root,'webshop-loyalty-wallet.jsx'),'utf8'
 const barcode=fs.readFileSync(path.join(root,'webshop-loyalty-barcode.js'),'utf8').replace(/^export /gm,'');
 const qr=fs.readFileSync(path.join(root,'qr.jsx'),'utf8');
 const code='FID1-ZZZZZZ-0123456789ABCDEF0123456789ABCDEF';
-const source=transformSync(`${barcode}\nconst useLoyaltyPage=()=>({items:[],busy:false,error:null,nextCursor:null});
-function LoyaltyProgram(){return null;}function AccountVouchers(){return null;}
+const source=transformSync(`${barcode}\nfunction PersonalLoyalty(){return null;}function AccountVouchers(){return null;}
 ${wallet}
 ReactDOM.createRoot(document.getElementById('root')).render(<LoyaltyWallet identity={{status:'ready',code:window.cardCode}} shopId={2} user={{id:1,firstName:'Test'}} onClose={()=>window.walletClosed=true}/>);`,{loader:'jsx',format:'iife'}).code;
 (async()=>{

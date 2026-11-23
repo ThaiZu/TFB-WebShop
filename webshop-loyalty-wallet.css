@@ -109,3 +109,7 @@
     border-color: #8d1d2c;
     background: #f8eae9;
 }
+
+.ws-personal-history { list-style: none; margin: 0; padding: 0; }
+.ws-personal-history li { display: flex; justify-content: space-between; align-items: center; gap: 1rem; border-bottom: 1px solid #ddd; padding: .7rem 0; }
+.ws-bingo li span { display: block; }
