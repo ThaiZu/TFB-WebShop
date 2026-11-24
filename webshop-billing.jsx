@@ -59,11 +59,52 @@ export function BillingCompanies({allowAdd = true}) {
   </section>;
 }
 
+export function validInvoiceBuyer(buyer) {
+  return buyer.type === 'none' || (buyer.type === 'company' ? Number(buyer.companyId) > 0
+    : ['name', 'address', 'postalCode', 'city'].every(key => buyer[key]?.trim()));
+}
+
+export function InvoiceBuyerFields({buyer, setBuyer, companies, disabled, allowNone = false}) {
+  const t = window.WSI18n.t;
+  const update = (key, value) => setBuyer(previous => ({...previous, [key]: value}));
+  return <fieldset className="ws-acc__form" disabled={disabled}>
+    <legend className="ws-acc__field-label">{t('billing.invoice')}</legend>
+    <label className="ws-acc__field">
+      <span>{t('billing.buyerType')}</span>
+      <select className="ws-acc__input" value={buyer.type} onChange={event => {
+        const type = event.target.value;
+        setBuyer(previous => ({...previous, type, companyId: previous.companyId ||
+          String((companies.find(company => company.isDefault) || companies[0])?.id || '')}));
+      }}>
+        {allowNone && <option value="none">{t('billing.noInvoice')}</option>}
+        <option value="personal">{t('billing.personalInvoice')}</option>
+        <option value="company">{t('billing.companyInvoice')}</option>
+      </select>
+    </label>
+    {buyer.type === 'personal' && Object.entries({name: 200, address: 200, postalCode: 20, city: 100}).map(([key, limit]) =>
+      <label className="ws-acc__field" key={key}><span>{t('billing.buyerField.' + key)}</span>
+        <input className="ws-acc__input" required maxLength={limit} value={buyer[key] || ''} onChange={event => update(key, event.target.value)}/>
+      </label>)}
+    {buyer.type === 'company' && (companies.length > 0 ? <label className="ws-acc__field"><span>{t('billing.buyer')}</span>
+      <select className="ws-acc__input" required value={buyer.companyId || ''} onChange={event => update('companyId', event.target.value)}>
+        <option value="" disabled>{t('billing.selectCompany')}</option>
+        {companies.map(company => <option key={company.id} value={company.id}>{company.name} · {company.vat}</option>)}
+      </select>
+    </label> : <p>{t('billing.addCompanyFirst')}</p>)}
+  </fieldset>;
+}
+
+export function invoiceBuyerPayload(buyer) {
+  if (buyer.type === 'company') return {type: 'company', companyId: Number(buyer.companyId)};
+  const {type, name, address, postalCode, city} = buyer;
+  return {type, name, address, postalCode, city};
+}
+
 export function PurchaseInvoice({orderRef, refreshKey = ''}) {
   const t = window.WSI18n.t;
   const [status, setStatus] = useState(null);
   const [companies, setCompanies] = useState([]);
-  const [companyId, setCompanyId] = useState('');
+  const [buyer, setBuyer] = useState({type: 'personal'});
   const [po, setPo] = useState('');
   const [reference, setReference] = useState('');
   const [email, setEmail] = useState('');
@@ -76,10 +117,10 @@ export function PurchaseInvoice({orderRef, refreshKey = ''}) {
   useEffect(() => {
     const current = ++generation.current;
     setStatus(null); setError(''); setSent(false); setBusy(false);
-    Promise.all([billingRequest(path), billingRequest('/companies')]).then(([data, rows]) => {
+    Promise.all([billingRequest(path), billingRequest('/companies').catch(() => [])]).then(([data, rows]) => {
       if (generation.current !== current) return;
       setStatus(data); setCompanies(rows);
-      setCompanyId(String((rows.find(row => row.isDefault) || rows[0])?.id || ''));
+      setBuyer({type: 'personal'});
     }).catch(e => { if (generation.current === current) setError(billingError(e)); });
     return () => { generation.current++; };
   }, [path, revision, refreshKey]);
@@ -94,7 +135,7 @@ export function PurchaseInvoice({orderRef, refreshKey = ''}) {
   }
   function issue() {
     return action(async current => {
-      const result = await billingRequest(path, {method:'POST', body:{companyId:Number(companyId), po, reference}});
+      const result = await billingRequest(path, {method:'POST', body:status.requested ? {} : {...invoiceBuyerPayload(buyer), po, reference}});
       if (generation.current === current) setStatus({invoice:result.invoice, eligible:false});
     });
   }
@@ -115,7 +156,7 @@ export function PurchaseInvoice({orderRef, refreshKey = ''}) {
     {!status && error && <button type="button" className="ws-linkbtn" onClick={() => setRevision(n => n+1)}>{t('stock.refresh')}</button>}
     {status?.invoice ? <div className="ws-acc__card">
       <strong>{status.invoice.invoice_number}</strong>
-      <p>{status.invoice.consignee_name} · {status.invoice.consignee_tax_number}</p>
+      <p>{status.invoice.consignee_name}{status.invoice.consignee_tax_number && ` · ${status.invoice.consignee_tax_number}`}</p>
       {status.invoice.po_hash && <p>PO#: {status.invoice.po_hash}</p>}
       {status.invoice.reference_comment && <p>{status.invoice.reference_comment}</p>}
       <button type="button" className="ws-cta" disabled={busy} onClick={download}>{t('billing.download')}</button>
@@ -129,16 +170,15 @@ export function PurchaseInvoice({orderRef, refreshKey = ''}) {
         <button className="ws-cta" type="submit" disabled={busy}>{t('billing.send')}</button>
       </form>
       {sent && <p role="status">{t('billing.sent')}</p>}
-    </div> : status?.eligible ? companies.length ? <form onSubmit={e => {e.preventDefault(); issue();}}>
-      <label className="ws-acc__field"><span>{t('billing.buyer')}</span>
-        <select className="ws-acc__input" value={companyId} required disabled={busy} onChange={e => setCompanyId(e.target.value)}>
-          {companies.map(company => <option key={company.id} value={company.id}>{company.name} · {company.vat}</option>)}
-        </select></label>
-      <label className="ws-acc__field"><span>PO#</span><input className="ws-acc__input" value={po} maxLength={100} disabled={busy} onChange={e => setPo(e.target.value)}/></label>
-      <label className="ws-acc__field"><span>{t('billing.reference')}</span><textarea className="ws-acc__input" value={reference} maxLength={255} disabled={busy} onChange={e => setReference(e.target.value)}/></label>
+    </div> : status?.eligible ? <form onSubmit={e => {e.preventDefault(); issue();}}>
+      {status.requested ? <p>{t('billing.invoiceRequested')}</p> : <>
+        <InvoiceBuyerFields buyer={buyer} setBuyer={setBuyer} companies={companies} disabled={busy}/>
+        <label className="ws-acc__field"><span>PO#</span><input className="ws-acc__input" value={po} maxLength={100} disabled={busy} onChange={e => setPo(e.target.value)}/></label>
+        <label className="ws-acc__field"><span>{t('billing.reference')}</span><textarea className="ws-acc__input" value={reference} maxLength={255} disabled={busy} onChange={e => setReference(e.target.value)}/></label>
+      </>}
       <p className="ws-acc__hint">{t('billing.issueHint')}</p>
-      <button className="ws-cta" type="submit" disabled={busy || !companyId}>{t(busy ? 'ui.saving' : 'billing.issue')}</button>
-    </form> : <p>{t('billing.addCompanyFirst')}</p> : status && <p>{t('billing.contactShop')}</p>}
+      <button className="ws-cta" type="submit" disabled={busy || (!status.requested && !validInvoiceBuyer(buyer))}>{t(busy ? 'ui.saving' : 'billing.issue')}</button>
+    </form> : status && <p>{t(status.waitingForOrder && !status.contactShop ? 'billing.invoiceRequested' : 'billing.contactShop')}</p>}
     {error && <p role="alert" className="ws-acc__vat-msg ws-acc__vat-msg--err">{error}</p>}
   </section>;
 }

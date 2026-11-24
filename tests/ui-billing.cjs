@@ -43,7 +43,7 @@ const fs = require('node:fs');
       } else if(path.endsWith('/webshop/billing/orders/'+ref)) {
         if(request.method()==='POST') {
           const data=request.postDataJSON();
-          assert.deepEqual(data,{companyId:51,po:'PO-123',reference:'Department A'});
+          assert.deepEqual(data,{type:'company',companyId:51,po:'PO-123',reference:'Department A'});
           issueAttempts++;
           if(!invoice){issued++;invoice={id:1,invoice_number:'260001',consignee_name:'Company 51',consignee_tax_number:'BE0987654321',po_hash:data.po,reference_comment:data.reference};}
           status=issueAttempts===1?503:200;
@@ -78,7 +78,8 @@ const fs = require('node:fs');
     await page.waitForFunction(()=>document.querySelector('.ws-billing-companies .ws-acc__card strong')?.textContent==='Company 51');
     await purchase();
     const section=page.locator('.ws-purchase-invoice');await section.getByRole('button',{name:'Wystaw fakturę',exact:true}).waitFor();
-    assert.equal(await section.locator('select').inputValue(),'51');
+    await section.getByLabel('Rodzaj faktury').selectOption('company');
+    assert.equal(await section.getByLabel('Firma do faktury').inputValue(),'51');
     await section.getByLabel('PO#',{exact:true}).fill('PO-123');await section.locator('textarea').fill('Department A');
     await section.getByRole('button',{name:'Wystaw fakturę',exact:true}).click();await section.locator('[role=alert]').waitFor();
     await section.getByRole('button',{name:'Wystaw fakturę',exact:true}).click();await section.getByText('260001',{exact:true}).waitFor();

@@ -19,7 +19,8 @@ import { defaultShoppingContext, normaliseShoppingContext, sameShoppingContext, 
 import { StripeReturnDialog, StripeRetryButton } from './webshop-stripe-return.jsx';
 import { PurchaseDetails } from './webshop-purchase-details.jsx';
 import { AccountTransactions, receiptIntent } from './webshop-account-transactions.jsx';
-import { BillingCompanies } from './webshop-billing.jsx';
+import { BillingCompanies, InvoiceBuyerFields, invoiceBuyerPayload, validInvoiceBuyer } from './webshop-billing.jsx';
+import { billingError, billingRequest } from './webshop-billing-api.js';
 import { OfficeMembershipModal } from './webshop-office-membership.jsx';
 import { OfficeDeliveryModal } from './webshop-office-delivery.jsx';
 import { createPortal } from 'react-dom';
@@ -4104,9 +4105,9 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
   // Slot
   const [slot, setSlot] = useState(null);
 
-  // Office invoice toggle
-  const [invoice, setInvoice] = useState(false);
-  const [vat, setVat] = useState('');
+  const [invoiceBuyer, setInvoiceBuyer] = useState({type: 'none'});
+  const [orderNote, setOrderNote] = useState('');
+  const [poNumber, setPoNumber] = useState('');
 
   // Payment : reset to 'deferred' for deferred sites, 'bancontact' otherwise
   // Aucun moyen par défaut inventé : « bancontact » n'existe pas côté serveur
@@ -4115,45 +4116,23 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
   const defaultPayment = '';
   const [payment, setPayment] = useState(defaultPayment);
 
-  // B2B « commander pour une entreprise » + remarque + PO (facturation pro).
-  const [orderNote, setOrderNote] = useState('');
-  const [poNumber, setPoNumber] = useState('');
   const [companies, setCompanies] = useState([]);
-  const [companyId, setCompanyId] = useState('');
-  const [onAccount, setOnAccount] = useState(false);
   useEffect(() => {
     let alive = true;
-    const email = user && user.email;
-    if (open && email && window.WSCompanies) {
-      window.WSCompanies.list(email).then((cs) => { if (alive) setCompanies(cs || []); }).catch(() => {});
-    } else setCompanies([]);
-    return () => { alive = false; };
-  }, [open, user && user.email]);
-  // « Demander une facture nominative » coché → on sélectionne automatiquement la
-  // société liée à l'utilisateur (companyClientId), sinon sa première société.
-  // On n'écrase jamais un choix déjà fait.
-  useEffect(() => {
-    if (invoice && !companyId && companies.length) {
-      const own = companies.find((c) => String(c.id) === String(user && user.companyClientId)) || companies[0];
-      if (own) setCompanyId(String(own.id));
+    setCompanies([]);
+    if (open && user?.id) {
+      billingRequest('/companies').then(rows => { if (alive) setCompanies(rows); }).catch(() => {});
     }
-  }, [invoice, companies]);
-  // …et on PRÉ-REMPLIT les données B2B de la fiche utilisateur : le N° de TVA de la
-  // société sélectionnée, sinon celui enregistré sur le compte (user.invoice.vat).
-  // On n'écrase pas une saisie manuelle en cours.
-  useEffect(() => {
-    if (!invoice || vat) return;
-    const c = companies.find((x) => String(x.id) === String(companyId));
-    const preVat = (c && c.vat) || (user && user.invoice && user.invoice.vat) || '';
-    if (preVat) setVat(preVat);
-  }, [invoice, companyId, companies]);
+    return () => { alive = false; };
+  }, [open, user?.id]);
 
   // Reset when reopened
   useEffect(() => {
     if (open) {
-      setStep(1); setSlot(null); setInvoice(false); setVat(''); setForceAuth(false); setPaying(false); setPayErr(null);
+      setStep(1); setSlot(null); setInvoiceBuyer({type: 'none', name: [user?.firstName, user?.lastName].filter(Boolean).join(' ')}); setForceAuth(false); setPaying(false); setPayErr(null);
       setPayKey(newPayKey());
-      setOrderNote(''); setPoNumber(''); setCompanyId(''); setOnAccount(false);
+      setOrderNote('');
+      setPoNumber('');
       setPayment('');
     }
   }, [open]);
@@ -4161,12 +4140,9 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
   // Moyens de paiement : chargés ICI, AVANT tout return conditionnel, un hook
   // placé après « if (!open) return null » change le nombre de hooks entre deux
   // rendus, ce que React refuse (écran blanc à l'ouverture du tunnel).
-  // Le profil est recalculé en ligne : companyId/user suffisent, et les valeurs
-  // dérivées plus bas ne sont pas encore disponibles à ce point du composant.
   const ordinaryPaymentMethods = usePaymentMethods(
     shop && shop.id, mode, deliveryFeeResult,
-    companyId ? 'company' : (user ? 'registered' : 'guest'),
-    companyId || null,
+    user ? 'registered' : 'guest', null,
   ).filter((method) => method.method !== 'shop' && method.family !== 'shop');
   const freeVoucherOrder = mode === 'collect' && (quoteState.quote?.voucher?.valid === true && quoteState.quote?.voucher?.matches_cart === true) && Number(quoteState.quote?.totals?.gross_after_discount) === 0;
   const paymentMethods = freeVoucherOrder ? [{id:'shop',method:'shop',family:'shop',label:t('loyaltyUse.noPayment'),sub:t('loyaltyUse.collect')}] : companyBilling
@@ -4203,19 +4179,13 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
   const subtotal = T.sousTotal;
   const total = T.total;
 
-  const isOffice = mode === 'delivery' && user && office;
-  const isGuest = !user;
-  // Client relié à un B2B ? (a au moins une société liée, ou un id société ERP).
-  const isB2B = companies.length > 0 || !!(user && user.companyClientId);
-  // Profil de paiement : société (companyId) > enregistré (user) > visiteur (guest).
-  const checkoutProfile = companyId ? 'company' : (user ? 'registered' : 'guest');
   // Step 1 validity
   function step1Valid() { return Boolean(user) && (mode !== 'delivery' || Boolean(office && selectedSiteId && !deliveryFeeErr)); }
   function step2Valid() { return Boolean(slot); }
   // Étape 3 : un moyen de paiement doit être proposé ET choisi. Sans ce test, le
   // bouton « Payer » restait actif alors que l'écran affichait « moyens
   // indisponibles », et la commande partait avec un moyen vide.
-  function step3Valid() { return paymentMethods.some((method) => method.id === payment); }
+  function step3Valid() { return paymentMethods.some((method) => method.id === payment) && (officeContext || validInvoiceBuyer(invoiceBuyer)); }
 
   async function handlePay() {
     if (!user) { onLogin(); return; }
@@ -4255,8 +4225,7 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
         basket: basket.map((l, index) => ({ line_key: wsQuoteLineKey(l, index), shopping_context: normaliseShoppingContext(l.shopping_context), productId: l.productId, qty: l.qty, portion: l.portion || null, id_product_portion: l.id_product_portion ?? null, ...(l.weight_grams != null ? { weight_grams: l.weight_grams } : {}), note: l.note || null, options: l.options || [], bundleId: l.bundleId || null, bundleOfferId: l.bundleOfferId || null, bundleSlots: l.bundleSlots || {}, ...(l.promotion_group && Number(l.promotion_id) > 0 ? { promotion_group: l.promotion_group, promotion_id: Number(l.promotion_id) } : {}), ...(l.personalization_selection ? {personalization_selection:l.personalization_selection} : {}), ...(l.menu_selection ? {menu_selection:l.menu_selection} : {}) })),
         voucher: voucherApplied && voucherApplied.ok ? voucherApplied.voucher.code : null,
         note: orderNote || null,
-        companyId: officeContext ? null : (companyId || null),
-        onAccount: officeContext ? companyBilling : !!onAccount,
+        onAccount: officeContext && companyBilling,
         customer: user ? { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, phone: user.phone || null, officeId: user.officeId || null } : { ...contact },
         payment: { method: freeVoucherOrder ? 'shop' : companyBilling ? 'company_invoice' : payment },
         delivery: mode === 'delivery' && office ? {
@@ -4273,7 +4242,7 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
           delivery_mode:               'office_delivery',
         } : null,
         total,
-        invoice: invoice ? { requested: true, vat, po: poNumber || null, note: orderNote || null } : null,
+        invoice_request: !officeContext && invoiceBuyer.type !== 'none' ? {...invoiceBuyerPayload(invoiceBuyer), po: poNumber} : null,
       };
       // Une commande n'est « passée » que si le serveur l'a ENREGISTRÉE. L'ancien
       // repli renvoyait un faux succès (orderId 'ord-demo') quand le module de
@@ -4295,7 +4264,7 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
     } catch (ex) {
       if (ex.code === 'WEBSHOP_QUOTE_CHANGED' && ex.quote) {
         onQuoteChanged?.(ex.quote); setPayErr(t('officeAccess.priceChanged'));
-      } else setPayErr(ex.message || wsText("error.payment"));
+      } else setPayErr(ex.code?.startsWith("BILLING_") ? billingError(new Error(ex.code)) : (ex.message || wsText("error.payment")));
     } finally {
       setPaying(false);
     }
@@ -4421,8 +4390,6 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
             quoteState={quoteState} shoppingContext={shoppingContext} companyBilling={companyBilling} deliveryDate={date}
             deliveryFee={deliveryFee} deliveryFeeResult={deliveryFeeResult} deliveryFeeErr={wsMessage(deliveryFeeErr)}
             payment={payment} setPayment={setPayment} paymentMethods={paymentMethods}
-            profile={checkoutProfile} companyId={companyId || null}
-            isOffice={isOffice} isB2B={isB2B} invoice={invoice} setInvoice={setInvoice} vat={vat} setVat={setVat}
             shop={shop}
             shopId={shop && shop.id}
             voucherInput={voucherInput} setVoucherInput={setVoucherInput}
@@ -4431,94 +4398,17 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
             giftEmail={user ? (user.email || null) : ((contact && contact.email) || null)}
             customerId={user ? user.id : null}
           />
-          {invoice && !officeContext && (
-          <div className="ws-b2b">
-            <div className="ws-b2b__head">
-              <span className="ws-b2b__icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 21h18"/>
-                  <path d="M5 21V7l7-4 7 4v14"/>
-                  <path d="M9 9h.01M9 13h.01M9 17h.01M15 9h.01M15 13h.01M15 17h.01"/>
-                </svg>
-              </span>
-              <div className="ws-b2b__titles">
-                <span className="ws-b2b__title">{t('co.company.step')}</span>
-                <span className="ws-b2b__sub">{t('co.company.hint')}</span>
-              </div>
-            </div>
-
-            {companies.length > 0 && (
-              <label className="ws-field ws-b2b__field">
-                <span>{t('co.company.forCompany')}</span>
-                <select value={companyId} onChange={(e) => { setCompanyId(e.target.value); setOnAccount(false); }}>
-                  <option value="">{t('co.company.personal')}</option>
-                  {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
+          {user && !officeContext && <div className="ws-b2b">
+            <InvoiceBuyerFields buyer={invoiceBuyer} setBuyer={setInvoiceBuyer} companies={companies} disabled={paying || !!pendingOrder} allowNone/>
+            {invoiceBuyer.type !== 'none' && <>
+              <label className="ws-acc__field"><span>{t('co.company.po')}</span>
+                <input className="ws-acc__input" value={poNumber} onChange={event => setPoNumber(event.target.value)} maxLength={100} disabled={paying}/>
               </label>
-            )}
-
-            {companyId && (() => {
-              const c = companies.find((x) => String(x.id) === String(companyId));
-              if (c && c.deferredBilling) {
-                return (
-                  <label className="ws-b2b__account">
-                    <input type="checkbox" checked={onAccount} onChange={(e) => setOnAccount(e.target.checked)} />
-                    <span className="ws-b2b__account-box" aria-hidden="true"/>
-                    <span className="ws-b2b__account-copy">
-                      <span className="ws-b2b__account-name">{t('co.company.onAccount')}</span>
-                      <span className="ws-b2b__account-sub">{t('co.company.deferred')}</span>
-                    </span>
-                  </label>
-                );
-              }
-              return (
-                <div className="ws-b2b__callout" role="note">
-                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <rect x="2" y="5" width="20" height="14" rx="2"/>
-                    <path d="M2 10h20"/>
-                  </svg>
-                  <span>{tRich(t, 'co.company.payByCard')}</span>
-                </div>
-              );
-            })()}
-
-            {/* Récap facturation : raison sociale + adresse (lecture seule),
-                depuis la fiche utilisateur (user.invoice) / la société. */}
-            {(() => {
-              const c = companies.find((x) => String(x.id) === String(companyId));
-              const persName = user ? [user.firstName, user.lastName].filter(Boolean).join(' ') : '';
-              const bName = (user && (user.invoice?.name || user.company)) || (c && c.name) || persName || '';
-              const bVat = (c && c.vat) || (user && user.invoice && user.invoice.vat) || vat || '';
-              const uAddr = (user && user.invoice)
-                ? [user.invoice.address, [user.invoice.postalCode, user.invoice.city].filter(Boolean).join(' ')].filter(Boolean).join(', ')
-                : '';
-              const cAddr = c
-                ? [c.address, [c.postalCode, c.city].filter(Boolean).join(' ')].filter(Boolean).join(', ')
-                : '';
-              const bAddr = uAddr || cAddr; // fiche user d'abord, sinon adresse société (API /companies)
-              if (!bName && !bVat && !bAddr) return null;
-              return (
-                <div className="ws-b2b__bill" role="note">
-                  <span className="ws-b2b__bill-k">{t('co.company.billedTo')}</span>
-                  {bName && <span className="ws-b2b__bill-name">{bName}</span>}
-                  {bVat && <span className="ws-b2b__bill-addr">{wsText("ui.vatNumber")} {bVat}</span>}
-                  {bAddr && <span className="ws-b2b__bill-addr">{bAddr}</span>}
-                </div>
-              );
-            })()}
-
-            <label className="ws-field ws-b2b__field">
-              <span>{t('co.company.note')}</span>
-              <textarea value={orderNote} onChange={(e) => setOrderNote(e.target.value)} rows={2} maxLength={1000}
-                        placeholder={t('co.company.notePh')} />
-            </label>
-            <label className="ws-field ws-b2b__field">
-              <span>{t('co.company.po')}</span>
-              <input type="text" value={poNumber} onChange={(e) => setPoNumber(e.target.value)}
-                     placeholder={t('co.company.poPh')} />
-            </label>
-          </div>
-          )}
+              <label className="ws-acc__field"><span>{t('co.company.note')}</span>
+                <textarea className="ws-acc__input" value={orderNote} onChange={event => setOrderNote(event.target.value)} maxLength={1000} disabled={paying}/>
+              </label>
+            </>}
+          </div>}
           </>
         )}
       </div>
@@ -4824,25 +4714,15 @@ function CheckoutStep2({ mode, shop, office, tour, slot, setSlot, date, onDate, 
   );
 }
 
-function CheckoutStep3({ basket, subtotal, totaux, total, payment, setPayment, isOffice, isB2B, invoice, setInvoice, vat, setVat, shop,
+function CheckoutStep3({ basket, subtotal, totaux, total, payment, setPayment, shop,
                          shopId, mode, voucherInput, setVoucherInput, voucherApplied, setVoucherApplied, voucherDiscount,
-                         deliveryFee, deliveryFeeResult, deliveryFeeErr, profile, companyId, customerId, quoteState,
+                         deliveryFee, deliveryFeeResult, deliveryFeeErr, customerId, quoteState,
                          paymentMethods, shoppingContext, companyBilling, deliveryDate }) {
   const { t } = wsUseT();
   const allowVoucher = shoppingContext?.mode !== 'office_offer';
-  const isOfficeContext = shoppingContext?.mode !== 'standard';
   const voucherLoading = quoteState?.status === 'loading';
   const voucherErr = quoteState?.status === 'error' ? quoteState.error : null;
   const displayRows = wsBasketDisplayRows(basket, quoteState?.quote || null);
-  // Infobulle « facture nominative » : ouverte au TAP, fermée au tap extérieur.
-  const [infoOpen, setInfoOpen] = useState(false);
-  const infoRef = React.useRef(null);
-  React.useEffect(() => {
-    if (!infoOpen) return;
-    const off = (e) => { if (infoRef.current && !infoRef.current.contains(e.target)) setInfoOpen(false); };
-    document.addEventListener('pointerdown', off, true);
-    return () => document.removeEventListener('pointerdown', off, true);
-  }, [infoOpen]);
   // paymentMethods vient du wizard (prop) : plus de second appel à /payment-methods.
   // Si le moyen sélectionné n'est plus proposé (profil/boutique), prendre le premier dispo.
   useEffect(() => {
@@ -4976,25 +4856,6 @@ function CheckoutStep3({ basket, subtotal, totaux, total, payment, setPayment, i
           </label>
         ))}
       </div>
-
-      {profile !== 'guest' && !isOfficeContext && (
-        <div className="ws-co-invoice" ref={infoRef}>
-          <div className="ws-co-invoice__row">
-            <label className="ws-co-invoice__check">
-              <input type="checkbox" checked={invoice} onChange={(e) => setInvoice(e.target.checked)}/>
-              <span>{t(isB2B ? 'co.askInvoice' : 'co.askInvoiceNamed')}</span>
-            </label>
-            {!isB2B && (
-              <button type="button" className={`ws-co-invoice__i${infoOpen ? ' is-open' : ''}`}
-                      aria-label={t('co.invoice.about')} aria-expanded={infoOpen}
-                      onClick={() => setInfoOpen((v) => !v)}>i</button>
-            )}
-          </div>
-          {!isB2B && infoOpen && (
-            <div className="ws-co-invoice__tip" role="note"> {wsText("ui.invoiceHint")} </div>
-          )}
-        </div>
-      )}
 
       <p className="ws-co-step__hint">{t('co.pay.secure')}</p>
     </div>
