@@ -41,12 +41,13 @@ function TransactionInvoice({ invoice, t }) {
 
   if (!invoice) return null;
   if (invoice.status === 'pending') return <p role="status">{t('billing.invoicePending')}</p>;
-  return <div className="ws-acc__row-foot">
-    <button type="button" className="ws-linkbtn" disabled={busy} onClick={download}>
-      {t(busy ? 'common.loading2' : 'billing.download')} · {invoice.number}
+  return <>
+    <button type="button" className="ws-transaction-action" disabled={busy} onClick={download}>
+      <TransactionActionIcon download/>
+      <span>{t(busy ? 'common.loading2' : 'billing.download')} · {invoice.number}</span>
     </button>
     {error && <p role="alert">{error}</p>}
-  </div>;
+  </>;
 }
 
 function TransactionReceipt({ transaction, t }) {
@@ -171,8 +172,11 @@ export function AccountTransactions({ receiptToken, t, locale, onReceiptHandled 
           <span>{detail.shop} · {date(detail.at)}</span>
         </div>
         <p>{t('acc.orders.total')} · {money(detail.total)}</p>
-        <TransactionReceipt transaction={detail} t={t}/>
-        <TransactionInvoice invoice={detail.invoice} t={t}/>
+        <div className="ws-transaction-actions">
+          <TransactionReceipt transaction={detail} t={t}/>
+          {detail.invoice?.status === 'issued' && <TransactionInvoice invoice={detail.invoice} t={t}/>}
+        </div>
+        {detail.invoice?.status === 'pending' && <TransactionInvoice invoice={detail.invoice} t={t}/>}
       </div>
       {detail.lines.map(line => <div className="ws-acc__card" key={line.id}>
         <strong>{line.name}</strong>
@@ -197,8 +201,9 @@ export function AccountTransactions({ receiptToken, t, locale, onReceiptHandled 
             <span>{t('acc.transactions.detail')}</span>
           </button>
           <TransactionReceipt transaction={item} t={t}/>
+          {item.invoice?.status === 'issued' && <TransactionInvoice invoice={item.invoice} t={t}/>}
         </div>
-        <TransactionInvoice invoice={item.invoice} t={t}/>
+        {item.invoice?.status === 'pending' && <TransactionInvoice invoice={item.invoice} t={t}/>}
       </div>)}
       {before && <button type="button" className="ws-linkbtn" disabled={loading} onClick={loadMore}>{t('acc.transactions.more')}</button>}
     </>}
