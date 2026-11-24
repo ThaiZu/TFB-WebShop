@@ -78,7 +78,7 @@ const fs = require('node:fs');
     await page.waitForFunction(()=>document.querySelector('.ws-billing-companies .ws-acc__card strong')?.textContent==='Company 51');
     await purchase();
     const section=page.locator('.ws-purchase-invoice');await section.getByRole('button',{name:'Wystaw fakturę',exact:true}).waitFor();
-    await section.getByLabel('Rodzaj faktury').selectOption('company');
+    await section.getByRole('radio',{name:'Faktura na firmę'}).check();
     assert.equal(await section.getByLabel('Firma do faktury').inputValue(),'51');
     await section.getByLabel('PO#',{exact:true}).fill('PO-123');await section.locator('textarea').fill('Department A');
     await section.getByRole('button',{name:'Wystaw fakturę',exact:true}).click();await section.locator('[role=alert]').waitFor();

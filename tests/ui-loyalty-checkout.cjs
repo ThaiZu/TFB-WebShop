@@ -7,7 +7,7 @@ const local=process.env.CHECKOUT_LOCAL_URL||null;
 const pageData=(items,nextCursor=null)=>({status:'available',asOf:new Date().toISOString(),items,nextCursor});
 (async()=>{
  const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||undefined,headless:true,args:['--no-sandbox','--host-resolver-rules=MAP webshop.tfbuddy.local 127.0.0.1']});
- try {for(const width of [1440,390]) {for(const scenario of (process.env.CHECKOUT_SCENARIOS||'none,reserved,expired,mismatch,optional,free,pickup,unavailable,mixed').split(',')) {
+ try {for(const width of [1440,390]) {for(const scenario of (process.env.CHECKOUT_SCENARIOS||'none,reserved,expired,mismatch,optional,free,pickup,unavailable,mixed,invoice').split(',')) {
   const context=await browser.newContext({ignoreHTTPSErrors:true,viewport:{width,height:1000},isMobile:width<600,hasTouch:width<600,serviceWorkers:'block'});
   await context.addInitScript(()=>{const now=Date.now()-3600000;for(const [key,value] of [['ws.lang','pl'],['ws_auth_token','test-A'],['ws_auth_refresh_token','refresh-A']])sessionStorage.setItem('ws.session.v1:'+key,JSON.stringify({value,createdAt:now,expiresAt:now+43200000}));});
   const errors=[],orders=[],quotes=[];let stripeCalls=0,rewardMode=['optional','free'].includes(scenario)?'ready':['pickup','unavailable','mixed'].includes(scenario)?'none':scenario;
@@ -32,6 +32,10 @@ const pageData=(items,nextCursor=null)=>({status:'available',asOf:new Date().toI
    }
    else if(url.pathname.endsWith('/availability/slots'))data=[{id:1,label:'15:00 – 15:30',capacity:30,current_orders:0,available:true}];
    else if(url.pathname.endsWith('/payment-methods'))data=scenario==='unavailable'?[]:scenario==='pickup'?[{method:'shop',family:'shop',label:'Pay at pickup'}]:[...(scenario==='mixed'?[{method:'shop',family:'shop',label:'Pay at pickup'}]:[]),{method:'stripe',family:'stripe',label:'Karta'}];
+   else if(url.pathname.endsWith('/webshop/billing/companies'))data=[
+    {id:50,name:'Default company',vat:'BE0123456789',isDefault:true},
+    {id:51,name:'Other company',vat:'BE0987654321',isDefault:false},
+   ];
    else if(url.pathname.endsWith('/webshop/vouchers/prepare'))data={prepared:0,hasMore:false};
    else if(url.pathname.endsWith('/webshop/vouchers'))data=pageData([{id:4,code:'PERSONAL-4',name:'Test bread',source:'LOYALTY',status:'READY',validFrom:null,validTo:null,canUse:true}]);
    else if(url.pathname.endsWith('/webshop/loyalty/identity'))data={status:'available',code:'FID1-1-'+'A'.repeat(32)};
@@ -73,6 +77,23 @@ const pageData=(items,nextCursor=null)=>({status:'available',asOf:new Date().toI
    return next;
   }
   const pay=await checkout(rewardMode);
+  if(scenario==='invoice') {
+   const types=page.getByRole('group',{name:'Rodzaj faktury',exact:true});
+   const none=types.getByRole('radio',{name:'Bez faktury'});
+   const personal=types.getByRole('radio',{name:'Faktura imienna'});
+   const company=types.getByRole('radio',{name:'Faktura na firmę'});
+   const companies=page.getByLabel('Firma do faktury');
+   assert.equal(await types.getByRole('radio').count(),3);
+   assert.equal(await none.isChecked(),true);
+   await personal.check();
+   assert.equal(await companies.count(),0);
+   await none.check();
+   await company.check();
+   assert.equal(await companies.inputValue(),'50');
+   assert.ok((await companies.boundingBox()).height>=52);
+   assert.equal(await companies.evaluate(node=>getComputedStyle(node).fontSize),'16px');
+   await companies.selectOption('51');
+  }
   const rewardPanel=page.getByRole('region',{name:'Odbiór nagrody',exact:true});
   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
   assert.equal(await rewardPanel.count(),0,'Legacy reward picker is replaced by the voucher wallet');
@@ -83,7 +104,7 @@ const pageData=(items,nextCursor=null)=>({status:'available',asOf:new Date().toI
    assert.equal(await page.locator('input[name=payment][value=shop]').count(),0,'Paid goods never offer pickup payment');
    assert.equal(await pay.evaluate(node=>getComputedStyle(node).cursor),'not-allowed');
    assert.equal(orders.length,0);assert.equal(stripeCalls,0);
-  } else if(['none','optional','free','mixed'].includes(scenario)) {
+  } else if(['none','optional','free','mixed','invoice'].includes(scenario)) {
    if(scenario==='mixed')assert.equal(await page.locator('input[name=payment][value=shop]').count(),0,'Old API pickup option is filtered out');
    await page.screenshot({path:`/tmp/fidelity-checkout-${scenario}-${width}.png`});
    if(scenario==='optional'){await pay.focus();await page.keyboard.press('Enter');}
@@ -92,6 +113,7 @@ const pageData=(items,nextCursor=null)=>({status:'available',asOf:new Date().toI
    assert.equal(orders.length,1);
    assert.equal(orders[0].loyalty_reward||null,null);
    assert.equal(orders[0].voucher||null,scenario==='free'?'PERSONAL-4':null);
+   if(scenario==='invoice')assert.deepEqual(orders[0].invoice_request,{type:'company',companyId:51,po:''});
    assert.equal(orders[0].payment.method,scenario==='free'?'shop':'stripe');
    assert.equal(stripeCalls,scenario==='free'?0:1);
   } else assert.equal(orders.length,0);
