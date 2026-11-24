@@ -21,3 +21,14 @@ export function billingError(error) {
   const translated = t(key);
   return translated === key ? t('billing.error.generic') : translated;
 }
+
+export function saveInvoicePdf(blob, number) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'invoice-' + String(number).replace(/[^a-z0-9-]/gi, '_') + '.pdf';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
