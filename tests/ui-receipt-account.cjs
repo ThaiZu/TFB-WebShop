@@ -98,6 +98,7 @@ async function flow(browser, opts) {
     assert.equal(resolveCount, 1);
     const receiptCard = page.locator('.ws-acc__card').filter({hasText:'SALE-52'});
     await receiptCard.getByRole('button', {name:'Szczegóły transakcji', exact:true}).click();
+    await page.getByRole('button', {name:/Wróć do transakcji/}).waitFor();
     const document = page.getByRole('button', {name:'Dokument sprzedaży', exact:true});
     await document.click();
     await page.getByText(/Nie udało się pobrać dokumentu sprzedaży/).waitFor();

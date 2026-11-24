@@ -2,6 +2,14 @@ import { useEffect, useState } from 'react';
 import { normalizeReceiptToken } from './webshop-receipt-token.js';
 import { billingError, billingRequest, saveInvoicePdf, savePdf } from './webshop-billing-api.js';
 
+function TransactionActionIcon({ download = false }) {
+  return <svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 24 24"
+    fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    {download ? <path d="M12 3v12m-4-4 4 4 4-4M4 16v4h16v-4"/>
+      : <path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/>}
+  </svg>;
+}
+
 function TransactionInvoice({ invoice, t }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -49,8 +57,9 @@ function TransactionReceipt({ transaction, t }) {
   if (transaction.receiptAvailable === false || transaction.invoice?.status === 'issued') return null;
 
   return <>
-    <button type="button" className="ws-linkbtn" disabled={busy} onClick={download}>
-      {t(busy ? 'common.loading2' : 'acc.transactions.salesDocument')}
+    <button type="button" className="ws-transaction-action" disabled={busy} onClick={download}>
+      <TransactionActionIcon download/>
+      <span>{t(busy ? 'common.loading2' : 'acc.transactions.salesDocument')}</span>
     </button>
     {error && <p role="alert">{t('acc.transactions.salesDocumentError')}</p>}
   </>;
@@ -168,7 +177,10 @@ export function AccountTransactions({ receiptToken, t, locale, onReceiptHandled 
         <p>{item.shop} · {date(item.at)}</p>
         <p>{t('acc.orders.source.' + item.source)}</p>
         <div className="ws-acc__row-foot">
-          <button type="button" className="ws-linkbtn" disabled={loading} onClick={() => openTransaction(item.id)}>{t('acc.transactions.detail')}</button>
+          <button type="button" className="ws-transaction-action" disabled={loading} onClick={() => openTransaction(item.id)}>
+            <TransactionActionIcon/>
+            <span>{t('acc.transactions.detail')}</span>
+          </button>
           <TransactionReceipt transaction={item} t={t}/>
         </div>
         <TransactionInvoice invoice={item.invoice} t={t}/>
