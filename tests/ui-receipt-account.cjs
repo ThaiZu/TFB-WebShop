@@ -6,6 +6,10 @@ const base = process.env.WEBSHOP_BASE || 'http://127.0.0.1:33409';
 const token = 'a'.repeat(64);
 const user = { id: 7, email: 'customer@example.invalid', firstName: 'Test', lastName: 'Client', needsPostcode: true };
 const transactions = [{ id: 52, reference: 'SALE-52', at: '2026-11-23T10:00:00Z', shop: 'Atelier', source: 'store', total: 6 }];
+const pending = { id: 53, reference: 'SALE-53', at: '2026-11-23T11:00:00Z', shop: 'Atelier', source: 'webshop', total: 9,
+  invoice: { status:'pending', orderRef:'WEB-2-20261123-ABCDEA' } };
+const issued = { id: 54, reference: 'SALE-54', at: '2026-11-23T12:00:00Z', shop: 'Atelier', source: 'webshop', total: 12,
+  invoice: { status:'issued', orderRef:'WEB-2-20261123-ABCDEF', number:'260001' } };
 const orders = [
   { orderId: 12, source: 'store', orderRef: 'POS-12', status: 'new', total: 6, itemsCount: 1, mode: 'collect', payment: {method: 'store', status: 'pending'} },
   { orderId: 13, source: 'webshop', orderRef: 'WEB-2-20261123-ABCDEF', status: 'new', total: 9, itemsCount: 1, mode: 'collect', payment: {method: 'stripe', status: 'paid'} },
@@ -17,7 +21,7 @@ async function flow(browser, opts) {
     const createdAt = Date.now();
     sessionStorage.setItem('ws.session.v1:ws.lang', JSON.stringify({value:'pl', createdAt, expiresAt:createdAt + 43200000}));
   });
-  let loggedIn = opts.signedIn, resolveCount = 0;
+  let loggedIn = opts.signedIn, resolveCount = 0, pdfCount = 0;
   const errors = [];
   await context.route('**/api/v1/**', async route => {
     const req = route.request();
@@ -38,7 +42,12 @@ async function flow(browser, opts) {
         resolveCount++;
         return opts.owned ? payload(200, { ...transactions[0], lines: [{id:1,name:'Tarte témoin',quantity:1,unitGrossPrice:6,discountValue:0,totalGross:6}] }) : payload(404, {});
       case '/webshop/transactions/me':
-        return payload(200, { items: transactions, nextBefore: null });
+        return payload(200, { items: opts.owned ? [issued, pending, ...transactions] : transactions, nextBefore: null });
+      case '/webshop/billing/orders/WEB-2-20261123-ABCDEF/pdf':
+        assert.equal(req.headers().authorization, 'Bearer fixture');
+        pdfCount++;
+        if (pdfCount === 1) return payload(503, {});
+        return route.fulfill({ status: 200, contentType: 'application/pdf', body:'%PDF-1.4\nfixture' });
       case '/webshop/orders/me':
         return payload(200, orders);
       case '/webshop/orders/store/12':
@@ -64,6 +73,8 @@ async function flow(browser, opts) {
       await login.locator('input[autocomplete=current-password]').fill('fixture-password');
       await login.locator('button[type=submit]').click();
     }
+    await page.locator('.ws-acc__section').first().waitFor();
+    assert.equal(await page.evaluate(() => window.WSI18n.setLang('pl')), true);
     if (opts.owned) {
       await page.getByText('Tarte témoin').waitFor();
       await page.getByRole('button', {name:/Wróć do transakcji/}).click();
@@ -74,6 +85,19 @@ async function flow(browser, opts) {
     await page.getByText('SALE-52', { exact: true }).waitFor();
     assert.equal(new URL(page.url()).hash, '');
     assert.equal(resolveCount, 1);
+    const downloadInvoice = page.getByRole('button', {name:/Pobierz fakturę.*260001/});
+    if (opts.owned) {
+      await page.locator('.ws-acc__card').filter({hasText:'SALE-53'}).getByText('Zapisano prośbę o fakturę.').waitFor();
+      await downloadInvoice.click();
+      await page.locator('.ws-acc__card').filter({hasText:'SALE-54'}).getByRole('alert').waitFor();
+      const download = page.waitForEvent('download');
+      await downloadInvoice.click();
+      assert.equal((await download).suggestedFilename(), 'invoice-260001.pdf');
+      assert.equal(pdfCount, 2);
+    } else {
+      assert.equal(await downloadInvoice.count(), 0);
+      assert.equal(pdfCount, 0);
+    }
 
     await page.getByRole('tab', {name:'Moje zamówienia'}).click();
     await page.getByText('POS-12 · W sklepie stacjonarnym').waitFor();

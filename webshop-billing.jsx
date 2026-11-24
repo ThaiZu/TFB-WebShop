@@ -1,5 +1,5 @@
 import {useEffect, useRef, useState} from 'react';
-import {billingRequest, billingError} from './webshop-billing-api.js';
+import {billingRequest, billingError, saveInvoicePdf} from './webshop-billing-api.js';
 import './webshop-billing.css';
 
 const countries = ['AT','BE','BG','CY','CZ','DE','DK','EE','EL','ES','FI','FR','HR','HU','IE','IT','LT','LU','LV','MT','NL','PL','PT','RO','SE','SI','SK','XI'];
@@ -143,11 +143,7 @@ export function PurchaseInvoice({orderRef, refreshKey = ''}) {
     return action(async current => {
       const blob = await billingRequest(path+'/pdf', {pdf:true});
       if (generation.current !== current) return;
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url; link.download = 'invoice-' + String(status.invoice.invoice_number).replace(/[^a-z0-9-]/gi, '_') + '.pdf';
-      document.body.appendChild(link); link.click(); link.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      saveInvoicePdf(blob, status.invoice.invoice_number);
     });
   }
   return <section className="ws-acc__section ws-purchase-invoice" aria-busy={busy}>
@@ -178,7 +174,7 @@ export function PurchaseInvoice({orderRef, refreshKey = ''}) {
       </>}
       <p className="ws-acc__hint">{t('billing.issueHint')}</p>
       <button className="ws-cta" type="submit" disabled={busy || (!status.requested && !validInvoiceBuyer(buyer))}>{t(busy ? 'ui.saving' : 'billing.issue')}</button>
-    </form> : status && <p>{t(status.waitingForOrder && !status.contactShop ? 'billing.invoiceRequested' : 'billing.contactShop')}</p>}
+    </form> : status && <p>{t((status.pending || status.waitingForOrder) && !status.contactShop ? 'billing.invoiceRequested' : 'billing.contactShop')}</p>}
     {error && <p role="alert" className="ws-acc__vat-msg ws-acc__vat-msg--err">{error}</p>}
   </section>;
 }

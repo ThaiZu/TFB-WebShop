@@ -1,5 +1,33 @@
 import { useEffect, useState } from 'react';
 import { normalizeReceiptToken } from './webshop-receipt-token.js';
+import { billingError, billingRequest, saveInvoicePdf } from './webshop-billing-api.js';
+
+function TransactionInvoice({ invoice, t }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  async function download() {
+    setBusy(true);
+    setError('');
+    try {
+      const blob = await billingRequest('/orders/' + encodeURIComponent(invoice.orderRef) + '/pdf', { pdf: true });
+      saveInvoicePdf(blob, invoice.number);
+    } catch (exception) {
+      setError(billingError(exception));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!invoice) return null;
+  if (invoice.status === 'pending') return <p role="status">{t('billing.invoiceRequested')}</p>;
+  return <div className="ws-acc__row-foot">
+    <button type="button" className="ws-linkbtn" disabled={busy} onClick={download}>
+      {t(busy ? 'common.loading2' : 'billing.download')} · {invoice.number}
+    </button>
+    {error && <p role="alert">{error}</p>}
+  </div>;
+}
 
 export function receiptIntent() {
   const token = new URLSearchParams(location.hash.slice(1)).get('receipt');
@@ -94,6 +122,7 @@ export function AccountTransactions({ receiptToken, t, locale, onReceiptHandled 
         <p>{detail.shop} · {date(detail.at)}</p>
         <p>{t('acc.orders.source.' + detail.source)}</p>
         <p>{t('acc.orders.total')} · {money(detail.total)}</p>
+        <TransactionInvoice invoice={detail.invoice} t={t}/>
       </div>
       {detail.lines.map(line => <div className="ws-acc__card" key={line.id}>
         <strong>{line.name}</strong>
@@ -111,6 +140,7 @@ export function AccountTransactions({ receiptToken, t, locale, onReceiptHandled 
         <p>{item.shop} · {date(item.at)}</p>
         <p>{t('acc.orders.source.' + item.source)}</p>
         <button type="button" className="ws-linkbtn" disabled={loading} onClick={() => openTransaction(item.id)}>{t('acc.transactions.receipt')}</button>
+        <TransactionInvoice invoice={item.invoice} t={t}/>
       </div>)}
       {before && <button type="button" className="ws-linkbtn" disabled={loading} onClick={loadMore}>{t('acc.transactions.more')}</button>}
     </>}
