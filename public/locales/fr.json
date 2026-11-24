@@ -1,4 +1,11 @@
 {
+  "personal.total.PURCHASE": "Points des achats",
+  "personal.total.BINGO": "Points du Bingo",
+  "personal.total.RETURN": "Corrections pour retours",
+  "personal.unavailable": "Le solde de points et le Bingo sont indisponibles.",
+  "billing.error.VIES_BUSY": "VIES est surchargé. Réessayez dans un instant.",
+  "billing.error.BILLING_BUSY": "Les données de cette société sont en cours de traitement. Réessayez dans un instant.",
+  "billing.error.BILLING_UNAVAILABLE": "Impossible d’enregistrer la société. Si le problème persiste, contactez le magasin.",
   "personal.estimated": "Points estimés",
   "personal.points": "Points",
   "personal.balance": "Solde de points",
