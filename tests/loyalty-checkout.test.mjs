@@ -6,6 +6,9 @@ import {transformSync} from 'esbuild';
 import {basketShoppingContext,normaliseShoppingContext} from '../webshop-office-context.js';
 const bundle=fs.readFileSync(new URL('../webshop-full-bundle.jsx',import.meta.url),'utf8');
 const code=transformSync(bundle.slice(bundle.indexOf('function CheckoutWizard('),bundle.indexOf('function CheckoutStep1(')),{loader:'jsx'}).code;
+const billing=fs.readFileSync(new URL('../webshop-billing.jsx',import.meta.url),'utf8');
+const validBuyer=billing.slice(billing.indexOf('export function validInvoiceBuyer'),billing.indexOf('export function InvoiceBuyerFields'));
+const buyerPayload=billing.slice(billing.indexOf('export function invoiceBuyerPayload'),billing.indexOf('export function PurchaseInvoice'));
 const adapter=fs.readFileSync(new URL('../webshop-orders-api.jsx',import.meta.url),'utf8');
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
 function nodes(node) {return node && typeof node==='object' ? [node,...(node.children||[]).flat(Infinity).flatMap(nodes)] : [];}
@@ -24,12 +27,12 @@ function setup({method='shop',rejectFirst=true}={}) {
   wsUseT:()=>({t:key=>key}),wsText:key=>key,wsMessage:v=>v,wsCurrency:String,wsNumber:String,
   wsQuoteTotals:q=>q?{bon:0,sousTotal:Number(q.totals.gross_after_discount),total:Number(q.totals.gross_after_discount)}:null,
   wsQuoteLineKey:line=>'web-'+line.line,wsCheckoutQuoteComparable:q=>q,wsSelectedAutomaticPromotionId:()=>null,wsTap:fn=>({onClick:fn}),usePaymentMethods:()=>[{id:'stripe',method:'stripe',family:'stripe',label:'Card'}],
-  CheckoutStep1:'CheckoutStep1',CheckoutStep2:'CheckoutStep2',CheckoutStep3:'CheckoutStep3',Pict:'Pict'};
- vm.createContext(context);vm.runInContext(code,context);
+  CheckoutStep1:'CheckoutStep1',CheckoutStep2:'CheckoutStep2',CheckoutStep3:'CheckoutStep3',InvoiceBuyerFields:'InvoiceBuyerFields',Pict:'Pict'};
+ vm.createContext(context);vm.runInContext(validBuyer.replace('export ', '')+buyerPayload.replace('export ', '')+code,context);
  const render=()=>{index=0;return context.CheckoutWizard(props);};
  const find=predicate=>nodes(render()).find(predicate);
  const next=()=>find(n=>n.props.className==='ws-cta ws-cta--block').props.onClick();
- async function submit(){next();find(n=>n.type==='CheckoutStep2').props.setSlot({id:'slot1',label:'10:00–11:00'});next();find(n=>n.type==='CheckoutStep3').props.setPayment(method);next();await flush();}
+ async function submit(buyer){next();find(n=>n.type==='CheckoutStep2').props.setSlot({id:'slot1',label:'10:00–11:00'});next();find(n=>n.type==='CheckoutStep3').props.setPayment(method);if(buyer) find(n=>n.type==='InvoiceBuyerFields').props.setBuyer(buyer);next();await flush();}
  return {props,calls,confirmed,payments,submit,find,render,quotes:()=>quotes,setFailure:e=>{failure=e;}};
 }
 test('lost creation response replays exact voucher request without requoting',async()=>{
@@ -76,4 +79,14 @@ test('checkout action handles click directly and reports stale pricing instead o
  h.find(node=>node.props.className==='ws-cta ws-cta--block').props.onClick();
  assert.ok(h.find(node=>node.props.role==='alert'&&node.children.includes('error.quote')));
  assert.equal(h.calls.length,0);
+});
+
+test('invoice buyer stays separate from the checkout payer and survives a retry',async()=>{
+ const h=setup();
+ await h.submit({type:'company',companyId:'51'});
+ assert.deepEqual(h.calls[0].invoice_request,{type:'company',companyId:51,po:''});
+ assert.equal(h.calls[0].customer.id,10);
+ assert.equal(h.calls[0].onAccount,false);
+ await h.find(n=>n.children.includes('loyaltyUse.retryOrder')).props.onClick();
+ assert.deepEqual(h.calls[0],h.calls[1]);
 });
