@@ -1205,7 +1205,7 @@
   "billing.error.generic": "Nie udało się zakończyć operacji. Spróbuj ponownie lub skontaktuj się ze sklepem.",
   "billing.error.BILLING_INPUT_INVALID": "Sprawdź pola formularza.",
   "billing.error.BILLING_COMPANY_INCOMPLETE": "VIES nie dostarczył kompletnych danych do faktury. Skontaktuj się ze sklepem.",
-  "billing.error.BILLING_COMPANY_AMBIGUOUS": "Ta firma wymaga sprawdzenia przez sklep. Twoje dane osobowe pozostają bez zmian.",
+  "billing.error.BILLING_COMPANY_AMBIGUOUS": "Numer VAT wymaga sprawdzenia. Sprawa jest już w Helpdesku. Spróbuj dodać firmę ponownie po wyjaśnieniu konfliktu.",
   "billing.error.BILLING_COMPANY_NOT_FOUND": "Ta firma nie jest już przypisana do Twojego konta. Odśwież stronę.",
   "billing.error.BILLING_ALREADY_ISSUED": "Do tego zakupu istnieje już faktura. Odśwież stronę, aby ją zobaczyć.",
   "billing.error.BILLING_NOT_ELIGIBLE": "Do tego zakupu nie można wystawić faktury automatycznie. Skontaktuj się ze sklepem.",

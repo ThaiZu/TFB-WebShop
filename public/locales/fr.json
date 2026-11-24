@@ -1205,7 +1205,7 @@
   "billing.error.generic": "Impossible de terminer cette opération. Réessayez ou contactez le magasin.",
   "billing.error.BILLING_INPUT_INVALID": "Vérifiez les champs du formulaire.",
   "billing.error.BILLING_COMPANY_INCOMPLETE": "VIES ne fournit pas toutes les données de facturation. Contactez le magasin.",
-  "billing.error.BILLING_COMPANY_AMBIGUOUS": "Cette société nécessite une vérification par le magasin. Vos données personnelles restent inchangées.",
+  "billing.error.BILLING_COMPANY_AMBIGUOUS": "Ce numéro de TVA doit être vérifié. Le dossier est déjà enregistré auprès du support. Réessayez après sa résolution.",
   "billing.error.BILLING_COMPANY_NOT_FOUND": "Cette société n’est plus liée à votre compte. Actualisez la page.",
   "billing.error.BILLING_ALREADY_ISSUED": "Une facture existe déjà pour cet achat. Actualisez la page pour la consulter.",
   "billing.error.BILLING_NOT_ELIGIBLE": "Cet achat ne permet pas l’émission automatique. Contactez le magasin.",
