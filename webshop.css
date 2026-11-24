@@ -3863,7 +3863,7 @@
   .ws-nav__shopchip svg:last-child { flex-shrink: 0; opacity: .6; }
 
   /* Hide top-nav account icon, cart icon, and "Office Client" indicator on mobile */
-  .ws-nav__icon,
+  .ws-nav__icon:not(.ws-product-search-toggle),
   .ws-nav__cart,
   .ws-nav__office { display: none !important; }
 

@@ -2492,14 +2492,18 @@ function CategoryRow({ active, sub, onSelect, onSelectSub, onBack, accent, tint,
 
 // Variant A : Subtle: small shop chip after brand
 
-function ProductSearchField({ query, onChange, mobile = false }) {
+function ProductSearchField({ query, onChange, mobile = false, disabled = false }) {
   const { t } = wsUseT();
   return <label className={`ws-product-search ws-product-search--${mobile ? 'mobile' : 'desktop'}`}>
     <Pict d={ICONS.search} s={17}/>
-    <input id={mobile ? 'ws-mobile-product-search' : undefined} type="search"
+    <input id={mobile ? 'ws-mobile-product-search' : undefined} name="product-search" type="search" autoComplete="off"
       aria-label={t('productSearch.label')} placeholder={t('productSearch.placeholder')}
-      value={query} onChange={event => onChange(event.target.value)} maxLength={100}
-      autoFocus={mobile}/>
+      value={query} maxLength={100} autoFocus={mobile} disabled={disabled}
+      onChange={event => {
+        const input = event.currentTarget;
+        // Ignore autofill on the catalogue field while the customer is using another control.
+        if (!input.disabled && input === input.ownerDocument.activeElement) onChange(input.value);
+      }}/>
   </label>;
 }
 
@@ -3592,7 +3596,10 @@ function AccountModal({ open, requestedTab, requestedReceipt, onReceiptHandled, 
     } catch (_) { setCompanyErr(wsText('error.billingUnlink')); }
     finally { setCompanyBusy(false); }
   }
-  async function savePassword() {
+  const canSavePassword = !pwBusy && !!pw0 && pw1.length >= 4 && pw1 === pw2;
+  async function savePassword(event) {
+    event.preventDefault();
+    if (!canSavePassword) return;
     setPwBusy(true); setPwMsg(null);
     const r = await window.WSAuth.changePassword({ currentPassword: pw0, password: pw1 });
     setPwBusy(false);
@@ -3942,22 +3949,22 @@ function AccountModal({ open, requestedTab, requestedReceipt, onReceiptHandled, 
       <BillingCompanies key={user.id} allowAdd={allowBillingCompanyLinking}/>
 
       {/* ── Sécurité ── */}
-      <div className="ws-acc__section">
+      <form className="ws-acc__section" onSubmit={savePassword}>
         <div className="ws-acc__section-h">{t('acc.security')}</div>
         <div className="ws-acc__form">
           <label className="ws-acc__field">
             <span className="ws-acc__field-label">{wsText("ui.currentPassword")}</span>
-            <input type="password" className="ws-acc__input" value={pw0}
+            <input type="password" name="current-password" className="ws-acc__input" value={pw0}
               onChange={(e) => setPw0(e.target.value)} autoComplete="current-password" />
           </label>
           <label className="ws-acc__field">
             <span className="ws-acc__field-label">{t('acc.newPassword')}</span>
-            <input type="password" className="ws-acc__input" value={pw1}
+            <input type="password" name="new-password" className="ws-acc__input" value={pw1}
               onChange={(e) => setPw1(e.target.value)} autoComplete="new-password" />
           </label>
           <label className="ws-acc__field">
             <span className="ws-acc__field-label">{t('acc.confirmPassword')}</span>
-            <input type="password" className="ws-acc__input" value={pw2}
+            <input type="password" name="confirm-password" className="ws-acc__input" value={pw2}
               onChange={(e) => setPw2(e.target.value)} autoComplete="new-password" />
           </label>
         </div>
@@ -3967,9 +3974,9 @@ function AccountModal({ open, requestedTab, requestedReceipt, onReceiptHandled, 
           </p>
         )}
         <div className="ws-acc__form-foot">
-          <button type="button" className="ws-cta" disabled={pwBusy || !pw0 || pw1.length < 4 || pw1 !== pw2} onClick={savePassword}> {wsText("ui.changePassword")} </button>
+          <button type="submit" className="ws-cta" disabled={!canSavePassword}> {wsText("ui.changePassword")} </button>
         </div>
-      </div>
+      </form>
 
       <div className="ws-acc__section">
         <div className="ws-acc__section-h">{t('acc.prefs')}</div>
@@ -6229,7 +6236,7 @@ function ShopFrame({ variant }) {
   return (
     <div className={`ws ws--${variant}${hidePrices ? ' ws-noprice' : ''}`} data-mode={mode}>
       {invitationDialog}
-      <Nav productSearch={<ProductSearchField query={productQuery} onChange={setProductQuery}/>}
+      <Nav productSearch={<ProductSearchField query={productQuery} onChange={setProductQuery} disabled={accountOpen}/>}
            searchToggle={<button type="button" className="ws-nav__icon ws-product-search-toggle"
              aria-label={t('productSearch.label')} aria-expanded={mobileSearchOpen}
              onClick={() => {
@@ -6281,7 +6288,7 @@ function ShopFrame({ variant }) {
             <p className="ws-slot-ask">{t('evening.q')} <button type="button" className="ws-linkbtn" onClick={() => window.WSSlots && window.WSSlots.requestEvening && window.WSSlots.requestEvening({ officeId: (user && user.officeId) || null })}>{t('evening.tellUs')}</button></p>
           )}
 
-          {mobileSearchOpen && <ProductSearchField mobile query={productQuery} onChange={setProductQuery}/>}
+          {mobileSearchOpen && <ProductSearchField mobile query={productQuery} onChange={setProductQuery} disabled={accountOpen}/>}
           <CategoryRow active={cat} sub={subCat} onSelect={selectCat} onSelectSub={selectSub} onBack={backToCats} navIcons={navIcons} accent={mode === 'delivery' ? '#c17a2a' : 'var(--color-primary)'} tint={mode === 'delivery' ? 'invert(45%) sepia(60%) saturate(600%) hue-rotate(5deg)' : 'invert(15%) sepia(85%) saturate(2400%) hue-rotate(335deg)'} categories={navCats} assortments={hideOfficePeriods ? [] : seasonChips}/>
 
           {catalogueError && <div className="ws-catalogue-loading" role="alert">
