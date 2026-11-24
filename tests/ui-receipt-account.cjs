@@ -10,6 +10,7 @@ const pending = { id: 53, reference: 'SALE-53', at: '2026-11-23T11:00:00Z', shop
   invoice: { status:'pending', orderRef:'WEB-2-20261123-ABCDEA' } };
 const issued = { id: 54, reference: 'SALE-54', at: '2026-11-23T12:00:00Z', shop: 'Atelier', source: 'webshop', total: 12,
   invoice: { status:'issued', orderRef:'WEB-2-20261123-ABCDEF', number:'260001' } };
+const invoicedWithoutDownload = { ...issued, id:55, reference:'SALE-55', invoice:undefined, receiptAvailable:false };
 const orders = [
   { orderId: 12, source: 'store', orderRef: 'POS-12', status: 'new', total: 6, itemsCount: 1, mode: 'collect', payment: {method: 'store', status: 'pending'} },
   { orderId: 13, source: 'webshop', orderRef: 'WEB-2-20261123-ABCDEF', status: 'new', total: 9, itemsCount: 1, mode: 'collect', payment: {method: 'stripe', status: 'paid'} },
@@ -41,6 +42,8 @@ async function flow(browser, opts) {
         assert.deepEqual(req.postDataJSON(), {token});
         resolveCount++;
         return opts.owned ? payload(200, { ...transactions[0], lines: [{id:1,name:'Tarte témoin',quantity:1,unitGrossPrice:6,discountValue:0,totalGross:6}] }) : payload(404, {});
+      case '/webshop/transactions/me/55':
+        return payload(200, { ...invoicedWithoutDownload, lines: [] });
       case '/webshop/transactions/me/52':
         return payload(200, { ...transactions[0], lines: [] });
       case '/webshop/transactions/me/52/receipt/pdf':
@@ -48,7 +51,7 @@ async function flow(browser, opts) {
         if (++receiptCount === 1) return payload(503, {});
         return route.fulfill({status:200, contentType:'application/pdf', body:'%PDF-1.4\nfixture'});
       case '/webshop/transactions/me':
-        return payload(200, { items: opts.owned ? [issued, pending, ...transactions] : transactions, nextBefore: null });
+        return payload(200, { items: opts.owned ? [invoicedWithoutDownload, issued, pending, ...transactions] : transactions, nextBefore: null });
       case '/webshop/billing/orders/WEB-2-20261123-ABCDEF/pdf':
         assert.equal(req.headers().authorization, 'Bearer fixture');
         pdfCount++;
@@ -106,6 +109,15 @@ async function flow(browser, opts) {
     const downloadInvoice = page.getByRole('button', {name:/Pobierz fakturę.*260001/});
     if (opts.owned) {
       await page.locator('.ws-acc__card').filter({hasText:'SALE-53'}).getByText('Faktura oczekuje na wystawienie.').waitFor();
+      const denied = page.locator('.ws-acc__card').filter({hasText:'SALE-55'});
+      const salesDocument = {name:'Dokument sprzedaży', exact:true};
+      assert.equal(await denied.getByRole('button', salesDocument).count(), 0);
+      assert.equal(await page.locator('.ws-acc__card').filter({hasText:'SALE-54'}).getByRole('button', salesDocument).count(), 0);
+      assert.equal(await page.locator('.ws-acc__card').filter({hasText:'SALE-53'}).getByRole('button', salesDocument).count(), 1);
+      await denied.getByRole('button', {name:'Szczegóły transakcji', exact:true}).click();
+      await page.getByRole('button', {name:/Wróć do transakcji/}).waitFor();
+      assert.equal(await page.getByRole('button', salesDocument).count(), 0);
+      await page.getByRole('button', {name:/Wróć do transakcji/}).click();
       await downloadInvoice.click();
       await page.locator('.ws-acc__card').filter({hasText:'SALE-54'}).getByRole('alert').waitFor();
       const download = page.waitForEvent('download');

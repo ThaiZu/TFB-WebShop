@@ -46,6 +46,8 @@ function TransactionReceipt({ transaction, t }) {
     }
   }
 
+  if (transaction.receiptAvailable === false || transaction.invoice?.status === 'issued') return null;
+
   return <>
     <button type="button" className="ws-linkbtn" disabled={busy} onClick={download}>
       {t(busy ? 'common.loading2' : 'acc.transactions.salesDocument')}
@@ -147,7 +149,7 @@ export function AccountTransactions({ receiptToken, t, locale, onReceiptHandled 
         <p>{detail.shop} · {date(detail.at)}</p>
         <p>{t('acc.orders.source.' + detail.source)}</p>
         <p>{t('acc.orders.total')} · {money(detail.total)}</p>
-        <div className="ws-acc__row-foot"><TransactionReceipt transaction={detail} t={t}/></div>
+        <TransactionReceipt transaction={detail} t={t}/>
         <TransactionInvoice invoice={detail.invoice} t={t}/>
       </div>
       {detail.lines.map(line => <div className="ws-acc__card" key={line.id}>
