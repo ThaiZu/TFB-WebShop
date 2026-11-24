@@ -1207,6 +1207,7 @@
   "billing.buyerField.address": "Rue et numéro",
   "billing.buyerField.postalCode": "Code postal",
   "billing.buyerField.city": "Ville",
+  "billing.invoicePending": "La facture est en attente. Le lien de téléchargement du PDF apparaîtra ici dès qu’elle sera disponible.",
   "billing.invoiceRequested": "La demande de facture a été enregistrée.",
   "billing.issueHint": "Vérifiez les données de facturation. La facture reprendra les montants de l’achat.",
   "billing.issue": "Émettre la facture",

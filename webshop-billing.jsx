@@ -174,7 +174,7 @@ export function PurchaseInvoice({orderRef, refreshKey = ''}) {
       </>}
       <p className="ws-acc__hint">{t('billing.issueHint')}</p>
       <button className="ws-cta" type="submit" disabled={busy || (!status.requested && !validInvoiceBuyer(buyer))}>{t(busy ? 'ui.saving' : 'billing.issue')}</button>
-    </form> : status && <p>{t((status.pending || status.waitingForOrder) && !status.contactShop ? 'billing.invoiceRequested' : 'billing.contactShop')}</p>}
+    </form> : status && <p>{t((status.pending || status.waitingForOrder) && !status.contactShop ? 'billing.invoicePending' : 'billing.contactShop')}</p>}
     {error && <p role="alert" className="ws-acc__vat-msg ws-acc__vat-msg--err">{error}</p>}
   </section>;
 }

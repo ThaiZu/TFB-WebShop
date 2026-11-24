@@ -20,7 +20,7 @@ function TransactionInvoice({ invoice, t }) {
   }
 
   if (!invoice) return null;
-  if (invoice.status === 'pending') return <p role="status">{t('billing.invoiceRequested')}</p>;
+  if (invoice.status === 'pending') return <p role="status">{t('billing.invoicePending')}</p>;
   return <div className="ws-acc__row-foot">
     <button type="button" className="ws-linkbtn" disabled={busy} onClick={download}>
       {t(busy ? 'common.loading2' : 'billing.download')} · {invoice.number}
