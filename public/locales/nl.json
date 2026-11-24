@@ -1205,7 +1205,7 @@
   "billing.error.generic": "Deze bewerking kon niet worden voltooid. Probeer opnieuw of neem contact op met de winkel.",
   "billing.error.BILLING_INPUT_INVALID": "Controleer de velden van het formulier.",
   "billing.error.BILLING_COMPANY_INCOMPLETE": "VIES levert niet alle facturatiegegevens. Neem contact op met de winkel.",
-  "billing.error.BILLING_COMPANY_AMBIGUOUS": "Dit btw-nummer moet worden gecontroleerd. Het dossier staat al bij de helpdesk. Probeer het bedrijf opnieuw toe te voegen zodra het conflict is opgelost.",
+  "billing.error.BILLING_COMPANY_AMBIGUOUS": "Je aanvraag is doorgestuurd naar de beheerder. Probeer het later opnieuw.",
   "billing.error.BILLING_COMPANY_NOT_FOUND": "Dit bedrijf is niet meer gekoppeld aan uw account. Vernieuw de pagina.",
   "billing.error.BILLING_ALREADY_ISSUED": "Er bestaat al een factuur voor deze aankoop. Vernieuw de pagina om deze te bekijken.",
   "billing.error.BILLING_NOT_ELIGIBLE": "Deze aankoop kan niet automatisch worden gefactureerd. Neem contact op met de winkel.",
