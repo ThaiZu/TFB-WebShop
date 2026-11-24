@@ -1,0 +1,97 @@
+name: Deploy Webshop PRODUCTION
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-webshop-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    environment: production
+    timeout-minutes: 15
+    env:
+      WEBSHOP_PUBLIC_URL: ${{ vars.WEBSHOP_PUBLIC_URL }}
+      VITE_API_BASE_URL: https://atelierby.tfbuddy.com/api/v1
+      VITE_SAME_ORIGIN_API: '1'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Validate WebShop URL
+        id: target
+        run: |
+          node --input-type=module <<'JS' >> "$GITHUB_OUTPUT"
+          const url = new URL(process.env.WEBSHOP_PUBLIC_URL || '');
+          if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash
+              || !/^\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]*\/?$/.test(url.pathname)) {
+            throw new Error('WEBSHOP_PUBLIC_URL must be the HTTPS WebShop base URL without query or credentials.');
+          }
+          const path = url.pathname.replace(/\/?$/, '/');
+          console.log('url=' + url.origin + path);
+          console.log('base=' + path);
+          console.log('origin=' + url.origin);
+          JS
+
+      - name: Build production frontend
+        env:
+          SITE_BASE: ${{ steps.target.outputs.base }}
+          PUBLIC_ORIGIN: ${{ steps.target.outputs.origin }}
+        run: |
+          curl -fsS --max-time 20 "$PUBLIC_ORIGIN/api/v1/shops" | jq -e 'type == "array"' >/dev/null
+          npm ci
+          npm run build
+          test -s dist/index.html
+          test -s dist/sw.js
+          grep -Fxq 'window.WS_API_BASE_URL = "/api/v1";' dist/api-runtime-config.js
+
+      - name: Configure verified SSH connection
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          : "${SSH_PRIVATE_KEY:?Set SSH_PRIVATE_KEY}"
+          : "${SSH_KNOWN_HOSTS:?Set SSH_KNOWN_HOSTS}"
+          install -d -m 700 "$HOME/.ssh"
+          umask 077
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/webshop-production"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+
+      - name: Publish production frontend
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          : "${SSH_HOST:?Set SSH_HOST}"
+          : "${SSH_USER:?Set SSH_USER}"
+          target="$SSH_USER@$SSH_HOST"
+          directory=/opt/tfbuddy/apps/tfbuddy/webshop
+          ssh -i "$HOME/.ssh/webshop-production" -o IdentitiesOnly=yes -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes "$target" \
+            'command -v rsync >/dev/null && test -d /opt/tfbuddy/apps/tfbuddy/webshop && test -w /opt/tfbuddy/apps/tfbuddy/webshop'
+          rsync -rz --delay-updates --chmod=D755,F644 \
+            -e 'ssh -i ~/.ssh/webshop-production -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes' \
+            dist/ "$target:$directory/"
+
+      - name: Verify the production build over HTTPS
+        env:
+          PUBLIC_URL: ${{ steps.target.outputs.url }}
+        run: |
+          for file in index.html api-runtime-config.js sw.js; do
+            url="$PUBLIC_URL$file"
+            if [ "$file" = index.html ]; then url="$PUBLIC_URL"; fi
+            curl -fsS --retry 3 --retry-connrefused --max-time 20 \
+              -H 'Cache-Control: no-cache' "$url" -o "$RUNNER_TEMP/$file"
+            cmp "dist/$file" "$RUNNER_TEMP/$file"
+          done
+          printf '### WebShop production deployment\n\n- Commit: %s\n- URL: %s\n' \
+            "$GITHUB_SHA" "$PUBLIC_URL" >> "$GITHUB_STEP_SUMMARY"
