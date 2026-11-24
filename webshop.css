@@ -2968,6 +2968,16 @@
   display: flex; gap: 8px; justify-content: flex-end;
   margin-top: 12px; flex-wrap: wrap;
 }
+.ws-transaction-source { flex: none; color: var(--color-primary, #8d1d2c); }
+.ws-transaction-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, auto));
+  justify-content: end;
+  gap: 6px;
+  margin-top: 12px;
+}
+.ws-transaction-actions > [role="alert"] { grid-column: 1 / -1; }
+.ws-transaction-actions .ws-transaction-action { font-size: 12px; padding-inline: 8px; gap: 5px; }
 .ws-transaction-action {
   display: inline-flex;
   align-items: center;

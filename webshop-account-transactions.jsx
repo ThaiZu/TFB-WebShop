@@ -10,6 +10,18 @@ function TransactionActionIcon({ download = false }) {
   </svg>;
 }
 
+function TransactionSource({ source, t }) {
+  const label = t('acc.orders.source.' + source);
+  return <svg className="ws-transaction-source" role="img" aria-label={label}
+    width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <title>{label}</title>
+    {source === 'webshop'
+      ? <><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></>
+      : <path d="M4 10v10h16V10M3 10l2-6h14l2 6H3zm6 10v-6h6v6"/>}
+  </svg>;
+}
+
 function TransactionInvoice({ invoice, t }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -154,9 +166,10 @@ export function AccountTransactions({ receiptToken, t, locale, onReceiptHandled 
     {detail ? <>
       <button type="button" className="ws-linkbtn" onClick={closeDetail}>← {t('acc.transactions.back')}</button>
       <div className="ws-acc__card">
-        <strong>{detail.reference || t('acc.transactions.receipt')}</strong>
-        <p>{detail.shop} · {date(detail.at)}</p>
-        <p>{t('acc.orders.source.' + detail.source)}</p>
+        <div className="ws-acc__card-head">
+          <TransactionSource source={detail.source} t={t}/>
+          <span>{detail.shop} · {date(detail.at)}</span>
+        </div>
         <p>{t('acc.orders.total')} · {money(detail.total)}</p>
         <TransactionReceipt transaction={detail} t={t}/>
         <TransactionInvoice invoice={detail.invoice} t={t}/>
@@ -172,11 +185,13 @@ export function AccountTransactions({ receiptToken, t, locale, onReceiptHandled 
       </div>)}
     </> : <>
       {!loading && error !== 'acc.transactions.error' && items.length === 0 && <p>{t('acc.transactions.empty')}</p>}
-      {items.map(item => <div className="ws-acc__card" key={item.id}>
-        <div className="ws-acc__card-head"><strong>{item.reference || t('acc.transactions.receipt')}</strong><strong>{money(item.total)}</strong></div>
+      {items.map(item => <div className="ws-acc__card" key={item.id} data-transaction-id={item.id}>
+        <div className="ws-acc__card-head">
+          <TransactionSource source={item.source} t={t}/>
+          <strong>{money(item.total)}</strong>
+        </div>
         <p>{item.shop} · {date(item.at)}</p>
-        <p>{t('acc.orders.source.' + item.source)}</p>
-        <div className="ws-acc__row-foot">
+        <div className="ws-transaction-actions">
           <button type="button" className="ws-transaction-action" disabled={loading} onClick={() => openTransaction(item.id)}>
             <TransactionActionIcon/>
             <span>{t('acc.transactions.detail')}</span>
