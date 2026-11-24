@@ -4399,7 +4399,7 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
             customerId={user ? user.id : null}
           />
           {user && !officeContext && <div className="ws-b2b">
-            <InvoiceBuyerFields buyer={invoiceBuyer} setBuyer={setInvoiceBuyer} companies={companies} disabled={paying || !!pendingOrder} allowNone/>
+            <InvoiceBuyerFields buyer={invoiceBuyer} setBuyer={setInvoiceBuyer} companies={companies} disabled={paying || !!pendingOrder} allowNone allowPersonal={false}/>
             {invoiceBuyer.type !== 'none' && <>
               <label className="ws-acc__field"><span>{t('co.company.po')}</span>
                 <input className="ws-acc__input" value={poNumber} onChange={event => setPoNumber(event.target.value)} maxLength={100} disabled={paying}/>

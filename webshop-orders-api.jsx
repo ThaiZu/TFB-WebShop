@@ -185,6 +185,19 @@
       return accountJson('/transactions/me/' + encodeURIComponent(id));
     },
 
+    async getTransactionReceipt(id) {
+      if (!api.endpoint || !window.WSAuth?.authenticatedBlob) throw new Error('Account API is unavailable.');
+      const endpoint = api.endpoint.replace(/\/orders\/?$/, '');
+      const {response, data} = await window.WSAuth.authenticatedBlob(
+        endpoint + '/transactions/me/' + encodeURIComponent(id) + '/receipt/pdf',
+        {credentials: 'include'},
+      );
+      if (!response.ok || !response.headers.get('content-type')?.includes('application/pdf')) {
+        throw new Error('Sales document is unavailable.');
+      }
+      return data;
+    },
+
     resolveReceipt(token, signal) {
       return accountJson('/transactions/me/resolve-receipt', {
         method: 'POST', signal, headers: { 'Content-Type': 'application/json' },

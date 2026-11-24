@@ -64,13 +64,13 @@ export function validInvoiceBuyer(buyer) {
     : ['name', 'address', 'postalCode', 'city'].every(key => buyer[key]?.trim()));
 }
 
-export function InvoiceBuyerFields({buyer, setBuyer, companies, disabled, allowNone = false}) {
+export function InvoiceBuyerFields({buyer, setBuyer, companies, disabled, allowNone = false, allowPersonal = true}) {
   const t = window.WSI18n.t;
   const buyerTypeName = useId();
   const update = (key, value) => setBuyer(previous => ({...previous, [key]: value}));
   const choices = [
     ...(allowNone ? [['none', 'billing.noInvoice']] : []),
-    ['personal', 'billing.personalInvoice'],
+    ...(allowPersonal ? [['personal', 'billing.personalInvoice']] : []),
     ['company', 'billing.companyInvoice'],
   ];
   const selectType = type => setBuyer(previous => ({
