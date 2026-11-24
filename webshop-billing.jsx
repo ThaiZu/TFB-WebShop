@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useId, useRef, useState} from 'react';
 import {billingRequest, billingError, saveInvoicePdf} from './webshop-billing-api.js';
 import './webshop-billing.css';
 
@@ -66,27 +66,36 @@ export function validInvoiceBuyer(buyer) {
 
 export function InvoiceBuyerFields({buyer, setBuyer, companies, disabled, allowNone = false}) {
   const t = window.WSI18n.t;
+  const buyerTypeName = useId();
   const update = (key, value) => setBuyer(previous => ({...previous, [key]: value}));
-  return <fieldset className="ws-acc__form" disabled={disabled}>
+  const choices = [
+    ...(allowNone ? [['none', 'billing.noInvoice']] : []),
+    ['personal', 'billing.personalInvoice'],
+    ['company', 'billing.companyInvoice'],
+  ];
+  const selectType = type => setBuyer(previous => ({
+    ...previous,
+    type,
+    companyId: previous.companyId || String((companies.find(company => company.isDefault) || companies[0])?.id || ''),
+  }));
+  return <fieldset className="ws-acc__form ws-invoice-buyer" disabled={disabled}>
     <legend className="ws-acc__field-label">{t('billing.invoice')}</legend>
-    <label className="ws-acc__field">
-      <span>{t('billing.buyerType')}</span>
-      <select className="ws-acc__input" value={buyer.type} onChange={event => {
-        const type = event.target.value;
-        setBuyer(previous => ({...previous, type, companyId: previous.companyId ||
-          String((companies.find(company => company.isDefault) || companies[0])?.id || '')}));
-      }}>
-        {allowNone && <option value="none">{t('billing.noInvoice')}</option>}
-        <option value="personal">{t('billing.personalInvoice')}</option>
-        <option value="company">{t('billing.companyInvoice')}</option>
-      </select>
-    </label>
+    <fieldset className="ws-acc__field--full ws-invoice-buyer__types">
+      <legend className="ws-invoice-buyer__type-label">{t('billing.buyerType')}</legend>
+      <div className="ws-invoice-buyer__choices">
+        {choices.map(([type, label]) => <label className="ws-invoice-buyer__badge" key={type}>
+          <input type="radio" name={buyerTypeName} value={type} checked={buyer.type === type}
+            onChange={() => selectType(type)}/>
+          <span>{t(label)}</span>
+        </label>)}
+      </div>
+    </fieldset>
     {buyer.type === 'personal' && Object.entries({name: 200, address: 200, postalCode: 20, city: 100}).map(([key, limit]) =>
       <label className="ws-acc__field" key={key}><span>{t('billing.buyerField.' + key)}</span>
         <input className="ws-acc__input" required maxLength={limit} value={buyer[key] || ''} onChange={event => update(key, event.target.value)}/>
       </label>)}
-    {buyer.type === 'company' && (companies.length > 0 ? <label className="ws-acc__field"><span>{t('billing.buyer')}</span>
-      <select className="ws-acc__input" required value={buyer.companyId || ''} onChange={event => update('companyId', event.target.value)}>
+    {buyer.type === 'company' && (companies.length > 0 ? <label className="ws-acc__field ws-acc__field--full"><span>{t('billing.buyer')}</span>
+      <select className="ws-acc__input ws-invoice-buyer__company" required value={buyer.companyId || ''} onChange={event => update('companyId', event.target.value)}>
         <option value="" disabled>{t('billing.selectCompany')}</option>
         {companies.map(company => <option key={company.id} value={company.id}>{company.name} · {company.vat}</option>)}
       </select>

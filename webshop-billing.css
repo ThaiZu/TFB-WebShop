@@ -22,3 +22,67 @@
 .ws-billing-companies .ws-acc__card {
   overflow-wrap: anywhere;
 }
+
+.ws-invoice-buyer,
+.ws-invoice-buyer__types {
+  min-inline-size: 0;
+}
+
+.ws-invoice-buyer__types {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.ws-invoice-buyer__type-label {
+  margin-bottom: 6px;
+  padding: 0;
+}
+
+.ws-invoice-buyer__choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ws-invoice-buyer__badge {
+  display: flex;
+  flex: 1 1 8rem;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  min-height: 48px;
+  border: 1px solid var(--color-border-tertiary, rgba(20,14,10,.10));
+  border-radius: 10px;
+  background: var(--color-surface, #fff);
+  cursor: pointer;
+}
+
+.ws-invoice-buyer__badge input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--color-primary, #8d1d2c);
+}
+
+.ws-invoice-buyer__badge:has(:checked) {
+  border-color: var(--color-primary, #8d1d2c);
+  background: color-mix(in srgb, var(--color-primary, #8d1d2c) 8%, var(--color-surface, #fff));
+}
+
+.ws-invoice-buyer__badge:focus-within {
+  outline: 2px solid var(--color-primary, #8d1d2c);
+  outline-offset: 2px;
+}
+
+.ws-invoice-buyer:disabled .ws-invoice-buyer__badge {
+  opacity: .65;
+  cursor: default;
+}
+
+select.ws-invoice-buyer__company {
+  width: 100%;
+  min-height: 52px;
+  font-size: 16px;
+}
