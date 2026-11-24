@@ -93,10 +93,16 @@ async function flow(browser, opts) {
       await page.getByText('Ten paragon jest niedostępny na tym koncie.').waitFor();
       assert.equal(await page.getByText('Tarte témoin').count(), 0);
     }
-    await page.getByText('SALE-52', { exact: true }).waitFor();
+    const card = id => page.locator(`[data-transaction-id="${id}"]`);
+    await card(52).getByRole('img', {name:'W sklepie stacjonarnym'}).waitFor();
+    assert.equal(await card(52).getByText('SALE-52', {exact:true}).count(), 0);
+    const actions = await card(52).locator('.ws-transaction-actions button').evaluateAll(
+      buttons => buttons.map(button => button.getBoundingClientRect().top));
+    assert.equal(actions.length, 2);
+    assert.equal(actions[0], actions[1]);
     assert.equal(new URL(page.url()).hash, '');
     assert.equal(resolveCount, 1);
-    const receiptCard = page.locator('.ws-acc__card').filter({hasText:'SALE-52'});
+    const receiptCard = card(52);
     await receiptCard.getByRole('button', {name:'Szczegóły transakcji', exact:true}).click();
     await page.getByRole('button', {name:/Wróć do transakcji/}).waitFor();
     const document = page.getByRole('button', {name:'Dokument sprzedaży', exact:true});
@@ -109,18 +115,19 @@ async function flow(browser, opts) {
     await page.getByRole('button', {name:/Wróć do transakcji/}).click();
     const downloadInvoice = page.getByRole('button', {name:/Pobierz fakturę.*260001/});
     if (opts.owned) {
-      await page.locator('.ws-acc__card').filter({hasText:'SALE-53'}).getByText('Faktura oczekuje na wystawienie.').waitFor();
-      const denied = page.locator('.ws-acc__card').filter({hasText:'SALE-55'});
+      await card(53).getByRole('img', {name:'W sklepie internetowym'}).waitFor();
+      await card(53).getByText('Faktura oczekuje na wystawienie.').waitFor();
+      const denied = card(55);
       const salesDocument = {name:'Dokument sprzedaży', exact:true};
       assert.equal(await denied.getByRole('button', salesDocument).count(), 0);
-      assert.equal(await page.locator('.ws-acc__card').filter({hasText:'SALE-54'}).getByRole('button', salesDocument).count(), 0);
-      assert.equal(await page.locator('.ws-acc__card').filter({hasText:'SALE-53'}).getByRole('button', salesDocument).count(), 1);
+      assert.equal(await card(54).getByRole('button', salesDocument).count(), 0);
+      assert.equal(await card(53).getByRole('button', salesDocument).count(), 1);
       await denied.getByRole('button', {name:'Szczegóły transakcji', exact:true}).click();
       await page.getByRole('button', {name:/Wróć do transakcji/}).waitFor();
       assert.equal(await page.getByRole('button', salesDocument).count(), 0);
       await page.getByRole('button', {name:/Wróć do transakcji/}).click();
       await downloadInvoice.click();
-      await page.locator('.ws-acc__card').filter({hasText:'SALE-54'}).getByRole('alert').waitFor();
+      await card(54).getByRole('alert').waitFor();
       const download = page.waitForEvent('download');
       await downloadInvoice.click();
       assert.equal((await download).suggestedFilename(), 'invoice-260001.pdf');
