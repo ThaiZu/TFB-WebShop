@@ -23,10 +23,14 @@ export function billingError(error) {
 }
 
 export function saveInvoicePdf(blob, number) {
+  savePdf(blob, 'invoice', number);
+}
+
+export function savePdf(blob, prefix, number) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = 'invoice-' + String(number).replace(/[^a-z0-9-]/gi, '_') + '.pdf';
+  link.download = prefix + '-' + String(number).replace(/[^a-z0-9-]/gi, '_') + '.pdf';
   document.body.appendChild(link);
   link.click();
   link.remove();

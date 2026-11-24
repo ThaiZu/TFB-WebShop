@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { normalizeReceiptToken } from './webshop-receipt-token.js';
-import { billingError, billingRequest, saveInvoicePdf } from './webshop-billing-api.js';
+import { billingError, billingRequest, saveInvoicePdf, savePdf } from './webshop-billing-api.js';
 
 function TransactionInvoice({ invoice, t }) {
   const [busy, setBusy] = useState(false);
@@ -27,6 +27,31 @@ function TransactionInvoice({ invoice, t }) {
     </button>
     {error && <p role="alert">{error}</p>}
   </div>;
+}
+
+function TransactionReceipt({ transaction, t }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(false);
+
+  async function download() {
+    setBusy(true);
+    setError(false);
+    try {
+      const pdf = await window.WSOrders.getTransactionReceipt(transaction.id);
+      savePdf(pdf, 'receipt', transaction.reference || transaction.id);
+    } catch (_) {
+      setError(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return <>
+    <button type="button" className="ws-linkbtn" disabled={busy} onClick={download}>
+      {t(busy ? 'common.loading2' : 'acc.transactions.salesDocument')}
+    </button>
+    {error && <p role="alert">{t('acc.transactions.salesDocumentError')}</p>}
+  </>;
 }
 
 export function receiptIntent() {
@@ -122,6 +147,7 @@ export function AccountTransactions({ receiptToken, t, locale, onReceiptHandled 
         <p>{detail.shop} · {date(detail.at)}</p>
         <p>{t('acc.orders.source.' + detail.source)}</p>
         <p>{t('acc.orders.total')} · {money(detail.total)}</p>
+        <div className="ws-acc__row-foot"><TransactionReceipt transaction={detail} t={t}/></div>
         <TransactionInvoice invoice={detail.invoice} t={t}/>
       </div>
       {detail.lines.map(line => <div className="ws-acc__card" key={line.id}>
@@ -139,7 +165,10 @@ export function AccountTransactions({ receiptToken, t, locale, onReceiptHandled 
         <div className="ws-acc__card-head"><strong>{item.reference || t('acc.transactions.receipt')}</strong><strong>{money(item.total)}</strong></div>
         <p>{item.shop} · {date(item.at)}</p>
         <p>{t('acc.orders.source.' + item.source)}</p>
-        <button type="button" className="ws-linkbtn" disabled={loading} onClick={() => openTransaction(item.id)}>{t('acc.transactions.receipt')}</button>
+        <div className="ws-acc__row-foot">
+          <button type="button" className="ws-linkbtn" disabled={loading} onClick={() => openTransaction(item.id)}>{t('acc.transactions.detail')}</button>
+          <TransactionReceipt transaction={item} t={t}/>
+        </div>
         <TransactionInvoice invoice={item.invoice} t={t}/>
       </div>)}
       {before && <button type="button" className="ws-linkbtn" disabled={loading} onClick={loadMore}>{t('acc.transactions.more')}</button>}

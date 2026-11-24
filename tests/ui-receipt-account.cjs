@@ -21,7 +21,7 @@ async function flow(browser, opts) {
     const createdAt = Date.now();
     sessionStorage.setItem('ws.session.v1:ws.lang', JSON.stringify({value:'pl', createdAt, expiresAt:createdAt + 43200000}));
   });
-  let loggedIn = opts.signedIn, resolveCount = 0, pdfCount = 0;
+  let loggedIn = opts.signedIn, resolveCount = 0, pdfCount = 0, receiptCount = 0;
   const errors = [];
   await context.route('**/api/v1/**', async route => {
     const req = route.request();
@@ -41,6 +41,12 @@ async function flow(browser, opts) {
         assert.deepEqual(req.postDataJSON(), {token});
         resolveCount++;
         return opts.owned ? payload(200, { ...transactions[0], lines: [{id:1,name:'Tarte témoin',quantity:1,unitGrossPrice:6,discountValue:0,totalGross:6}] }) : payload(404, {});
+      case '/webshop/transactions/me/52':
+        return payload(200, { ...transactions[0], lines: [] });
+      case '/webshop/transactions/me/52/receipt/pdf':
+        assert.equal(req.headers().authorization, 'Bearer fixture');
+        if (++receiptCount === 1) return payload(503, {});
+        return route.fulfill({status:200, contentType:'application/pdf', body:'%PDF-1.4\nfixture'});
       case '/webshop/transactions/me':
         return payload(200, { items: opts.owned ? [issued, pending, ...transactions] : transactions, nextBefore: null });
       case '/webshop/billing/orders/WEB-2-20261123-ABCDEF/pdf':
@@ -75,6 +81,8 @@ async function flow(browser, opts) {
     }
     await page.locator('.ws-acc__section').first().waitFor();
     assert.equal(await page.evaluate(() => window.WSI18n.setLang('pl')), true);
+    await page.locator('.ws-cookie-actions button').last().click();
+    await page.locator('.ws-cookie-panel').waitFor({state:'detached'});
     if (opts.owned) {
       await page.getByText('Tarte témoin').waitFor();
       await page.getByRole('button', {name:/Wróć do transakcji/}).click();
@@ -85,6 +93,16 @@ async function flow(browser, opts) {
     await page.getByText('SALE-52', { exact: true }).waitFor();
     assert.equal(new URL(page.url()).hash, '');
     assert.equal(resolveCount, 1);
+    const receiptCard = page.locator('.ws-acc__card').filter({hasText:'SALE-52'});
+    await receiptCard.getByRole('button', {name:'Szczegóły transakcji', exact:true}).click();
+    const document = page.getByRole('button', {name:'Dokument sprzedaży', exact:true});
+    await document.click();
+    await page.getByText(/Nie udało się pobrać dokumentu sprzedaży/).waitFor();
+    const receiptDownload = page.waitForEvent('download');
+    await document.click();
+    assert.equal((await receiptDownload).suggestedFilename(), 'receipt-SALE-52.pdf');
+    assert.equal(receiptCount, 2);
+    await page.getByRole('button', {name:/Wróć do transakcji/}).click();
     const downloadInvoice = page.getByRole('button', {name:/Pobierz fakturę.*260001/});
     if (opts.owned) {
       await page.locator('.ws-acc__card').filter({hasText:'SALE-53'}).getByText('Faktura oczekuje na wystawienie.').waitFor();

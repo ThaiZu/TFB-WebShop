@@ -83,11 +83,10 @@ const pageData=(items,nextCursor=null)=>({status:'available',asOf:new Date().toI
    const personal=types.getByRole('radio',{name:'Faktura imienna'});
    const company=types.getByRole('radio',{name:'Faktura na firmę'});
    const companies=page.getByLabel('Firma do faktury');
-   assert.equal(await types.getByRole('radio').count(),3);
+   assert.equal(await types.getByRole('radio').count(),2);
+   assert.equal(await personal.count(),0);
    assert.equal(await none.isChecked(),true);
-   await personal.check();
    assert.equal(await companies.count(),0);
-   await none.check();
    await company.check();
    assert.equal(await companies.inputValue(),'50');
    assert.ok((await companies.boundingBox()).height>=52);
