@@ -20,7 +20,8 @@ const copies = {
     back: 'Revenir au choix', load: 'Un instant…', retry: 'Réessayer', empty: 'Aucun produit',
     missing: 'Ticket introuvable', invalid: 'Scannez de nouveau le QR de votre ticket ou demandez en boutique.',
     pending: 'Ce ticket n’est pas encore disponible. Si vous venez de régler, réessayez dans un instant.',
-    network: 'Le serveur ne répond pas. Réessayez dans un instant.',
+    network: 'Impossible de joindre le service des tickets. Réessayez dans un instant.',
+    service: 'Le ticket ne peut pas être affiché pour le moment. Réessayez dans un instant.',
     purchases: 'Vos achats,', detail: 'en détail.', discount: 'Réduction', total: 'Total payé, TVA comprise',
     count: (n, formatted) => `${formatted} article${n === 1 ? '' : 's'}`,
     rows: (n, count) => `${n} produit${n === 1 ? '' : 's'}, ${count}`,
@@ -46,7 +47,8 @@ const copies = {
     back: 'Terug naar de keuze', load: 'Even geduld…', retry: 'Opnieuw proberen', empty: 'Geen producten',
     missing: 'Kasticket niet gevonden', invalid: 'Scan de QR-code op uw kasticket opnieuw of vraag het in de winkel.',
     pending: 'Dit kasticket is nog niet beschikbaar. Hebt u net betaald? Probeer het dan zo meteen opnieuw.',
-    network: 'De server antwoordt niet. Probeer het zo meteen opnieuw.',
+    network: 'De kasticketdienst is niet bereikbaar. Probeer het zo meteen opnieuw.',
+    service: 'Dit kasticket kan momenteel niet worden getoond. Probeer het zo meteen opnieuw.',
     purchases: 'Uw aankopen,', detail: 'in detail.', discount: 'Korting', total: 'Totaal betaald, incl. btw',
     count: (n, formatted) => `${n} artikel${n === 1 ? '' : 'en'}`,
     rows: (n, count) => `${n} product${n === 1 ? '' : 'en'}, ${count}`,
@@ -192,7 +194,7 @@ function Receipt({ data, lang }) {
   const dates = receiptDates(sale.date, lang, shop.timezone);
   const webshop = safeLink(data.liens?.webshop);
   const review = safeLink(data.liens?.avis);
-  const app = safeLink(data.liens?.application);
+  const app = data.has_customer === true ? safeLink(data.liens?.application) : null;
   const trace = knownAllergens(data.travailles).map(code => allergenName(code, lang));
   const allergens = Object.keys(allergenLabels).filter(code => rows.some(row => array(row.allergenes).includes(code)));
   const freshness = [...new Set(rows.map(row => Number(row.vieMinutes)).filter(n => n > 0 && Number.isFinite(n)))].sort((a, b) => a - b);
@@ -358,9 +360,18 @@ function ReceiptPage() {
         setStatus('pending');
         return;
       }
-      if (!response.ok) throw new Error('receipt status');
-      const receipt = await response.json();
-      if (!receipt.boutique || !receipt.transaction || !Array.isArray(receipt.lignes)) throw new Error('receipt payload');
+      if (!response.ok) {
+        setStatus('service');
+        return;
+      }
+      const receipt = await response.json().catch(error => {
+        if (controller.signal.aborted) throw error;
+        return null;
+      });
+      if (!receipt?.boutique || !receipt.transaction || !Array.isArray(receipt.lignes)) {
+        if (!controller.signal.aborted) setStatus('service');
+        return;
+      }
       if (controller.signal.aborted) return;
       if (!chosenLanguage.current && ['fr', 'nl'].includes(receipt.langue)) setLanguage(receipt.langue);
       setData(receipt);
@@ -370,6 +381,7 @@ function ReceiptPage() {
     }).finally(() => window.clearTimeout(timeout));
     return () => { window.clearTimeout(timeout); controller.abort(); };
   }, [request]);
+  const showChoice = status === 'ready' && data?.has_customer === true && !view;
   return <>
     <header className="receipt-nav"><div className="receipt-wrap">
       <img src={`${BASE_URL}logo.png`} width="116" height="28" alt="L’Atelier By" />
@@ -380,7 +392,7 @@ function ReceiptPage() {
         }}>{value.toUpperCase()}</button>)}</div>
     </div></header>
     <main>
-      {!view ? <section className="receipt-wrap receipt-choice">
+      {showChoice ? <section className="receipt-wrap receipt-choice">
         <p className="receipt-kicker">{[t.title, data?.boutique?.ville].filter(Boolean).join(' · ')}</p>
         <h1>{t.choice}</h1>
         <div className="receipt-choice-actions">
@@ -391,12 +403,12 @@ function ReceiptPage() {
           <a className="receipt-button" href="#ticket">{t.public}<span aria-hidden="true">→</span></a>
         </div>
       </section> : <>
-        <div className="receipt-wrap receipt-back"><a href="#">{'← ' + t.back}</a></div>
+        {data?.has_customer === true && view && <div className="receipt-wrap receipt-back"><a href="#">{'← ' + t.back}</a></div>}
         {status === 'ready' && data ? <Receipt data={data} lang={lang} /> :
           <section className="receipt-wrap receipt-state" aria-live="polite">
             {status === 'invalid' && <h1>{t.missing}</h1>}
-            <p>{({ loading: t.load, pending: t.pending, error: t.network, invalid: t.invalid })[status]}</p>
-            {['pending', 'error'].includes(status) && <button className="receipt-button" type="button"
+            <p>{({ loading: t.load, pending: t.pending, error: t.network, service: t.service, invalid: t.invalid })[status]}</p>
+            {['pending', 'error', 'service'].includes(status) && <button className="receipt-button" type="button"
               onClick={() => requestAgain(n => n + 1)}>{t.retry}</button>}
           </section>}
       </>}
