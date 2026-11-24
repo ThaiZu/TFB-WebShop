@@ -194,7 +194,7 @@ function Receipt({ data, lang }) {
   const dates = receiptDates(sale.date, lang, shop.timezone);
   const webshop = safeLink(data.liens?.webshop);
   const review = safeLink(data.liens?.avis);
-  const app = safeLink(data.liens?.application);
+  const app = data.has_customer === true ? safeLink(data.liens?.application) : null;
   const trace = knownAllergens(data.travailles).map(code => allergenName(code, lang));
   const allergens = Object.keys(allergenLabels).filter(code => rows.some(row => array(row.allergenes).includes(code)));
   const freshness = [...new Set(rows.map(row => Number(row.vieMinutes)).filter(n => n > 0 && Number.isFinite(n)))].sort((a, b) => a - b);
