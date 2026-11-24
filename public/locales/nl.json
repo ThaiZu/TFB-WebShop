@@ -1207,6 +1207,7 @@
   "billing.buyerField.address": "Straat en huisnummer",
   "billing.buyerField.postalCode": "Postcode",
   "billing.buyerField.city": "Plaats",
+  "billing.invoicePending": "De factuur wacht op uitgifte. Zodra ze klaar is, verschijnt hier een link om de PDF te downloaden.",
   "billing.invoiceRequested": "De factuuraanvraag is opgeslagen.",
   "billing.issueHint": "Controleer de factuurgegevens. De factuur gebruikt de bedragen van je aankoop.",
   "billing.issue": "Factuur opstellen",

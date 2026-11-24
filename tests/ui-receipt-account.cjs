@@ -87,7 +87,7 @@ async function flow(browser, opts) {
     assert.equal(resolveCount, 1);
     const downloadInvoice = page.getByRole('button', {name:/Pobierz fakturę.*260001/});
     if (opts.owned) {
-      await page.locator('.ws-acc__card').filter({hasText:'SALE-53'}).getByText('Zapisano prośbę o fakturę.').waitFor();
+      await page.locator('.ws-acc__card').filter({hasText:'SALE-53'}).getByText('Faktura oczekuje na wystawienie.').waitFor();
       await downloadInvoice.click();
       await page.locator('.ws-acc__card').filter({hasText:'SALE-54'}).getByRole('alert').waitFor();
       const download = page.waitForEvent('download');

@@ -1207,6 +1207,7 @@
   "billing.buyerField.address": "Ulica i numer",
   "billing.buyerField.postalCode": "Kod pocztowy",
   "billing.buyerField.city": "Miejscowość",
+  "billing.invoicePending": "Faktura oczekuje na wystawienie. Gdy będzie gotowa, tutaj pojawi się link do pobrania PDF.",
   "billing.invoiceRequested": "Zapisano prośbę o fakturę.",
   "billing.issueHint": "Sprawdź dane nabywcy. Faktura zostanie wystawiona na kwoty z zakupu.",
   "billing.issue": "Wystaw fakturę",
