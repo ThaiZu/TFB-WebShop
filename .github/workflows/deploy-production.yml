@@ -17,7 +17,6 @@ jobs:
     environment: production
     timeout-minutes: 15
     env:
-      WEBSHOP_PUBLIC_URL: ${{ vars.WEBSHOP_PUBLIC_URL }}
       VITE_API_BASE_URL: https://atelierby.tfbuddy.com/api/v1
       VITE_SAME_ORIGIN_API: '1'
     steps:
@@ -29,10 +28,13 @@ jobs:
 
       - name: Validate WebShop URL
         id: target
+        env:
+          WEBSHOP_PUBLIC_URL: ${{ vars.WEBSHOP_PUBLIC_URL }}
         run: |
           node --input-type=module <<'JS' >> "$GITHUB_OUTPUT"
-          const url = new URL(process.env.WEBSHOP_PUBLIC_URL || '');
-          if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash
+          const configuredUrl = process.env.WEBSHOP_PUBLIC_URL?.trim() || 'https://webshop.atelierby.be/';
+          const url = URL.parse(configuredUrl);
+          if (!url || url.protocol !== 'https:' || url.username || url.password || url.search || url.hash
               || !/^\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]*\/?$/.test(url.pathname)) {
             throw new Error('WEBSHOP_PUBLIC_URL must be the HTTPS WebShop base URL without query or credentials.');
           }
