@@ -1436,6 +1436,8 @@ function ProductDetail({ open, product, mode, activeVoucher, onClose, onAdd, onP
           )}
           <div className="pdm-scroll" ref={scrollRef}>
             <div className="pdm-head">
+              {/* Desktop only: the photo banner is hidden there, a thumbnail sits beside the title. */}
+              <img className="pdm-thumb" src={product.img || getPlaceholder(product)} alt="" aria-hidden="true"/>
               <p className="pdm-eyebrow">{product.cat === 'sandwiches' ? t('pd.eyebrow.sandwich') : product.cat === 'plats' ? t('pd.eyebrow.dish') : t('pd.eyebrow.selection')}</p>
               <h2 className="pdm-title">{product.name}</h2>
 
@@ -2784,10 +2786,14 @@ function useSwipeDownToClose(onClose, scrollEl) {
 function ModalShell({ onClose, children, narrow, split }) {
   const { t } = wsUseT();
   const backdropPress = React.useRef(false);
-  const panelRef = useSwipeDownToClose(onClose);
+  // useSwipeDownToClose returns a callback ref (no .current): keep our own handle on
+  // the panel so the scroll state (rail arrows, is-scrolled) can read it.
+  const panelEl = React.useRef(null);
+  const swipeRef = useSwipeDownToClose(onClose);
+  const panelRef = React.useCallback((el) => { panelEl.current = el; swipeRef(el); }, [swipeRef]);
   const [showArrows, setShowArrows] = React.useState({ up: false, down: false });
   React.useEffect(() => {
-    const el = panelRef.current; if (!el) return;
+    const el = panelEl.current; if (!el) return;
     const update = () => {
       const can = el.scrollHeight > el.clientHeight + 4;
       setShowArrows({
@@ -2802,7 +2808,7 @@ function ModalShell({ onClose, children, narrow, split }) {
     return () => { el.removeEventListener('scroll', update); ro.disconnect(); };
   }, []);
   function nudge(dir) {
-    const el = panelRef.current; if (!el) return;
+    const el = panelEl.current; if (!el) return;
     el.scrollBy({ top: dir * Math.max(180, el.clientHeight * 0.6), behavior: 'smooth' });
   }
   return (
@@ -2817,7 +2823,7 @@ function ModalShell({ onClose, children, narrow, split }) {
         backdropPress.current = false;
         if (startedOnBackdrop && event.target === event.currentTarget) onClose();
       }}>
-      <div ref={panelRef} className={`ws-modal__panel${narrow ? ' ws-modal__panel--narrow' : ''}${split ? ' ws-modal__panel--split' : ''}`} onClick={(e) => e.stopPropagation()}>
+      <div ref={panelRef} className={`ws-modal__panel${narrow ? ' ws-modal__panel--narrow' : ''}${split ? ' ws-modal__panel--split' : ''}${showArrows.up ? ' is-scrolled' : ''}`} onClick={(e) => e.stopPropagation()}>
         <span className="ws-modal__handle" aria-hidden="true"/>
         <button className="ws-modal__close" onClick={onClose} aria-label={t('common.close2')}><Pict d={ICONS.close} s={14}/></button>
         {children}
@@ -2908,6 +2914,18 @@ function phonePrefixOptions() {
       </optgroup>
     </>
   );
+}
+
+// The closed field shows only « 🇧🇪 +32 » so country and number fit on one row;
+// the native list underneath keeps the country names.
+function PhonePrefixSelect({ value, onChange, label }) {
+  const flag = ((PHONE_PREFIXES.find(([v]) => v === value) || [])[1] || '').split(' ')[0];
+  return <span className="ws-phone__pfxwrap">
+    <span className="ws-phone__pfxshow" aria-hidden="true">{flag} {value}</span>
+    <select className="ws-phone__pfx" autoComplete="tel-country-code" value={value} onChange={onChange} aria-label={label}>
+      {phonePrefixOptions()}
+    </select>
+  </span>;
 }
 
 // International postal-code input. Locality suggestions are currently
@@ -3272,7 +3290,6 @@ function LoginModal({ open, onClose, onLogin, onRegister, onGoToAccount, shopId,
       <>
       <h2 className="ws-modal__title">{tRich(t, tab === 'login' ? 'auth.welcomeBack' : 'auth.createTitle')}</h2>
       <p className="ws-modal__lede">{tab === 'login' ? wsText("ui.loginHint") : wsText("ui.registerHint")}</p>
-      {tab !== 'login' && <p className="ws-registration-privacy">{wsText("privacy.notice")} <PolicyLinks/></p>}
       <div className="ws-tabs">
         <button className={`ws-tab${tab === 'login' ? ' is-active' : ''}`} onClick={() => { setTab('login'); setErr(''); }}>{t('auth.login')}</button>
         <button className={`ws-tab${tab === 'register' ? ' is-active' : ''}`} onClick={() => { setTab('register'); setErr(''); }}>{t('auth.createAccount')}</button>
@@ -3285,12 +3302,10 @@ function LoginModal({ open, onClose, onLogin, onRegister, onGoToAccount, shopId,
               <label className="ws-field"><span>{t('form.lastName')}</span><input value={form.lastName} onChange={(e) => set('lastName', e.target.value)} autoComplete="family-name"/></label>
             </div>
             <label className="ws-field"><span>{t('form.email')}</span><input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} autoComplete="email"/></label>
-            <label className="ws-field"><span>{t('auth.password')}</span><input type="password" value={form.password} onChange={(e) => set('password', e.target.value)} autoComplete="new-password" minLength={4} placeholder={t('auth.min4')}/></label>
+            <label className="ws-field"><span>{t('auth.password')}</span><input type="password" value={form.password} onChange={(e) => set('password', e.target.value)} autoComplete="new-password" minLength={4} aria-describedby="ws-pwd-help"/><small id="ws-pwd-help" className="ws-field__help">{t('auth.min4')}</small></label>
             <label className="ws-field"><span>{t('form.phone')}</span>
               <span className="ws-phone">
-                <select className="ws-phone__pfx" autoComplete="tel-country-code" value={form.phonePrefix} onChange={(e) => set('phonePrefix', e.target.value)} aria-label={t('form.phonePrefix')}>
-                  {phonePrefixOptions()}
-                </select>
+                <PhonePrefixSelect value={form.phonePrefix} onChange={(e) => set('phonePrefix', e.target.value)} label={t('form.phonePrefix')}/>
                 <input type="tel" value={form.phone} onChange={(e) => { const value = e.target.value; setForm((f) => ({ ...f, ...splitPhoneInput(value, f.phonePrefix) })); setErr(''); }} autoComplete="tel-national" inputMode="tel" placeholder="470 00 00 02"/>
               </span>
             </label>
@@ -3308,9 +3323,7 @@ function LoginModal({ open, onClose, onLogin, onRegister, onGoToAccount, shopId,
             <label className="ws-field"><span>{form.authMethod === 'phone' ? wsText("form.phone") : wsText("form.email")}</span>
               {form.authMethod === 'phone' ? (
                 <span className="ws-phone">
-                  <select className="ws-phone__pfx" autoComplete="tel-country-code" value={form.phonePrefix} onChange={(e) => set('phonePrefix', e.target.value)} aria-label={t('form.phonePrefix')}>
-                    {phonePrefixOptions()}
-                  </select>
+                  <PhonePrefixSelect value={form.phonePrefix} onChange={(e) => set('phonePrefix', e.target.value)} label={t('form.phonePrefix')}/>
                   <input type="tel" value={form.identifier} onChange={(e) => set('identifier', e.target.value)} autoComplete="username" inputMode="tel" placeholder="470 00 00 02"/>
                 </span>
               ) : (
@@ -3323,6 +3336,7 @@ function LoginModal({ open, onClose, onLogin, onRegister, onGoToAccount, shopId,
         )}
         {err && <p className="ws-form__err" role="alert">{wsMessage(err)}</p>}
         {canResendActivation && tab === 'register' && <button type="button" className="ws-linkbtn" onClick={() => { setActivation({ email: form.email, existing: true }); setErr(''); }}>{t('activation.resend')}</button>}
+        {tab !== 'login' && <p className="ws-registration-privacy">{wsText("privacy.notice")} <PolicyLinks/></p>}
         <button type="submit" className="ws-cta ws-cta--block" disabled={loading}>{loading ? wsText("common.loading2") : (tab === 'login' ? wsText("ui.login") : wsText("ui.register"))}</button>
       </form>
       </>
@@ -3548,9 +3562,23 @@ if (typeof document !== 'undefined' && !document.getElementById('ws-bureau-style
 const allowBillingCompanyLinking = true;
 const allowOfficeLinking = true;
 
+// A stored phone number shown with spaces (« +32 470 12 34 56 »); the saved value
+// is never changed. Unknown formats are shown as they are.
+function wsPhoneDisplay(value) {
+  const raw = String(value || '');
+  const v = raw.replace(/[\s.\-()/]/g, '');
+  let m;
+  if ((m = v.match(/^\+32(4\d{2})(\d{2})(\d{2})(\d{2})$/))) return `+32 ${m[1]} ${m[2]} ${m[3]} ${m[4]}`;
+  if ((m = v.match(/^\+32([2-9])(\d{3})(\d{2})(\d{2})$/))) return `+32 ${m[1]} ${m[2]} ${m[3]} ${m[4]}`;
+  if ((m = v.match(/^\+31(6)(\d{2})(\d{2})(\d{2})(\d{2})$/))) return `+31 ${m[1]} ${m[2]} ${m[3]} ${m[4]} ${m[5]}`;
+  if ((m = v.match(/^\+33([1-9])(\d{2})(\d{2})(\d{2})(\d{2})$/))) return `+33 ${m[1]} ${m[2]} ${m[3]} ${m[4]} ${m[5]}`;
+  if ((m = v.match(/^\+48(\d{3})(\d{3})(\d{3})$/))) return `+48 ${m[1]} ${m[2]} ${m[3]}`;
+  return raw;
+}
+
 // Collapsible block of the Profil tab: the whole tab fits in the window, sections open on demand.
-function AccFold({ title, children }) {
-  return <details className="ws-acc__fold">
+function AccFold({ title, children, className = '' }) {
+  return <details className={`ws-acc__fold${className ? ' ' + className : ''}`}>
     <summary><span>{title}</span>
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
     </summary>
@@ -3560,6 +3588,7 @@ function AccFold({ title, children }) {
 
 function AccountModal({ open, requestedTab, requestedReceipt, onReceiptHandled, user, onClose, onLogout, onRequestOffice, onUpdateUser, shops, currentShopId, onChangePreferredShop, office, tour, onManageOffices, onUseVoucher, activeVoucherCode, onClearVoucher, onVouchersViewed, onBrowseVoucher }) {
   const { t } = wsUseT();
+  const [phoneFocus, setPhoneFocus] = useState(false);
   const [form, setForm] = useState({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
@@ -4035,7 +4064,8 @@ function AccountModal({ open, requestedTab, requestedReceipt, onReceiptHandled, 
           </label>
           <label className="ws-acc__field">
             <span className="ws-acc__field-label">{t('form.phone')}</span>
-            <input type="tel" className="ws-acc__input" value={form.phone}
+            <input type="tel" className="ws-acc__input" value={phoneFocus ? form.phone : wsPhoneDisplay(form.phone)}
+              onFocus={() => setPhoneFocus(true)} onBlur={() => setPhoneFocus(false)}
               onChange={(e) => setField('phone', e.target.value)} placeholder="+32 ..." />
           </label>
           <CpField variant="acc" cp={form.postalCode} locality={form.locality}
@@ -4118,12 +4148,7 @@ function AccountModal({ open, requestedTab, requestedReceipt, onReceiptHandled, 
       </div>
       </AccFold>
 
-      {allowOfficeLinking && <AccFold title={t('officeAccess.title')}><div className="ws-acc__section">
-        <div className="ws-acc__section-h">{t('officeAccess.title')}</div>
-        <p className="ws-acc__note">{t('officeAccess.intro')}</p>
-        <button type="button" className="ws-cta" onClick={onManageOffices}>{t('officeAccess.manage')}</button>
-      </div></AccFold>}
-
+      {/* « Mes bureaux » has its own tab: no second copy in the profile. */}
       {linkedCompanies.length > 0 && (
         <AccFold title={t('acc.b2bAccounts')}><div className="ws-acc__section">
           <div className="ws-acc__section-h">{t('acc.b2bAccounts')}</div>
@@ -4138,7 +4163,7 @@ function AccountModal({ open, requestedTab, requestedReceipt, onReceiptHandled, 
       )}
 
       {window.LangMenu && (
-        <AccFold title={t('acc.language')}><div className="ws-acc__section">
+        <AccFold title={t('acc.language')} className="ws-acc__fold--lang"><div className="ws-acc__section">
           <div className="ws-acc__section-h">{t('acc.language')}</div>
           <window.LangMenu />
         </div></AccFold>
@@ -6374,7 +6399,10 @@ function ShopFrame({ variant }) {
             </div>
           )}
           {shopsFailed && <p className="ws-shopselect__help">{wsText("ui.connecting")}</p>}
-          <CookieConsent />
+          {/* A shop is already chosen (link or memory) and the list is still loading:
+              this screen is only a moment, so the cookie banner waits for the shop
+              instead of mounting here and again a second later. */}
+          {!(shopId && !shops.length && !shopsFailed) && <CookieConsent />}
         </main>
         <footer className="ws-shopselect__footer">© {new Date().getFullYear()} L'Atelier By</footer>
         {loginDialog}

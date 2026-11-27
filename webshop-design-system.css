@@ -2159,3 +2159,123 @@ body { background: var(--color-bg); }
   .ws-loyalty-wallet:not(.ws-loyalty-wallet--scan) > .ws-loyalty-wallet__section-head { margin-top: 6px; }
 }
 .ws-acc2__main .ws-purchase-filters { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+
+/* 24 · Transactions: one line per transaction on phones too (icons beside the amount),
+   and the detail as a list of lines « 4× Croissant au beurre … 7,20 € » (unit price under). */
+@media (max-width: 520px) {
+  .ws-tx-row { grid-template-columns: 32px minmax(0, 1fr) auto auto; gap: 8px; padding: 10px 10px 10px 12px; }
+  .ws-tx-row__src { width: 32px; height: 32px; }
+  .ws .ws-tx-row__actions { grid-column: auto; justify-content: flex-start; margin: 0; gap: 2px; }
+  .ws .ws-tx-row__actions .ws-transaction-action { width: 32px; height: 32px; min-height: 32px; }
+  .ws-tx-row__amount { font-size: 14px; }
+}
+.ws-tx-row__main span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ws-tx-lines { list-style: none; margin: 8px 0 0; padding: 0; display: block; }
+.ws-tx-line {
+  display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; column-gap: 10px; align-items: baseline;
+  padding: 11px 0; border-bottom: 0.5px solid var(--color-border-tertiary); font-variant-numeric: tabular-nums;
+}
+.ws-tx-line__qty { font: 500 14px/1.3 var(--font-ui); color: var(--color-text); }
+.ws-tx-line__name { font: 400 14px/1.3 var(--font-ui); color: var(--color-text); min-width: 0; }
+.ws-tx-line__name small { display: block; margin-top: 2px; font-size: 12px; color: var(--color-text-muted); }
+.ws-tx-line__total { font: 500 14px/1.3 var(--font-ui); color: var(--color-text); white-space: nowrap; text-align: right; }
+
+/* 26 · Points: short totals labels on one line with aligned figures, a lower balance
+   block, tighter history rows; a finished Bingo task says so once (tick + full bar). */
+.ws-points-hero { padding: 12px 16px; gap: 8px 14px; }
+.ws-points-hero__balance strong { font-size: 26px; }
+.ws-points-hero .ws-personal-totals dt { font-size: 12px; white-space: nowrap; max-width: none; }
+.ws-points-hero .ws-personal-totals dd { font-size: 15px; }
+.ws-points-hero .ws-personal-totals > div { display: flex; flex-direction: column; justify-content: flex-end; }
+.ws-personal-history li { padding: 7px 14px; }
+.ws-personal-history .ws-loyalty-ico { width: 28px; height: 28px; }
+.ws-bingo__done { display: none; }
+
+/* 27 · Profile: « Langue » only on phones (on a computer the FR selector sits in the
+   header; on a phone the header hides it); « Enregistrer » full width. */
+@media (min-width: 761px) { .ws-acc__fold--lang { display: none; } }
+.ws-acc__form-foot { flex-wrap: wrap; }
+.ws-acc__form-foot .ws-cta { width: 100%; justify-content: center; }
+
+/* 28 · Sign-in / sign-up: country code and number on one row (the closed field shows
+   « 🇧🇪 +32 », the list keeps the country names); one window width (680 px);
+   the privacy notice sits just above « Créer mon compte »; the password rule stays
+   visible under its field. */
+.ws .ws-phone { flex-wrap: nowrap; }
+.ws .ws-phone > input { flex: 1 1 auto; min-width: 0; }
+.ws-phone__pfxwrap { position: relative; flex: 0 0 116px; display: flex; }
+.ws-phone__pfxshow {
+  flex: 1; display: flex; align-items: center; gap: 6px; padding: 0 30px 0 14px;
+  min-height: var(--ds-field-h); border-radius: var(--ds-field-radius); border: 1px solid transparent;
+  background: var(--color-bg-secondary) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") right 10px center / 16px no-repeat;
+  font: 400 15px/1 var(--font-ui); color: var(--color-text); white-space: nowrap;
+}
+.ws .ws-phone__pfxwrap > .ws-phone__pfx {
+  position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; max-width: none;
+  opacity: 0; cursor: pointer; padding: 0; border: 0;
+}
+.ws-phone__pfxwrap:focus-within .ws-phone__pfxshow { background-color: var(--color-surface); border-color: var(--color-primary); box-shadow: 0 0 0 4px rgba(141, 29, 44, .10); }
+.ws-form--register .ws-phone__pfxshow { min-height: 46px; }
+@media (max-width: 760px) { .ws-form--register .ws-phone__pfxshow { min-height: 44px; } .ws-phone__pfxwrap { flex-basis: 104px; } }
+.ws-modal__panel--narrow:has(.ws-form) { width: min(680px, 100%); }
+.ws-form .ws-registration-privacy { margin: 2px 0 0; font-size: 12px; line-height: 1.45; color: var(--color-text-muted); }
+.ws-form .ws-registration-privacy a { margin-right: 8px; }
+.ws-field__help { display: block; margin-top: 6px; font-size: 12px; color: var(--color-text-muted); }
+
+/* 29 · Product sheet: on a computer a photo thumbnail beside the title (the banner
+   is hidden there); the « −1 −5 −10 » shortcuts stay, a little larger to tap. */
+.ws .pdm .pdm-qty-subtract button, .pdm .pdm-qty-subtract button { min-height: 40px; min-width: 44px; font-size: 13px; }
+.pdm-thumb { display: none; }
+@media (min-width: 721px) {
+  .pdm-head { display: grid; grid-template-columns: 104px minmax(0, 1fr); column-gap: 16px; align-items: center; }
+  .pdm-head > .pdm-thumb {
+    display: block; grid-row: 1 / span 6; width: 104px; height: 104px; object-fit: contain;
+    border-radius: 14px; background: var(--color-bg-secondary); mix-blend-mode: multiply;
+  }
+  .pdm-head > :not(.pdm-thumb) { grid-column: 2; }
+}
+
+/* 30 · Search: the category strip steps aside while a search runs; the result count
+   lines up with the grid; allergen icons on cards drawn at 14 px. */
+.ws-main:has(.ws-product-search-empty) .ws-cats-wrap { display: none; }
+.ws .ws-product-search-empty {
+  width: 100%; max-width: none; margin: 4px 0 12px; padding: 0; text-align: left;
+  font-size: 13px; font-weight: 500; color: var(--color-text-muted);
+}
+.ws-grid .ws-card .al-row .al-icon { width: 14px; height: 14px; }
+
+/* Remark 1 · Phone sheets: once the content scrolls, the band behind the handle grows
+   down to the close button, so nothing passes behind the cross. */
+@media (max-width: 720px) {
+  .ws-modal__panel.is-scrolled > .ws-modal__handle::before {
+    bottom: -48px; box-shadow: 0 1px 0 var(--color-border-tertiary);
+  }
+}
+
+/* Remark 2 · Loyalty card, Vouchers tab: « actualiser » at the end of the
+   « Autres vouchers · Tout afficher » row instead of on a line of its own. */
+.ws-loyalty-wallet__programs { position: relative; }
+.ws-loyalty-wallet__programs:has(.ws-vouchers__filter) .ws-vouchers__heading { position: absolute; top: 16px; right: 0; margin: 0; }
+.ws-loyalty-wallet__programs .ws-vouchers__filter { padding-right: 52px; min-height: 40px; align-items: center; }
+
+/* Remark 3 · Order awaiting online payment: no cream box inside the card, one muted
+   line and the « Procéder au paiement » button directly under it. */
+.ws .ws-purchase-payment-notice { margin: 10px 0 4px; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+.ws .ws-purchase-payment-notice p { margin: 0 0 8px; font-size: 13px; line-height: 1.45; color: var(--color-text-muted); }
+
+/* Remark 4 · Vouchers: « Utiliser » as an outlined button (several cards in a row no
+   longer stack filled primaries); the selected voucher keeps the filled bordeaux. */
+.ws .ws-vouchers__main .ws-cta, .ws-vouchers__main .ws-cta {
+  background: var(--color-surface); color: var(--color-primary);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+}
+@media (hover: hover) { .ws .ws-vouchers__main .ws-cta:not(:disabled):hover { background: rgba(141, 29, 44, .06); } }
+.ws .ws-vouchers__item.is-selected .ws-vouchers__main .ws-cta { background: var(--color-primary); color: #fff; box-shadow: none; }
+
+/* Remark 5 · Phone tab bar: the loyalty card button turns beige with a bordeaux icon,
+   so « Panier » stays the only filled bordeaux button. */
+.ws .ws-tabbar .ws-tabbar__btn--loyalty {
+  background: var(--color-bg-secondary); color: var(--color-primary);
+  box-shadow: 0 4px 14px rgba(34, 34, 34, .12);
+}
+.ws .ws-tabbar .ws-tabbar__btn--loyalty:active { background: var(--color-bg); }

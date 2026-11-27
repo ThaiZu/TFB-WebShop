@@ -1,7 +1,7 @@
 {
-  "personal.total.PURCHASE": "Punten uit aankopen",
-  "personal.total.BINGO": "Punten uit Bingo",
-  "personal.total.RETURN": "Correcties voor retouren",
+  "personal.total.PURCHASE": "Aankopen",
+  "personal.total.BINGO": "Bingo",
+  "personal.total.RETURN": "Retouren",
   "personal.unavailable": "Het puntensaldo en Bingo konden niet worden geladen.",
   "billing.error.VIES_BUSY": "VIES is overbelast. Probeer het zo opnieuw.",
   "billing.error.BILLING_BUSY": "De bedrijfsgegevens worden verwerkt. Probeer het zo opnieuw.",
@@ -182,6 +182,7 @@
   "acc.orders.error": "Je bestellingen kunnen niet worden geladen. Probeer opnieuw.",
   "acc.orders.items": "{count} artikelen",
   "acc.orders.itemsOne": "1 artikel",
+  "acc.orders.perPiece": "{price} / st.",
   "acc.orders.payment": "Betaling",
   "acc.orders.payment.paid": "Betaald",
   "acc.orders.payment.pending": "In afwachting van betaling",
