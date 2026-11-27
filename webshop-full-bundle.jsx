@@ -6368,7 +6368,7 @@ function ShopFrame({ variant }) {
                 </button>
                 {(office.offers || []).map(offer => <button type="button" key={offer.id} aria-pressed={browseContext.mode === 'office_offer' && Number(browseContext.offer_id) === Number(offer.id)} onClick={() => browseOfficeMenu({ mode: 'office_offer', office_id: office.id, offer_id: offer.id })}>{t('officeAccess.offer', { name: offer.name })}</button>)}
               </React.Fragment>)}
-              </div>{allowOfficeLinking && <button type="button" className="ws-office-manage" onClick={() => setOfficeAccessOpen(true)}><img src={hasOfficeMembership ? linkedOfficeIcon : noLinkedOfficeIcon} alt="" aria-hidden="true"/><span>{t('officeAccess.manage')}</span></button>}
+              </div>{allowOfficeLinking && <button type="button" className="ws-office-manage" onClick={() => setOfficeAccessOpen(true)}><img className={hasOfficeMembership ? 'is-linked' : undefined} src={hasOfficeMembership ? linkedOfficeIcon : noLinkedOfficeIcon} alt="" aria-hidden="true"/><span>{t('officeAccess.manage')}</span></button>}
             </div>) : null;
   return (
     <div className={`ws ws--${variant}${hidePrices ? ' ws-noprice' : ''}`} data-mode={mode}>
