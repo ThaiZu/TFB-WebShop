@@ -932,6 +932,7 @@
   "officeAccess.invitationError": "Nie można przyjąć zaproszenia. Link może być nieważny lub wygasły. Spróbuj ponownie lub skontaktuj się ze sklepem.",
   "officeAccess.invitationAccept": "Dołącz do biura",
   "co.slot.changeDate": "Wybierz dzień odbioru",
+  "co.slot.changeDateDelivery": "Wybierz dzień dostawy",
   "co.slot.loadError": "Nie udało się pobrać terminów. Spróbuj ponownie.",
   "co.slot.noneAvailable": "Brak dostępnych godzin na ten dzień. Wybierz inny dzień.",
   "co.slot.retry": "Odśwież terminy",

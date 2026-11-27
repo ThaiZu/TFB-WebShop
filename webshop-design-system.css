@@ -2279,3 +2279,17 @@ body { background: var(--color-bg); }
   box-shadow: 0 4px 14px rgba(34, 34, 34, .12);
 }
 .ws .ws-tabbar .ws-tabbar__btn--loyalty:active { background: var(--color-bg); }
+
+/* Day tiles: the selected day keeps its colours under the pointer (the hover style,
+   more specific, turned it white on white after a tap); in office delivery the
+   selected day is abricot, in the header picker and in the checkout strip alike. */
+.ws-daytile.is-sel, .ws-daytile.is-sel:hover:not(:disabled) { background: var(--color-primary); color: #fff; box-shadow: none; }
+.ws-datepop--delivery .ws-daytile.is-sel, .ws-datepop--delivery .ws-daytile.is-sel:hover:not(:disabled),
+.ws-co-daystrip--delivery .ws-daytile.is-sel, .ws-co-daystrip--delivery .ws-daytile.is-sel:hover:not(:disabled) {
+  background: var(--color-secondary); color: var(--color-on-abricot);
+}
+.ws-datepop--delivery .ws-daytile.is-sel .ws-daytile__m, .ws-co-daystrip--delivery .ws-daytile.is-sel .ws-daytile__m { color: rgba(107, 68, 32, .75); }
+@media (hover: hover) {
+  .ws-datepop--delivery .ws-daytile:hover:not(:disabled):not(.is-sel),
+  .ws-co-daystrip--delivery .ws-daytile:hover:not(:disabled):not(.is-sel) { box-shadow: inset 0 0 0 1.5px var(--color-collection-border); }
+}

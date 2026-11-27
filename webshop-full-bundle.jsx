@@ -4788,7 +4788,7 @@ function CheckoutDayStrip({ mode, shopId, date, minLeadDays, basket, onPick, lab
     return () => { alive = false; };
   }, [shopId, mode, minLeadDays, basket]);
   const selected = date instanceof Date ? iso(date) : '';
-  return <div className="ws-co-daystrip" role="group" aria-label={label}>
+  return <div className={`ws-co-daystrip ws-co-daystrip--${mode}`} role="group" aria-label={label}>
     <span className="ws-co-daystrip__label">{label}</span>
     <div className="ws-datepop__strip">
       {days.map(d => {
@@ -4861,7 +4861,7 @@ function CheckoutStep2({ mode, shop, office, tour, slot, setSlot, date, onDate, 
         <Pict d={ICONS.cal} s={13}/> <span>{dateLabel}</span>
       </div>
       <CheckoutDayStrip mode={mode} shopId={shop?.id} date={date} minLeadDays={minLeadDays} basket={basket}
-        onPick={d => { setSlot(null); onDate?.(d); }} label={t('co.slot.changeDate')}/>
+        onPick={d => { setSlot(null); onDate?.(d); }} label={t(mode === 'delivery' ? 'co.slot.changeDateDelivery' : 'co.slot.changeDate')}/>
       <details className="ws-co-otherday"><summary>{t('common.seeMore')}</summary>
       <label className="ws-field"><span>{t('co.slot.changeDate')}</span><input type="date" value={window.WSAvailability.isoOf(date)} onChange={event=>{if(event.target.value){setSlot(null);onDate?.(new Date(event.target.value+'T12:00:00'));}}}/></label>
       </details>

@@ -932,6 +932,7 @@
   "officeAccess.invitationError": "Impossible d’accepter cette invitation. Le lien peut être invalide ou expiré. Réessayez ou contactez le magasin.",
   "officeAccess.invitationAccept": "Rejoindre le bureau",
   "co.slot.changeDate": "Choisir le jour de retrait",
+  "co.slot.changeDateDelivery": "Choisir le jour de livraison",
   "co.slot.loadError": "Impossible de charger les créneaux. Réessayez.",
   "co.slot.noneAvailable": "Aucun créneau disponible pour ce jour. Choisissez un autre jour.",
   "co.slot.retry": "Actualiser les créneaux",
