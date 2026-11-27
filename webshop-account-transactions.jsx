@@ -178,24 +178,16 @@ export function AccountTransactions({ receiptToken, t, locale, onReceiptHandled 
         </div>
         {detail.invoice?.status === 'pending' && <TransactionInvoice invoice={detail.invoice} t={t}/>}
       </div>
-      <table className="ws-tx-lines">
-        <thead><tr>
-          <th scope="col">{t('acc.orders.quantity')}</th>
-          <th scope="col">{detail.lines.length === 1 ? t('acc.orders.itemsOne') : t('acc.orders.items', { count: detail.lines.length })}</th>
-          <th scope="col">{t('acc.orders.unitPrice')}</th>
-          <th scope="col">{t('acc.orders.lineTotal')}</th>
-        </tr></thead>
-        <tbody>
-          {detail.lines.map(line => <tr key={line.id}>
-            <td className="ws-tx-lines__qty">{line.quantity.toLocaleString(locale)}×</td>
-            <td className="ws-tx-lines__name">{line.name}
-              <span className="ws-tx-lines__unit-m">{line.quantity.toLocaleString(locale)} × {money(line.unitGrossPrice)}</span>
-              {line.discountValue > 0 && <span>{t('acc.orders.discount')} · {money(line.discountValue)}</span>}</td>
-            <td className="ws-tx-lines__unit">{money(line.unitGrossPrice)}</td>
-            <td className="ws-tx-lines__total">{money(line.totalGross)}</td>
-          </tr>)}
-        </tbody>
-      </table>
+      {/* One line per item: « 4× Croissant au beurre … 7,20 € », unit price underneath. */}
+      <ul className="ws-tx-lines" aria-label={detail.lines.length === 1 ? t('acc.orders.itemsOne') : t('acc.orders.items', { count: detail.lines.length })}>
+        {detail.lines.map(line => <li key={line.id} className="ws-tx-line">
+          <span className="ws-tx-line__qty">{line.quantity.toLocaleString(locale)}×</span>
+          <span className="ws-tx-line__name">{line.name}
+            <small>{t('acc.orders.perPiece', { price: money(line.unitGrossPrice) })}</small>
+            {line.discountValue > 0 && <small>{t('acc.orders.discount')} · {money(line.discountValue)}</small>}</span>
+          <span className="ws-tx-line__total">{money(line.totalGross)}</span>
+        </li>)}
+      </ul>
     </> : <>
       {!loading && error !== 'acc.transactions.error' && items.length === 0 && <p>{t('acc.transactions.empty')}</p>}
       {items.length > 0 && <ul className="ws-tx-list">
