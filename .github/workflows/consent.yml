@@ -23,7 +23,9 @@ jobs:
       - run: npm run test:consent:browser
       - run: PRIVACY_POLICY_PREVIEW=1 SITE_BASE=/ npm run build -- --outDir work/policy-preview --emptyOutDir
       - run: POLICY_BUILD=work/policy-preview POLICY_PREVIEW=1 npm run test:policies:browser
-      - run: npm run test:storage:browser
+      # test:storage:browser is not run here: its PHP fixture loads the API's real
+      # auth controller from ../api/ and the webshop from ../WebShop/, which only
+      # exist in the combined workspace. Run it there (npm run test:storage:browser).
       - run: npm run test:consent:stripe
       - run: SITE_BASE=/ VITE_SAME_ORIGIN_API=1 npm run build -- --outDir work/consent-pwa-build --emptyOutDir
       - run: npm run test:consent:pwa

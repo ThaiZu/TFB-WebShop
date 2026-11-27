@@ -21,6 +21,8 @@ const prefix=process.env.POLICY_BASE||'/';
   assert.equal(await panel.getByText('Podgląd roboczych dokumentów — treści niezatwierdzone.').count(),preview?1:0);
   assert.equal(await panel.getByRole('button',{name:'Akceptuj wszystkie',exact:true}).count(),0);
   await panel.getByRole('button',{name:'Rozumiem',exact:true}).waitFor();
+  // The withdrawal sentence is part of the details, opened with « Ustawienia ».
+  await panel.getByRole('button',{name:'Ustawienia',exact:true}).click();
   assert.equal(await panel.getByText(/Zgodę możesz w każdej chwili/).count(),1);
   const link=panel.getByRole('link',{name:'Polityka prywatności — otwiera nową kartę'});
   const popupPromise=page.waitForEvent('popup');await link.click();const popup=await popupPromise;await popup.waitForLoadState();
