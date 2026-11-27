@@ -1162,3 +1162,44 @@ body { background: var(--color-bg); }
 }
 .ws-drawer__panel { position: relative; }
 .ws-tx-lines td.ws-tx-lines__name .ws-tx-lines__unit-m { color: var(--color-text-muted); }
+
+/* =========================================================================
+   SPACING PASS (27/11/2026) — nothing glued together, nothing cut against an edge
+   ========================================================================= */
+/* Headings that repeat the pane title right under it */
+.ws-acc2__title + .ws-acc__section > div.ws-acc__section-h:first-child { display: none; }
+.ws-acc2__main .ws-vouchers__heading { justify-content: flex-end; }
+.ws-acc2__main .ws-vouchers__heading h3 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* Filters / segmented controls never sit on the next box */
+.ws-purchase-filters, .ws-tabs, .ws-toggle { margin-bottom: 16px; }
+.ws-acc2 .ws-acc__foot { display: flex; justify-content: flex-start; margin-top: 20px; }
+
+/* Horizontal scrollers: room at the end + a soft fade so the last item never looks cut */
+.ws-acc2__nav, .ws-purchase-filters, .ws .ws-cats {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+          mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+  scroll-padding-inline: 20px;
+}
+.ws-acc2__nav::after, .ws-purchase-filters::after, .ws .ws-cats::after { content: ''; flex: 0 0 24px; }
+@media (min-width: 761px) {
+  .ws-acc2__nav { -webkit-mask-image: none; mask-image: none; }
+  .ws-acc2__nav::after { display: none; }
+}
+
+/* Allergens: separate tiles with an even 8 px gap instead of a glued mosaic */
+.al-modal__grid { gap: 8px; border: 0; border-radius: 0; overflow: visible; }
+.al-card { border: 0 !important; border-radius: 12px; background: var(--color-bg-secondary); }
+.al-card:empty { background: transparent; }
+.al-modal__head h2, .al-modal__title { font-family: var(--font-title); font-weight: 400; }
+.al-modal__grid { background: transparent; }
+.ws-acc2 .ws-acc__foot .ws-cta, .ws-acc2 .ws-acc__foot .ws-purchases-refresh { margin-left: 0; margin-right: auto; }
+@media (min-width: 761px) {
+  .ws-purchase-filters { -webkit-mask-image: none; mask-image: none; }
+  .ws-purchase-filters::after { display: none; }
+  .ws-purchase-filters .ws-toggle__opt { white-space: nowrap; padding: 0 12px; }
+}
+@media (min-width: 761px) {
+  .ws-acc2 .ws-purchase-filters { flex-wrap: wrap; overflow: visible; }
+  .ws-acc2 .ws-purchase-filters .ws-toggle__opt { flex: 0 0 auto; }
+}
