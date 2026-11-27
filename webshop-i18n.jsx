@@ -283,11 +283,16 @@
   const loadedLanguages = new Set();
   const pending = new Map();
   const localeBase = import.meta.env.BASE_URL + 'locales/';
+  // Build stamp on the dictionary URL: a service worker from an earlier version
+  // precached locales/<lang>.json under the bare URL and kept serving that old
+  // copy to the new bundle (new keys showed as raw keys). A versioned URL always
+  // reaches the server.
+  const localeVersion = (typeof __WS_BUILD__ !== 'undefined') ? '?v=' + encodeURIComponent(__WS_BUILD__) : '';
 
   function loadLanguage(lang) {
     if (loadedLanguages.has(lang)) return Promise.resolve(true);
     if (pending.has(lang)) return pending.get(lang);
-    const request = fetch(localeBase + lang + '.json', {
+    const request = fetch(localeBase + lang + '.json' + localeVersion, {
       headers: { Accept: 'application/json' }, cache: 'no-store',
     })
       .then((response) => {
