@@ -2910,6 +2910,18 @@ function phonePrefixOptions() {
   );
 }
 
+// The closed field shows only « 🇧🇪 +32 » so country and number fit on one row;
+// the native list underneath keeps the country names.
+function PhonePrefixSelect({ value, onChange, label }) {
+  const flag = ((PHONE_PREFIXES.find(([v]) => v === value) || [])[1] || '').split(' ')[0];
+  return <span className="ws-phone__pfxwrap">
+    <span className="ws-phone__pfxshow" aria-hidden="true">{flag} {value}</span>
+    <select className="ws-phone__pfx" autoComplete="tel-country-code" value={value} onChange={onChange} aria-label={label}>
+      {phonePrefixOptions()}
+    </select>
+  </span>;
+}
+
 // International postal-code input. Locality suggestions are currently
 // available only for four-digit Belgian codes.
 // Match the API postal-code contract, including Polish and Dutch codes.
@@ -3272,7 +3284,6 @@ function LoginModal({ open, onClose, onLogin, onRegister, onGoToAccount, shopId,
       <>
       <h2 className="ws-modal__title">{tRich(t, tab === 'login' ? 'auth.welcomeBack' : 'auth.createTitle')}</h2>
       <p className="ws-modal__lede">{tab === 'login' ? wsText("ui.loginHint") : wsText("ui.registerHint")}</p>
-      {tab !== 'login' && <p className="ws-registration-privacy">{wsText("privacy.notice")} <PolicyLinks/></p>}
       <div className="ws-tabs">
         <button className={`ws-tab${tab === 'login' ? ' is-active' : ''}`} onClick={() => { setTab('login'); setErr(''); }}>{t('auth.login')}</button>
         <button className={`ws-tab${tab === 'register' ? ' is-active' : ''}`} onClick={() => { setTab('register'); setErr(''); }}>{t('auth.createAccount')}</button>
@@ -3285,12 +3296,10 @@ function LoginModal({ open, onClose, onLogin, onRegister, onGoToAccount, shopId,
               <label className="ws-field"><span>{t('form.lastName')}</span><input value={form.lastName} onChange={(e) => set('lastName', e.target.value)} autoComplete="family-name"/></label>
             </div>
             <label className="ws-field"><span>{t('form.email')}</span><input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} autoComplete="email"/></label>
-            <label className="ws-field"><span>{t('auth.password')}</span><input type="password" value={form.password} onChange={(e) => set('password', e.target.value)} autoComplete="new-password" minLength={4} placeholder={t('auth.min4')}/></label>
+            <label className="ws-field"><span>{t('auth.password')}</span><input type="password" value={form.password} onChange={(e) => set('password', e.target.value)} autoComplete="new-password" minLength={4} aria-describedby="ws-pwd-help"/><small id="ws-pwd-help" className="ws-field__help">{t('auth.min4')}</small></label>
             <label className="ws-field"><span>{t('form.phone')}</span>
               <span className="ws-phone">
-                <select className="ws-phone__pfx" autoComplete="tel-country-code" value={form.phonePrefix} onChange={(e) => set('phonePrefix', e.target.value)} aria-label={t('form.phonePrefix')}>
-                  {phonePrefixOptions()}
-                </select>
+                <PhonePrefixSelect value={form.phonePrefix} onChange={(e) => set('phonePrefix', e.target.value)} label={t('form.phonePrefix')}/>
                 <input type="tel" value={form.phone} onChange={(e) => { const value = e.target.value; setForm((f) => ({ ...f, ...splitPhoneInput(value, f.phonePrefix) })); setErr(''); }} autoComplete="tel-national" inputMode="tel" placeholder="470 00 00 02"/>
               </span>
             </label>
@@ -3308,9 +3317,7 @@ function LoginModal({ open, onClose, onLogin, onRegister, onGoToAccount, shopId,
             <label className="ws-field"><span>{form.authMethod === 'phone' ? wsText("form.phone") : wsText("form.email")}</span>
               {form.authMethod === 'phone' ? (
                 <span className="ws-phone">
-                  <select className="ws-phone__pfx" autoComplete="tel-country-code" value={form.phonePrefix} onChange={(e) => set('phonePrefix', e.target.value)} aria-label={t('form.phonePrefix')}>
-                    {phonePrefixOptions()}
-                  </select>
+                  <PhonePrefixSelect value={form.phonePrefix} onChange={(e) => set('phonePrefix', e.target.value)} label={t('form.phonePrefix')}/>
                   <input type="tel" value={form.identifier} onChange={(e) => set('identifier', e.target.value)} autoComplete="username" inputMode="tel" placeholder="470 00 00 02"/>
                 </span>
               ) : (
@@ -3323,6 +3330,7 @@ function LoginModal({ open, onClose, onLogin, onRegister, onGoToAccount, shopId,
         )}
         {err && <p className="ws-form__err" role="alert">{wsMessage(err)}</p>}
         {canResendActivation && tab === 'register' && <button type="button" className="ws-linkbtn" onClick={() => { setActivation({ email: form.email, existing: true }); setErr(''); }}>{t('activation.resend')}</button>}
+        {tab !== 'login' && <p className="ws-registration-privacy">{wsText("privacy.notice")} <PolicyLinks/></p>}
         <button type="submit" className="ws-cta ws-cta--block" disabled={loading}>{loading ? wsText("common.loading2") : (tab === 'login' ? wsText("ui.login") : wsText("ui.register"))}</button>
       </form>
       </>

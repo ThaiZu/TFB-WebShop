@@ -2196,3 +2196,28 @@ body { background: var(--color-bg); }
 @media (min-width: 761px) { .ws-acc__fold--lang { display: none; } }
 .ws-acc__form-foot { flex-wrap: wrap; }
 .ws-acc__form-foot .ws-cta { width: 100%; justify-content: center; }
+
+/* 28 · Sign-in / sign-up: country code and number on one row (the closed field shows
+   « 🇧🇪 +32 », the list keeps the country names); one window width (680 px);
+   the privacy notice sits just above « Créer mon compte »; the password rule stays
+   visible under its field. */
+.ws .ws-phone { flex-wrap: nowrap; }
+.ws .ws-phone > input { flex: 1 1 auto; min-width: 0; }
+.ws-phone__pfxwrap { position: relative; flex: 0 0 116px; display: flex; }
+.ws-phone__pfxshow {
+  flex: 1; display: flex; align-items: center; gap: 6px; padding: 0 30px 0 14px;
+  min-height: var(--ds-field-h); border-radius: var(--ds-field-radius); border: 1px solid transparent;
+  background: var(--color-bg-secondary) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") right 10px center / 16px no-repeat;
+  font: 400 15px/1 var(--font-ui); color: var(--color-text); white-space: nowrap;
+}
+.ws .ws-phone__pfxwrap > .ws-phone__pfx {
+  position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; max-width: none;
+  opacity: 0; cursor: pointer; padding: 0; border: 0;
+}
+.ws-phone__pfxwrap:focus-within .ws-phone__pfxshow { background-color: var(--color-surface); border-color: var(--color-primary); box-shadow: 0 0 0 4px rgba(141, 29, 44, .10); }
+.ws-form--register .ws-phone__pfxshow { min-height: 46px; }
+@media (max-width: 760px) { .ws-form--register .ws-phone__pfxshow { min-height: 44px; } .ws-phone__pfxwrap { flex-basis: 104px; } }
+.ws-modal__panel--narrow:has(.ws-form) { width: min(680px, 100%); }
+.ws-form .ws-registration-privacy { margin: 2px 0 0; font-size: 12px; line-height: 1.45; color: var(--color-text-muted); }
+.ws-form .ws-registration-privacy a { margin-right: 8px; }
+.ws-field__help { display: block; margin-top: 6px; font-size: 12px; color: var(--color-text-muted); }
