@@ -50,12 +50,12 @@ const server = http.createServer((req,res) => {
  await page.evaluate(()=>sessionStorage.setItem('ws.pendingPay','keep-fixture'));
  // Sensitive-looking navigation and API responses must not enter any cache.
  await page.goto(origin+'/api/v1/synthetic?audit_token=private');
- await page.goto(origin+'/?audit_token=current');await page.locator('.ws-cookie-settings').waitFor();
+ await page.goto(origin+'/?audit_token=current');await page.locator('.ws-cookie-settings').waitFor({state:'attached'});
  const keys=await page.evaluate(async()=>{const all=[];for(const name of await caches.keys())for(const req of await (await caches.open(name)).keys())all.push(req.url);return all;});
  assert.equal(keys.some(k=>k.includes('audit_token=')),false);assert.equal(keys.some(k=>k.includes('/api/v1/')),false);
- await page.goto(origin+'/');await page.locator('.ws-cookie-settings').waitFor();
+ await page.goto(origin+'/');await page.locator('.ws-cookie-settings').waitFor({state:'attached'});
  await context.setOffline(true);await page.reload({waitUntil:'domcontentloaded'});
- await page.locator('.ws-cookie-settings').waitFor();
+ await page.locator('.ws-cookie-settings').waitFor({state:'attached'});
  assert.deepEqual(await page.evaluate(()=>[window.WSConsent.get().analytics,window.WSConsent.integrationAllowed('ga4'),sessionStorage.getItem('ws.pendingPay')]),[false,false,'keep-fixture']);
  assert.deepEqual(external,[]);
  console.log('PASS PWA: old worker upgraded, legacy cache removed, unrelated cache preserved, no API/token caching, offline consent retained and analytics disabled');

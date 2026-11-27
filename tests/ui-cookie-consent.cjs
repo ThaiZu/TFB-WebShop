@@ -60,13 +60,15 @@ const config = { schemaVersion: 1, scope: 'atelierby', policyVersion: 'atelierby
   await panel.getByRole('button', { name: 'Akceptuj wszystkie', exact: true }).click();
   assert.equal(await page.evaluate(() => window.WSConsent.get().advertising), false);
   assert.equal(await page.evaluate(() => window.WSConsent.integrationAllowed('ga4')), true);
-  await page.reload(); await page.locator('.ws-cookie-settings').waitFor();
+  await page.reload(); await page.locator('.ws-cookie-settings').waitFor({ state: 'attached' });
   assert.equal(await panel.count(), 0);
   const footer = page.locator('.ws-main .ws-policy-footer');
   assert.equal(await footer.count(), 1);
   assert.equal(await footer.locator('.ws-cookie-settings').evaluate(el => getComputedStyle(el).position), 'static');
   assert.ok(await footer.evaluate(el => el.getBoundingClientRect().height < 130), 'Compact footer');
   assert.equal(await page.locator('.ws > .ws-policy-footer').count(), 0);
+  // The policies and the settings fold out of the one « Cookies » line.
+  await footer.locator('.ws-policy-drop > summary').click();
   await page.getByRole('button', { name: 'Ustawienia cookies', exact: true }).click();
   assert.equal(await panel.locator('input:checked').count(), 1);
   await panel.locator('input').first().uncheck();

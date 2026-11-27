@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import './webshop-cookie-consent.css';
 import { PolicyLinks } from './webshop-policy-links.jsx';
+import cookieIcon from './assets/category_icons/cookie.png';
 
 export function CookieConsent() {
   const api = window.WSConsent;
@@ -8,6 +9,7 @@ export function CookieConsent() {
   const [details, setDetails] = useState(() => new URLSearchParams(location.search).get('cookies') === '1');
   const [analytics, setAnalytics] = useState(() => !!api?.get()?.analytics);
   const [storageError, setStorageError] = useState(false);
+  const [footerOpen, setFooterOpen] = useState(false);
   const [, refresh] = useState(0);
   const decisionSignature = useRef(JSON.stringify([api?.get(), api?.configuration()?.policyVersion || 'atelierby-2026-01']));
   const panel = useRef(null), trigger = useRef(null), returnFocus = useRef(null);
@@ -58,8 +60,15 @@ export function CookieConsent() {
   };
   return <>
     {!open && <nav className="ws-policy-footer" aria-label={t('title')}>
-      <PolicyLinks configuration={configuration} preview={preview}/>
-      <button ref={trigger} className="ws-cookie-settings" type="button" onClick={show}>{t('settings')}</button>
+      {/* One line « Cookies » that folds out the policies and the settings. Its open state
+          lives here so it stays open when the settings panel closes and focus returns. */}
+      <details className="ws-policy-drop" open={footerOpen} onToggle={e => setFooterOpen(e.currentTarget.open)}>
+        <summary><img className="ws-policy-drop__ico" src={cookieIcon} alt="" width="40" height="40"/>{t('footer')}<span className="ws-policy-drop__chev" aria-hidden="true"/></summary>
+        <div className="ws-policy-drop__list">
+          <PolicyLinks configuration={configuration} preview={preview}/>
+          <button ref={trigger} className="ws-cookie-settings" type="button" onClick={show}>{t('settings')}</button>
+        </div>
+      </details>
     </nav>}
     {runtimeStatus?.reloadRequired && !open && <p className="ws-cookie-storage" role="alert">{t('reloadRequired')}</p>}
     {storageError && !runtimeStatus?.reloadRequired && !open && <p className="ws-cookie-storage" role="status">{t('storage')}</p>}

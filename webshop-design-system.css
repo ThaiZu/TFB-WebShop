@@ -1837,6 +1837,62 @@ body { background: var(--color-bg); }
   .ws-bingo__reward { padding: 2px 6px; font-size: 10.5px; }
 }
 
+/* Category and sub-category tiles: no red line. The strip scrolls, so it cut the focus
+   outline down to an L on the right and the bottom of "Tout". Focus and selection are now
+   a soft red shadow under the tile; the strip has room above and around for it. */
+.ws .ws-cats { padding: 8px 8px 14px; margin: -8px -8px 8px; }
+.ws .ws-cat:focus-visible, .ws .ws-subcat:focus-visible { outline: none; }
+.ws .ws-cat.is-active .ws-cat__tile,
+.ws .ws-cat--season.is-active .ws-cat__tile,
+.ws .ws-subcat.is-active .ws-subcat__tile {
+  border: 0.5px solid color-mix(in srgb, var(--cat-accent, var(--color-primary)) 22%, transparent);
+  box-shadow: 0 6px 16px -4px color-mix(in srgb, var(--cat-accent, var(--color-primary)) 38%, transparent);
+}
+.ws .ws-cat:focus-visible .ws-cat__tile,
+.ws .ws-subcat:focus-visible .ws-subcat__tile {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--cat-accent, var(--color-primary)) 14%, transparent),
+              0 6px 16px -4px color-mix(in srgb, var(--cat-accent, var(--color-primary)) 38%, transparent);
+}
+
+/* Footer: one « Cookies » line (design-system cookie drawing) that folds out the policies
+   and the settings. No card: it sits on the page beige, rows split by hairlines. */
+.ws-policy-footer { display: block !important; margin: 28px 16px 0; padding: 0; text-align: left; }
+.ws-policy-drop { border-top: 1px solid rgba(34, 34, 34, 0.10); }
+.ws-policy-drop > summary {
+  display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 4px;
+  list-style: none; cursor: pointer; font: 500 14px/1.3 var(--font-ui); color: var(--color-text);
+}
+.ws-policy-drop > summary::-webkit-details-marker { display: none; }
+.ws-policy-drop > summary:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; border-radius: 10px; }
+.ws-policy-drop__ico { flex: none; width: 40px; height: 40px; object-fit: contain; }
+.ws-policy-footer a::before, .ws-policy-footer .ws-cookie-settings::before {
+  content: ''; flex: none; width: 40px; height: 20px; background: var(--ico) center / 18px no-repeat;
+}
+.ws-policy-drop__chev {
+  margin-left: auto; width: 16px; height: 16px; opacity: .55; transition: transform .2s;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23222' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") center / 16px no-repeat;
+}
+.ws-policy-drop[open] .ws-policy-drop__chev { transform: rotate(180deg); }
+.ws-policy-drop__list { display: flex; flex-direction: column; }
+.ws-policy-drop__list .ws-policy-links { display: contents; }
+.ws-policy-footer .ws-policy-drop__list a, .ws-policy-footer .ws-policy-drop__list .ws-cookie-settings {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; margin: 0; padding: 0 4px;
+  border: 0; border-radius: 0; background: none; box-shadow: inset 0 1px 0 rgba(34, 34, 34, 0.08);
+  color: var(--color-text-muted); text-decoration: none; text-align: left; font: 400 13.5px/1.3 var(--font-ui); cursor: pointer;
+}
+.ws-policy-footer a::after, .ws-policy-footer .ws-cookie-settings::after {
+  content: ''; flex: none; margin-left: auto; width: 16px; height: 16px; opacity: .5; background: var(--chev) center / 15px no-repeat;
+}
+.ws-policy-footer a { --chev: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23222' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5'/%3E%3C/svg%3E"); }
+.ws-policy-footer .ws-cookie-settings { --chev: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23222' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 6l6 6-6 6'/%3E%3C/svg%3E"); }
+.ws-policy-footer a:nth-child(1) { --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238D1D2C' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z'/%3E%3Cpath d='M9 12l2 2 4-4'/%3E%3C/svg%3E"); }
+.ws-policy-footer a:nth-child(2) { --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238D1D2C' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z'/%3E%3Cpath d='M14 3v5h5M9 13h6M9 17h4'/%3E%3C/svg%3E"); }
+.ws-policy-footer .ws-cookie-settings { --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238D1D2C' stroke-width='1.8' stroke-linecap='round'%3E%3Cpath d='M4 7h10M18 7h2M4 17h4M12 17h8'/%3E%3Ccircle cx='16' cy='7' r='2'/%3E%3Ccircle cx='10' cy='17' r='2'/%3E%3C/svg%3E"); }
+@media (hover: hover) { .ws-policy-footer a:hover, .ws-policy-footer .ws-cookie-settings:hover, .ws-policy-drop > summary:hover { color: var(--color-primary); } }
+.ws-policy-footer .ws-policy-drop__list a:focus-visible, .ws-policy-footer .ws-policy-drop__list .ws-cookie-settings:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; border-radius: 10px; }
+@media (min-width: 768px) { .ws-policy-footer { max-width: 420px; margin: 32px auto 0; } }
+@media (prefers-reduced-motion: reduce) { .ws-policy-drop__chev { transition: none; } }
+
 /* Header (desktop): the « linked office » badge is a filled abricot circle with a small building.
    At 18 px the building was a speck; at 30 px the circle matches the 34 px avatar and the building
    reads as large as the other 18 px icons. The bare « no office » icon stays at 18 px. */

@@ -38,6 +38,25 @@ export function LoyaltyWallet({identity,shopId,user,onClose,onUseVoucher,activeV
   const {t}=window.useT();
   const dialog=React.useRef(null);
   const [view,setView]=React.useState('programs');
+  // A tap on Points / Bingo / Vouchers brings the tabs to the top of the sheet,
+  // so what was asked for is in view (the code above can fill the whole phone).
+  const tabs=React.useRef(null);
+  const [viewTap,setViewTap]=React.useState(0);
+  const pickView=next=>{setView(next);setViewTap(value=>value+1);};
+  React.useEffect(()=>{
+    if(!viewTap)return;
+    const box=dialog.current,head=tabs.current,content=document.getElementById('ws-wallet-content');
+    if(!box||!head)return;
+    // Short content (a Bingo with two tasks) could not scroll that far: give it the room.
+    if(content){
+      const gap=content.getBoundingClientRect().top-head.getBoundingClientRect().bottom;
+      const pad=parseFloat(getComputedStyle(box).paddingBottom)||0;
+      content.style.minHeight=Math.max(0,box.clientHeight-head.offsetHeight-gap-pad-12)+'px';
+    }
+    const top=head.getBoundingClientRect().top-box.getBoundingClientRect().top+box.scrollTop-12;
+    const still=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    box.scrollTo({top:Math.max(0,top),behavior:still?'auto':'smooth'});
+  },[viewTap]);
   const [codeFormat,setCodeFormat]=React.useState('barcode');
   const [scanExpanded,setScanExpanded]=React.useState(false);
   const scanTrigger=React.useRef(null);
@@ -78,10 +97,10 @@ export function LoyaltyWallet({identity,shopId,user,onClose,onUseVoucher,activeV
         {codeFormat==='barcode'&&!isShortLoyaltyCardCode(identity.code)&&<p className="ws-loyalty-wallet__scan-hint">{t('loyaltyWallet.scanHint')}</p>}
       </>:identity.status==='error'||(identity.status==='ready'&&!svg)?<div role="alert"><p>{t('loyaltyWallet.error')}</p><button type="button" className="ws-linkbtn" onClick={identity.retry}>{t('loyalty.retry')}</button></div>:<div className="ws-loyalty-wallet__loading" role="status">{t('loyaltyWallet.loading')}</div>}
     </section>
-    <div className="ws-loyalty-wallet__section-head">
-      <button id="ws-wallet-programs" type="button" aria-pressed={view==='programs'} aria-controls="ws-wallet-content" onClick={()=>setView('programs')}><PointsIcon/>{t('personal.points')}</button>
-      <button id="ws-wallet-bingo" type="button" aria-pressed={view==='bingo'} aria-controls="ws-wallet-content" onClick={()=>setView('bingo')}><BingoIcon/>Bingo</button>
-      <button id="ws-wallet-vouchers" type="button" aria-pressed={view==='vouchers'} aria-controls="ws-wallet-content" onClick={()=>setView('vouchers')}><VoucherIcon/>{t('loyaltyWallet.vouchers')}</button>
+    <div ref={tabs} className="ws-loyalty-wallet__section-head">
+      <button id="ws-wallet-programs" type="button" aria-pressed={view==='programs'} aria-controls="ws-wallet-content" onClick={()=>pickView('programs')}><PointsIcon/>{t('personal.points')}</button>
+      <button id="ws-wallet-bingo" type="button" aria-pressed={view==='bingo'} aria-controls="ws-wallet-content" onClick={()=>pickView('bingo')}><BingoIcon/>Bingo</button>
+      <button id="ws-wallet-vouchers" type="button" aria-pressed={view==='vouchers'} aria-controls="ws-wallet-content" onClick={()=>pickView('vouchers')}><VoucherIcon/>{t('loyaltyWallet.vouchers')}</button>
     </div>
     <section id="ws-wallet-content" className="ws-loyalty-wallet__programs" aria-labelledby={'ws-wallet-' + view}>
       {view === 'vouchers'
