@@ -2234,3 +2234,12 @@ body { background: var(--color-bg); }
   }
   .pdm-head > :not(.pdm-thumb) { grid-column: 2; }
 }
+
+/* 30 · Search: the category strip steps aside while a search runs; the result count
+   lines up with the grid; allergen icons on cards drawn at 14 px. */
+.ws-main:has(.ws-product-search-empty) .ws-cats-wrap { display: none; }
+.ws .ws-product-search-empty {
+  width: 100%; max-width: none; margin: 4px 0 12px; padding: 0; text-align: left;
+  font-size: 13px; font-weight: 500; color: var(--color-text-muted);
+}
+.ws-grid .ws-card .al-row .al-icon { width: 14px; height: 14px; }
