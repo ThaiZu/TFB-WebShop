@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import './webshop-cookie-consent.css';
 import { PolicyLinks } from './webshop-policy-links.jsx';
+import cookieIcon from './assets/category_icons/cookie.png';
 
 export function CookieConsent() {
   const api = window.WSConsent;
@@ -62,7 +63,7 @@ export function CookieConsent() {
       {/* One line « Cookies » that folds out the policies and the settings. Its open state
           lives here so it stays open when the settings panel closes and focus returns. */}
       <details className="ws-policy-drop" open={footerOpen} onToggle={e => setFooterOpen(e.currentTarget.open)}>
-        <summary><span className="ws-policy-drop__ico" aria-hidden="true"/>{t('footer')}<span className="ws-policy-drop__chev" aria-hidden="true"/></summary>
+        <summary><img className="ws-policy-drop__ico" src={cookieIcon} alt="" width="40" height="40"/>{t('footer')}<span className="ws-policy-drop__chev" aria-hidden="true"/></summary>
         <div className="ws-policy-drop__list">
           <PolicyLinks configuration={configuration} preview={preview}/>
           <button ref={trigger} className="ws-cookie-settings" type="button" onClick={show}>{t('settings')}</button>
