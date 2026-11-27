@@ -2271,3 +2271,11 @@ body { background: var(--color-bg); }
 }
 @media (hover: hover) { .ws .ws-vouchers__main .ws-cta:not(:disabled):hover { background: rgba(141, 29, 44, .06); } }
 .ws .ws-vouchers__item.is-selected .ws-vouchers__main .ws-cta { background: var(--color-primary); color: #fff; box-shadow: none; }
+
+/* Remark 5 · Phone tab bar: the loyalty card button turns beige with a bordeaux icon,
+   so « Panier » stays the only filled bordeaux button. */
+.ws .ws-tabbar .ws-tabbar__btn--loyalty {
+  background: var(--color-bg-secondary); color: var(--color-primary);
+  box-shadow: 0 4px 14px rgba(34, 34, 34, .12);
+}
+.ws .ws-tabbar .ws-tabbar__btn--loyalty:active { background: var(--color-bg); }
