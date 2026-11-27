@@ -2243,3 +2243,11 @@ body { background: var(--color-bg); }
   font-size: 13px; font-weight: 500; color: var(--color-text-muted);
 }
 .ws-grid .ws-card .al-row .al-icon { width: 14px; height: 14px; }
+
+/* Remark 1 · Phone sheets: once the content scrolls, the band behind the handle grows
+   down to the close button, so nothing passes behind the cross. */
+@media (max-width: 720px) {
+  .ws-modal__panel.is-scrolled > .ws-modal__handle::before {
+    bottom: -48px; box-shadow: 0 1px 0 var(--color-border-tertiary);
+  }
+}

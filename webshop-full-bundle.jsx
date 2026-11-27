@@ -2786,10 +2786,14 @@ function useSwipeDownToClose(onClose, scrollEl) {
 function ModalShell({ onClose, children, narrow, split }) {
   const { t } = wsUseT();
   const backdropPress = React.useRef(false);
-  const panelRef = useSwipeDownToClose(onClose);
+  // useSwipeDownToClose returns a callback ref (no .current): keep our own handle on
+  // the panel so the scroll state (rail arrows, is-scrolled) can read it.
+  const panelEl = React.useRef(null);
+  const swipeRef = useSwipeDownToClose(onClose);
+  const panelRef = React.useCallback((el) => { panelEl.current = el; swipeRef(el); }, [swipeRef]);
   const [showArrows, setShowArrows] = React.useState({ up: false, down: false });
   React.useEffect(() => {
-    const el = panelRef.current; if (!el) return;
+    const el = panelEl.current; if (!el) return;
     const update = () => {
       const can = el.scrollHeight > el.clientHeight + 4;
       setShowArrows({
@@ -2804,7 +2808,7 @@ function ModalShell({ onClose, children, narrow, split }) {
     return () => { el.removeEventListener('scroll', update); ro.disconnect(); };
   }, []);
   function nudge(dir) {
-    const el = panelRef.current; if (!el) return;
+    const el = panelEl.current; if (!el) return;
     el.scrollBy({ top: dir * Math.max(180, el.clientHeight * 0.6), behavior: 'smooth' });
   }
   return (
@@ -2819,7 +2823,7 @@ function ModalShell({ onClose, children, narrow, split }) {
         backdropPress.current = false;
         if (startedOnBackdrop && event.target === event.currentTarget) onClose();
       }}>
-      <div ref={panelRef} className={`ws-modal__panel${narrow ? ' ws-modal__panel--narrow' : ''}${split ? ' ws-modal__panel--split' : ''}`} onClick={(e) => e.stopPropagation()}>
+      <div ref={panelRef} className={`ws-modal__panel${narrow ? ' ws-modal__panel--narrow' : ''}${split ? ' ws-modal__panel--split' : ''}${showArrows.up ? ' is-scrolled' : ''}`} onClick={(e) => e.stopPropagation()}>
         <span className="ws-modal__handle" aria-hidden="true"/>
         <button className="ws-modal__close" onClick={onClose} aria-label={t('common.close2')}><Pict d={ICONS.close} s={14}/></button>
         {children}
