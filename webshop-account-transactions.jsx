@@ -189,6 +189,7 @@ export function AccountTransactions({ receiptToken, t, locale, onReceiptHandled 
           {detail.lines.map(line => <tr key={line.id}>
             <td className="ws-tx-lines__qty">{line.quantity.toLocaleString(locale)}×</td>
             <td className="ws-tx-lines__name">{line.name}
+              <span className="ws-tx-lines__unit-m">{line.quantity.toLocaleString(locale)} × {money(line.unitGrossPrice)}</span>
               {line.discountValue > 0 && <span>{t('acc.orders.discount')} · {money(line.discountValue)}</span>}</td>
             <td className="ws-tx-lines__unit">{money(line.unitGrossPrice)}</td>
             <td className="ws-tx-lines__total">{money(line.totalGross)}</td>
