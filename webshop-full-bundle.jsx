@@ -6399,7 +6399,10 @@ function ShopFrame({ variant }) {
             </div>
           )}
           {shopsFailed && <p className="ws-shopselect__help">{wsText("ui.connecting")}</p>}
-          <CookieConsent />
+          {/* A shop is already chosen (link or memory) and the list is still loading:
+              this screen is only a moment, so the cookie banner waits for the shop
+              instead of mounting here and again a second later. */}
+          {!(shopId && !shops.length && !shopsFailed) && <CookieConsent />}
         </main>
         <footer className="ws-shopselect__footer">© {new Date().getFullYear()} L'Atelier By</footer>
         {loginDialog}
