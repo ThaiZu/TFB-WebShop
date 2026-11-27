@@ -7,7 +7,7 @@
 .ws-langchip__btn {
   display: inline-flex; align-items: center; gap: 4px;
   height: 32px; padding: 0 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid var(--color-border-tertiary, rgba(20,14,10,.10));
   background: var(--color-surface, #fff);
   color: var(--color-text);
@@ -170,7 +170,7 @@ select.ws-acc__input { appearance: none; -webkit-appearance: none; background-im
 .ws-acc__toggle-track {
   position: relative;
   width: 36px; height: 20px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--color-border-tertiary, rgba(20,14,10,.18));
   transition: background 200ms ease;
   flex-shrink: 0;
@@ -270,7 +270,7 @@ select.ws-acc__input { appearance: none; -webkit-appearance: none; background-im
   margin-left: auto;
   padding: 4px 10px;
   border: 1px solid currentColor;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: transparent;
   color: inherit;
   font: 600 11px/1 var(--font-ui);

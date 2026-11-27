@@ -70,7 +70,7 @@ function TransactionReceipt({ transaction, t }) {
   if (transaction.receiptAvailable === false || transaction.invoice?.status === 'issued') return null;
 
   return <>
-    <button type="button" className="ws-transaction-action" disabled={busy} onClick={download}>
+    <button type="button" className="ws-transaction-action" disabled={busy} onClick={download} title={t('acc.transactions.salesDocument')}>
       <TransactionActionIcon download/>
       <span>{t(busy ? 'common.loading2' : 'acc.transactions.salesDocument')}</span>
     </button>
@@ -166,45 +166,57 @@ export function AccountTransactions({ receiptToken, t, locale, onReceiptHandled 
       onClick={() => setRevision(value => value + 1)}>{t('stock.refresh')}</button>}
     {detail ? <>
       <button type="button" className="ws-linkbtn" onClick={closeDetail}>← {t('acc.transactions.back')}</button>
-      <div className="ws-acc__card">
+      <div className="ws-acc__card ws-tx-summary">
         <div className="ws-acc__card-head">
-          <TransactionSource source={detail.source} t={t}/>
-          <span>{detail.shop} · {date(detail.at)}</span>
+          <span className="ws-tx-row__src"><TransactionSource source={detail.source} t={t}/></span>
+          <span className="ws-tx-row__main"><strong>{detail.shop}</strong><span>{date(detail.at)}</span></span>
         </div>
-        <p>{t('acc.orders.total')} · {money(detail.total)}</p>
+        <p className="ws-tx-summary__total"><span>{t('acc.orders.total')}</span><strong>{money(detail.total)}</strong></p>
         <div className="ws-transaction-actions">
           <TransactionReceipt transaction={detail} t={t}/>
           {detail.invoice?.status === 'issued' && <TransactionInvoice invoice={detail.invoice} t={t}/>}
         </div>
         {detail.invoice?.status === 'pending' && <TransactionInvoice invoice={detail.invoice} t={t}/>}
       </div>
-      {detail.lines.map(line => <div className="ws-acc__card" key={line.id}>
-        <strong>{line.name}</strong>
-        <dl className="ws-purchase-values">
-          <div><dt>{t('acc.orders.quantity')}</dt><dd>{line.quantity.toLocaleString(locale)}</dd></div>
-          <div><dt>{t('acc.orders.unitPrice')}</dt><dd>{money(line.unitGrossPrice)}</dd></div>
-          {line.discountValue > 0 && <div><dt>{t('acc.orders.discount')}</dt><dd>{money(line.discountValue)}</dd></div>}
-          <div><dt>{t('acc.orders.lineTotal')}</dt><dd>{money(line.totalGross)}</dd></div>
-        </dl>
-      </div>)}
+      <table className="ws-tx-lines">
+        <thead><tr>
+          <th scope="col">{t('acc.orders.quantity')}</th>
+          <th scope="col"><span className="ws-vh">{t('acc.transactions.detail')}</span></th>
+          <th scope="col">{t('acc.orders.unitPrice')}</th>
+          <th scope="col">{t('acc.orders.lineTotal')}</th>
+        </tr></thead>
+        <tbody>
+          {detail.lines.map(line => <tr key={line.id}>
+            <td className="ws-tx-lines__qty">{line.quantity.toLocaleString(locale)}×</td>
+            <td className="ws-tx-lines__name">{line.name}
+              {line.discountValue > 0 && <span>{t('acc.orders.discount')} · {money(line.discountValue)}</span>}</td>
+            <td className="ws-tx-lines__unit">{money(line.unitGrossPrice)}</td>
+            <td className="ws-tx-lines__total">{money(line.totalGross)}</td>
+          </tr>)}
+        </tbody>
+      </table>
     </> : <>
       {!loading && error !== 'acc.transactions.error' && items.length === 0 && <p>{t('acc.transactions.empty')}</p>}
-      {items.map(item => <div className="ws-acc__card" key={item.id} data-transaction-id={item.id}>
-        <div className="ws-acc__card-head">
-          <TransactionSource source={item.source} t={t}/>
-          <strong>{money(item.total)}</strong>
-        </div>
-        <p>{item.shop} · {date(item.at)}</p>
-        <div className="ws-transaction-actions">
-          <button type="button" className="ws-transaction-action" disabled={loading} onClick={() => openTransaction(item.id)}>
-            <TransactionActionIcon/>
-            <span>{t('acc.transactions.detail')}</span>
-          </button>
-          <TransactionReceipt transaction={item} t={t}/>
-          {item.invoice?.status === 'issued' && <TransactionInvoice invoice={item.invoice} t={t}/>}
-        </div>
-        {item.invoice?.status === 'pending' && <TransactionInvoice invoice={item.invoice} t={t}/>}
-      </div>)}
+      {items.length > 0 && <ul className="ws-tx-list">
+        {items.map(item => <li className="ws-tx-row" key={item.id} data-transaction-id={item.id}>
+          <span className="ws-tx-row__src"><TransactionSource source={item.source} t={t}/></span>
+          <span className="ws-tx-row__main">
+            <strong>{item.shop}</strong>
+            <span>{date(item.at)}</span>
+          </span>
+          <strong className="ws-tx-row__amount">{money(item.total)}</strong>
+          <div className="ws-transaction-actions ws-tx-row__actions">
+            <TransactionReceipt transaction={item} t={t}/>
+            {item.invoice?.status === 'issued' && <TransactionInvoice invoice={item.invoice} t={t}/>}
+            <button type="button" className="ws-transaction-action ws-tx-row__open" disabled={loading} onClick={() => openTransaction(item.id)}
+              title={t('acc.transactions.detail')}>
+              <span>{t('acc.transactions.detail')}</span>
+              <svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+            </button>
+          </div>
+          {item.invoice?.status === 'pending' && <div className="ws-tx-row__note"><TransactionInvoice invoice={item.invoice} t={t}/></div>}
+        </li>)}
+      </ul>}
       {before && <button type="button" className="ws-linkbtn" disabled={loading} onClick={loadMore}>{t('acc.transactions.more')}</button>}
     </>}
   </section>;

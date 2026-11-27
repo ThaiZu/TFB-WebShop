@@ -528,9 +528,9 @@ function DatePill({ mode, value, onChange, shopId,
   return (
     <div ref={wrapRef} className="ws-datepill">
       <button className="ws-nav__date" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
-        <Pict d={ICONS.cal} s={12}/>
-        <span>{t(mode === 'delivery' ? 'nav.datepill.delivery' : 'nav.datepill.pickup')}</span>
-        <strong>· {wsFormatPill(value)}</strong>
+        <Pict d={ICONS.cal} s={16}/>
+        <span className="ws-nav__date-k">{t(mode === 'delivery' ? 'nav.datepill.delivery' : 'nav.datepill.pickup')}</span>
+        <strong><i className="ws-nav__date-sep">· </i>{wsFormatPill(value)}</strong>
         <Pict d={ICONS.chev} s={10}/>
       </button>
       {open && (mobileCalendar ? createPortal(
@@ -673,24 +673,17 @@ function ModePills({ shopId, mode, onChange, collectCutoffPassed, collectCutoffL
           Il est SORTI du rail : depuis que le sélecteur est un segment à deux
           colonnes, un troisième enfant tombait en seconde ligne et débordait
           sous le rail. Frère du rail, il reste à côté sans le déformer. */}
-      <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', flex: 'none', marginLeft: 4 }}
+      <span className="ws-office-info-wrap"
         onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
         <button ref={tipAnchor} className="ws-nav__office-info" type="button" aria-label={t('office.notYet')} aria-describedby={hover ? tipId : undefined}
           onFocus={() => setHover(true)} onBlur={() => setHover(false)} onKeyDown={event => { if (event.key === 'Escape') setHover(false); }}
-          onClick={(e) => { e.stopPropagation(); e.preventDefault(); const url = new URL(import.meta.env.BASE_URL + 'landing/livraison-bureau.html', window.location.origin); url.searchParams.set('shop', String(shopId)); url.searchParams.set('lang', window.WSI18n?.getLang?.() || 'en'); window.location.assign(url.href); }}
-          style={{ borderRadius: '50%', border: 'none', cursor: 'pointer', flex: 'none',
-                   background: '#c17a2a', color: '#fff', font: '700 11px/1 system-ui',
-                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                   animation: 'wsBureauPulse 2.2s infinite' }}>i</button>
+          onClick={(e) => { e.stopPropagation(); e.preventDefault(); const url = new URL(import.meta.env.BASE_URL + 'landing/livraison-bureau.html', window.location.origin); url.searchParams.set('shop', String(shopId)); url.searchParams.set('lang', window.WSI18n?.getLang?.() || 'en'); window.location.assign(url.href); }}>
+          <svg className="ws-nav__office-info-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M4 21V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v16"/><path d="M2 21h14"/><path d="M8 8h2M8 12h2M8 16h2"/><path d="M19 9v6M16 12h6"/>
+          </svg>
+        </button>
         {hover && createPortal(
-          <span id={tipId} role="tooltip" style={{ position: 'fixed', ...tipPosition, width: 216, maxWidth: '78vw', pointerEvents: 'none',
-            boxSizing: 'border-box', whiteSpace: 'normal', wordBreak: 'break-word',
-            background: '#e8a15c', color: '#241a16', borderRadius: 14, padding: '11px 13px',
-            font: '600 11.5px/1.45 system-ui', boxShadow: '0 10px 28px rgba(36,26,22,.28)',
-            border: '1px solid rgba(36,26,22,.10)', zIndex: 10020, textAlign: 'left' }}>
-            <span aria-hidden="true" style={{ position: 'absolute', top: -5, right: 15, width: 11, height: 11,
-              background: '#e8a15c', borderTop: '1px solid rgba(36,26,22,.10)', borderLeft: '1px solid rgba(36,26,22,.10)',
-              transform: 'rotate(45deg)', borderRadius: 3 }} />
+          <span id={tipId} role="tooltip" className="ws-office-tip" style={{ top: tipPosition.top, left: tipPosition.left }}>
             {t('office.notYetTip')}
           </span>, document.body
         )}
@@ -2513,11 +2506,14 @@ function NavbarA({ shop, mode, onMode, onSwitchShop, cartCount, date, onDate, us
   return (
     <header className="ws-nav ws-nav--A">
       <div className="ws-nav__left">
-        <button className="ws-nav__shopchip" onClick={onSwitchShop}>
-          <span className="ws-nav__shopchip-dot"/>
-          <span>{shop.name}</span>
-          <Pict d={ICONS.chev} s={10}/>
-        </button>
+        <div className="ws-nav__brandblock">
+          <img className="ws-nav__logo" src={import.meta.env.BASE_URL + 'logo.png'} alt="L'Atelier By"/>
+          <button className="ws-nav__shopchip" onClick={onSwitchShop}>
+            <span className="ws-nav__shopchip-dot"/>
+            <span>{shop.name}</span>
+            <Pict d={ICONS.chev} s={10}/>
+          </button>
+        </div>
         <DatePill mode={mode} value={date} onChange={onDate} shopId={shop.id}
           collectCutoffPassed={collectCutoffPassed} collectCutoffLabel={collectCutoffLabel}
           deliveryCutoffPassed={deliveryCutoffPassed} deliveryCutoffLabel={deliveryCutoffLabel}
@@ -2536,9 +2532,11 @@ function NavbarA({ shop, mode, onMode, onSwitchShop, cartCount, date, onDate, us
             ? <span className="ws-nav__avatar" aria-hidden="true">{user.firstName?.[0] || user.email?.[0]?.toUpperCase() || '·'}</span>
             : <Pict d={ICONS.user} s={15}/>}
         </button>
-        <button className="ws-nav__icon ws-nav__cart" aria-label={t('nav.cartAria')}>
-          <Pict d={ICONS.bag} s={15}/>
-          {cartCount > 0 && <span className="ws-nav__cart-badge">{cartCount}</span>}
+        <button className={`ws-nav__icon ws-nav__cart${cartCount > 0 ? ' ws-nav__cart--full' : ''}`} aria-label={t('nav.cartAria')}>
+          <span className="ws-nav__cart-ico">
+            <Pict d={ICONS.bag} s={17}/>
+            {cartCount > 0 && <span className="ws-nav__cart-badge">{cartCount}</span>}
+          </span>
         </button>
       </div>
       <div className="ws-nav__ordering">
@@ -2706,7 +2704,7 @@ function useSwipeDownToClose(onClose, scrollEl) {
   }, []);
 }
 
-function ModalShell({ onClose, children, narrow }) {
+function ModalShell({ onClose, children, narrow, split }) {
   const { t } = wsUseT();
   const backdropPress = React.useRef(false);
   const panelRef = useSwipeDownToClose(onClose);
@@ -2742,7 +2740,7 @@ function ModalShell({ onClose, children, narrow }) {
         backdropPress.current = false;
         if (startedOnBackdrop && event.target === event.currentTarget) onClose();
       }}>
-      <div ref={panelRef} className={`ws-modal__panel${narrow ? ' ws-modal__panel--narrow' : ''}`} onClick={(e) => e.stopPropagation()}>
+      <div ref={panelRef} className={`ws-modal__panel${narrow ? ' ws-modal__panel--narrow' : ''}${split ? ' ws-modal__panel--split' : ''}`} onClick={(e) => e.stopPropagation()}>
         <span className="ws-modal__handle" aria-hidden="true"/>
         <button className="ws-modal__close" onClick={onClose} aria-label={t('common.close2')}><Pict d={ICONS.close} s={14}/></button>
         {children}
@@ -3202,7 +3200,7 @@ function LoginModal({ open, onClose, onLogin, onRegister, onGoToAccount, shopId,
         <button className={`ws-tab${tab === 'login' ? ' is-active' : ''}`} onClick={() => { setTab('login'); setErr(''); }}>{t('auth.login')}</button>
         <button className={`ws-tab${tab === 'register' ? ' is-active' : ''}`} onClick={() => { setTab('register'); setErr(''); }}>{t('auth.createAccount')}</button>
       </div>
-      <form className="ws-form" onSubmit={submit} noValidate>
+      <form className={`ws-form${tab === 'register' ? ' ws-form--register' : ''}`} onSubmit={submit} noValidate>
         {tab === 'register' && (
           <>
             <div className="ws-form__row2">
@@ -3870,14 +3868,32 @@ function AccountModal({ open, requestedTab, requestedReceipt, onReceiptHandled, 
     }
   }
   return (
-    <ModalShell onClose={onClose} narrow>
-      <p className="ws-modal__eyebrow">{t('auth.myAccount')}</p>
-      <h2 className="ws-modal__title">{tRich(t, 'acc.hello', { name: form.firstName || user.firstName })}</h2>
-      <p className="ws-modal__lede">{user.email}</p>
-      <button type="button" className="ws-linkbtn ws-account-cookie-settings" onClick={() => {
-        onClose();
-        window.setTimeout(() => window.WSConsent?.open(), 0);
-      }}>{t('cookies.settings')}</button>
+    <ModalShell onClose={onClose} split>
+      <div className="ws-acc2">
+      <aside className="ws-acc2__side">
+        <div className="ws-acc2__hello">
+          <p className="ws-modal__eyebrow">{t('auth.myAccount')}</p>
+          <h2 className="ws-modal__title">{tRich(t, 'acc.hello', { name: form.firstName || user.firstName })}</h2>
+          <p className="ws-modal__lede">{user.email}</p>
+        </div>
+        {/* Onglets : positions dérivées d'ACCOUNT_TABS, actif persisté. */}
+        <div className="ws-acc2__nav ws-account-tabs" role="tablist" aria-orientation="vertical" aria-label={t('acc.sectionsAria')}>
+          {visibleTabs.map((t) => (
+            <button key={t.key} type="button" role="tab" aria-selected={activeTab === t.key}
+              className={'ws-acc2__tab' + (activeTab === t.key ? ' is-active' : '')}
+              onClick={() => selectTab(t.key)}>{t.label}</button>
+          ))}
+        </div>
+        <div className="ws-acc2__sidefoot">
+          <button type="button" className="ws-linkbtn ws-account-cookie-settings" onClick={() => {
+            onClose();
+            window.setTimeout(() => window.WSConsent?.open(), 0);
+          }}>{t('cookies.settings')}</button>
+          <button type="button" className="ws-acc__logout" onClick={() => { onLogout(); onClose(); }}>{t('acc.signout')}</button>
+        </div>
+      </aside>
+      <section className="ws-acc2__main">
+      <h3 className="ws-acc2__title">{visibleTabs.find(item => item.key === activeTab)?.label}</h3>
       {user.activationRequired === true && <section className="ws-acc__section">
         <p>{t('activation.accountWarning')}</p>
         <button type="button" className="ws-cta" disabled={activationSending} onClick={resendAccountActivation}>
@@ -3889,15 +3905,6 @@ function AccountModal({ open, requestedTab, requestedReceipt, onReceiptHandled, 
       </section>}
 
 
-      {/* Onglets : positions dérivées d'ACCOUNT_TABS, actif persisté. */}
-      <div className="ws-toggle ws-account-tabs" role="tablist" aria-label={t('acc.sectionsAria')}>
-        {visibleTabs.map((t) => (
-          <button key={t.key} type="button" role="tab" aria-selected={activeTab === t.key}
-            className={'ws-toggle__opt' + (activeTab === t.key ? ' is-active' : '')}
-            onClick={() => selectTab(t.key)}>{t.label}</button>
-        ))}
-      </div>
-
       {activeTab === 'achats' && <AccountPurchases refreshRevision={purchaseRevision} onDetailsChange={setPurchaseDetailsOpen} />}
       {activeTab === 'transactions' && <AccountTransactions key={user.id} t={t} locale={wsLocale()}
         receiptToken={requestedReceipt} onReceiptHandled={onReceiptHandled} />}
@@ -3907,7 +3914,6 @@ function AccountModal({ open, requestedTab, requestedReceipt, onReceiptHandled, 
 
 
       {activeTab === 'profil' && <>
-      <button type="button" className="ws-cta ws-cta--block ws-account-purchases-link" onClick={() => selectTab('achats')}>{t('acc.orders.title')}</button>
       <form className="ws-acc__section" onSubmit={saveProfile}>
         <div className="ws-acc__section-h">{t('acc.contact')}</div>
         <div className="ws-acc__form">
@@ -4036,9 +4042,10 @@ function AccountModal({ open, requestedTab, requestedReceipt, onReceiptHandled, 
       )}
       </>}
 
-      <div className="ws-acc__foot">
-        {activeTab === 'achats' && !purchaseDetailsOpen && <button type="button" className="ws-cta ws-payment-refresh ws-purchases-refresh" onClick={() => setPurchaseRevision(value => value + 1)}>{t('stock.refresh')}</button>}
-        {activeTab === 'profil' && <button className="ws-acc__logout" onClick={() => { onLogout(); onClose(); }}>{t('acc.signout')}</button>}
+      {activeTab === 'achats' && !purchaseDetailsOpen && <div className="ws-acc__foot">
+        <button type="button" className="ws-cta ws-payment-refresh ws-purchases-refresh" onClick={() => setPurchaseRevision(value => value + 1)}>{t('stock.refresh')}</button>
+      </div>}
+      </section>
       </div>
     </ModalShell>
   );
