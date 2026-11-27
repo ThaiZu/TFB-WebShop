@@ -4112,7 +4112,7 @@ function AccountModal({ open, requestedTab, requestedReceipt, onReceiptHandled, 
       </>}
 
       {activeTab === 'achats' && !purchaseDetailsOpen && <div className="ws-acc__foot">
-        <button type="button" className="ws-cta ws-payment-refresh ws-purchases-refresh" onClick={() => setPurchaseRevision(value => value + 1)}>{t('stock.refresh')}</button>
+        <button type="button" className="ws-iconbtn ws-purchases-refresh" title={t('stock.refresh')} onClick={() => setPurchaseRevision(value => value + 1)}><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg><span className="ws-vh">{t('stock.refresh')}</span></button>
       </div>}
       </section>
       </div>

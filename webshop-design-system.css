@@ -1453,8 +1453,6 @@ body { background: var(--color-bg); }
 .ws-acc2__main [role="alert"] .ws-linkbtn, .ws-loyalty-wallet__programs [role="alert"] .ws-linkbtn {
   min-height: 40px; padding: 0 16px; border: 1px solid var(--color-primary); border-radius: 10px; text-decoration: none; background: var(--color-surface);
 }
-/* one retry action, not two */
-.ws-vouchers:has([role="alert"]) .ws-vouchers__heading .ws-linkbtn { display: none; }
 
 /* 9 · Active sub-category marked like the categories (border, no inverted picture) */
 .ws .ws-subcat.is-active .ws-subcat__tile { background: var(--color-bg-secondary); border: 2px solid var(--cat-accent); }
@@ -1562,4 +1560,7 @@ body { background: var(--color-bg); }
 .ws-acc2__main .ws-vouchers__heading { position: absolute; top: 76px; right: 40px; margin: 0; }
 @media (max-width: 760px) { .ws-acc2__main .ws-vouchers__heading { top: 14px; right: 20px; } }
 .ws-acc2__main .ws-vouchers__filter { margin-top: 0; }
-.ws-vouchers:has([role="alert"]) .ws-vouchers__refresh { display: none; }
+/* Same refresh icon for Mes commandes, on the pane title line */
+.ws-acc2 .ws-acc__foot:has(.ws-purchases-refresh) { position: absolute; top: 76px; right: 40px; margin: 0; }
+.ws-acc2 .ws-acc__foot .ws-purchases-refresh { margin: 0; min-height: 0; }
+@media (max-width: 760px) { .ws-acc2 .ws-acc__foot:has(.ws-purchases-refresh) { top: 14px; right: 20px; } }
