@@ -5,6 +5,14 @@
 // imports the W_SHOPS object directly. To swap in a real backend, set:
 //   window.WSShops.endpoint = 'https://your-host/shops';
 // Response must be an array (or {shops: [...]}) of {id,name,city,accent,address}.
+
+// Streets typed all in lower case (« auguste demaeghtlaan 227 ») are shown with
+// capitals; a street already written with capitals is left as it is.
+const STREET_PARTICLES = new Set(['de', 'du', 'des', 'la', 'le', 'les', 'l', 'd', 'van', 'der', 'den', 'het', 'ten', 'ter', 'op', 'aux', 'au', 'et', 'sur']);
+function streetCase(text) {
+  if (!text || text !== text.toLowerCase()) return text;
+  return text.replace(/[\p{L}]+/gu, (word, at) => (at > 0 && STREET_PARTICLES.has(word)) ? word : word[0].toUpperCase() + word.slice(1));
+}
 //
 // GO-LIVE : la liste vient UNIQUEMENT de l'API (/shops → table `shops`). Le
 // repli sur la fixture mémoire window.W_SHOPS a été SUPPRIMÉ, c'est lui qui a
@@ -32,9 +40,9 @@
         const shops = await fetchRemote(endpoint);
         // Public-facing shop name; keep the API contract unchanged for POS/admin.
         cache = shops.map((shop) => {
-          const streetAddress = String(
+          const streetAddress = streetCase(String(
             shop.address || [shop.street, shop.street_num].filter(Boolean).join(' ')
-          ).trim();
+          ).trim());
           const locality = [shop.zip, shop.city].filter(Boolean).join(' ').trim();
 
           return {

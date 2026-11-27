@@ -44,16 +44,19 @@ export function LoyaltyWallet({identity,shopId,user,onClose,onUseVoucher,activeV
   const [viewTap,setViewTap]=React.useState(0);
   const pickView=next=>{setView(next);setViewTap(value=>value+1);};
   React.useEffect(()=>{
-    if(!viewTap)return;
+    // On a computer the card shows no code: the tabs are already at the top.
+    if(!viewTap||window.matchMedia?.('(min-width: 900px)').matches)return;
     const box=dialog.current,head=tabs.current,content=document.getElementById('ws-wallet-content');
     if(!box||!head)return;
+    // The title bar stays fixed at the top of the card: land the tabs just below it.
+    const sticky=box.querySelector(':scope > header')?.offsetHeight||0;
     // Short content (a Bingo with two tasks) could not scroll that far: give it the room.
     if(content){
       const gap=content.getBoundingClientRect().top-head.getBoundingClientRect().bottom;
       const pad=parseFloat(getComputedStyle(box).paddingBottom)||0;
-      content.style.minHeight=Math.max(0,box.clientHeight-head.offsetHeight-gap-pad-12)+'px';
+      content.style.minHeight=Math.max(0,box.clientHeight-head.offsetHeight-gap-pad-12-sticky)+'px';
     }
-    const top=head.getBoundingClientRect().top-box.getBoundingClientRect().top+box.scrollTop-12;
+    const top=head.getBoundingClientRect().top-box.getBoundingClientRect().top+box.scrollTop-sticky-12;
     const still=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     box.scrollTo({top:Math.max(0,top),behavior:still?'auto':'smooth'});
   },[viewTap]);
