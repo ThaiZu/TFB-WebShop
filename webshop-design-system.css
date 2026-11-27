@@ -2190,3 +2190,9 @@ body { background: var(--color-bg); }
 .ws-personal-history li { padding: 7px 14px; }
 .ws-personal-history .ws-loyalty-ico { width: 28px; height: 28px; }
 .ws-bingo__done { display: none; }
+
+/* 27 · Profile: « Langue » only on phones (on a computer the FR selector sits in the
+   header; on a phone the header hides it); « Enregistrer » full width. */
+@media (min-width: 761px) { .ws-acc__fold--lang { display: none; } }
+.ws-acc__form-foot { flex-wrap: wrap; }
+.ws-acc__form-foot .ws-cta { width: 100%; justify-content: center; }

@@ -3548,9 +3548,23 @@ if (typeof document !== 'undefined' && !document.getElementById('ws-bureau-style
 const allowBillingCompanyLinking = true;
 const allowOfficeLinking = true;
 
+// A stored phone number shown with spaces (« +32 470 12 34 56 »); the saved value
+// is never changed. Unknown formats are shown as they are.
+function wsPhoneDisplay(value) {
+  const raw = String(value || '');
+  const v = raw.replace(/[\s.\-()/]/g, '');
+  let m;
+  if ((m = v.match(/^\+32(4\d{2})(\d{2})(\d{2})(\d{2})$/))) return `+32 ${m[1]} ${m[2]} ${m[3]} ${m[4]}`;
+  if ((m = v.match(/^\+32([2-9])(\d{3})(\d{2})(\d{2})$/))) return `+32 ${m[1]} ${m[2]} ${m[3]} ${m[4]}`;
+  if ((m = v.match(/^\+31(6)(\d{2})(\d{2})(\d{2})(\d{2})$/))) return `+31 ${m[1]} ${m[2]} ${m[3]} ${m[4]} ${m[5]}`;
+  if ((m = v.match(/^\+33([1-9])(\d{2})(\d{2})(\d{2})(\d{2})$/))) return `+33 ${m[1]} ${m[2]} ${m[3]} ${m[4]} ${m[5]}`;
+  if ((m = v.match(/^\+48(\d{3})(\d{3})(\d{3})$/))) return `+48 ${m[1]} ${m[2]} ${m[3]}`;
+  return raw;
+}
+
 // Collapsible block of the Profil tab: the whole tab fits in the window, sections open on demand.
-function AccFold({ title, children }) {
-  return <details className="ws-acc__fold">
+function AccFold({ title, children, className = '' }) {
+  return <details className={`ws-acc__fold${className ? ' ' + className : ''}`}>
     <summary><span>{title}</span>
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
     </summary>
@@ -3560,6 +3574,7 @@ function AccFold({ title, children }) {
 
 function AccountModal({ open, requestedTab, requestedReceipt, onReceiptHandled, user, onClose, onLogout, onRequestOffice, onUpdateUser, shops, currentShopId, onChangePreferredShop, office, tour, onManageOffices, onUseVoucher, activeVoucherCode, onClearVoucher, onVouchersViewed, onBrowseVoucher }) {
   const { t } = wsUseT();
+  const [phoneFocus, setPhoneFocus] = useState(false);
   const [form, setForm] = useState({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
@@ -4035,7 +4050,8 @@ function AccountModal({ open, requestedTab, requestedReceipt, onReceiptHandled, 
           </label>
           <label className="ws-acc__field">
             <span className="ws-acc__field-label">{t('form.phone')}</span>
-            <input type="tel" className="ws-acc__input" value={form.phone}
+            <input type="tel" className="ws-acc__input" value={phoneFocus ? form.phone : wsPhoneDisplay(form.phone)}
+              onFocus={() => setPhoneFocus(true)} onBlur={() => setPhoneFocus(false)}
               onChange={(e) => setField('phone', e.target.value)} placeholder="+32 ..." />
           </label>
           <CpField variant="acc" cp={form.postalCode} locality={form.locality}
@@ -4118,12 +4134,7 @@ function AccountModal({ open, requestedTab, requestedReceipt, onReceiptHandled, 
       </div>
       </AccFold>
 
-      {allowOfficeLinking && <AccFold title={t('officeAccess.title')}><div className="ws-acc__section">
-        <div className="ws-acc__section-h">{t('officeAccess.title')}</div>
-        <p className="ws-acc__note">{t('officeAccess.intro')}</p>
-        <button type="button" className="ws-cta" onClick={onManageOffices}>{t('officeAccess.manage')}</button>
-      </div></AccFold>}
-
+      {/* « Mes bureaux » has its own tab: no second copy in the profile. */}
       {linkedCompanies.length > 0 && (
         <AccFold title={t('acc.b2bAccounts')}><div className="ws-acc__section">
           <div className="ws-acc__section-h">{t('acc.b2bAccounts')}</div>
@@ -4138,7 +4149,7 @@ function AccountModal({ open, requestedTab, requestedReceipt, onReceiptHandled, 
       )}
 
       {window.LangMenu && (
-        <AccFold title={t('acc.language')}><div className="ws-acc__section">
+        <AccFold title={t('acc.language')} className="ws-acc__fold--lang"><div className="ws-acc__section">
           <div className="ws-acc__section-h">{t('acc.language')}</div>
           <window.LangMenu />
         </div></AccFold>
