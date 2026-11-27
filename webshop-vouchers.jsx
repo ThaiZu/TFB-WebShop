@@ -1,5 +1,6 @@
 import {prepareVouchers,readVouchers} from './webshop-vouchers-api.js';
 import './webshop-vouchers.css';
+import {VoucherIcon} from './webshop-loyalty-icons.jsx';
 
 export function AccountVouchers({shopId,onUse,activeCode,onClear,onViewed,onBrowse}) {
   const {t,lang}=window.useT();
@@ -69,7 +70,7 @@ export function AccountVouchers({shopId,onUse,activeCode,onClear,onViewed,onBrow
         ...(voucher.targets?.categories||[]).map(target=>({...target,kind:'category'}))]
         .filter((target,index,items)=>items.findIndex(item=>item.kind===target.kind&&item.id===target.id)===index);
       return <article className={`ws-vouchers__item${selected?' is-selected':''}${activeCode&&!selected?' is-locked':''}`} key={voucher.id}>
-        <div className="ws-vouchers__main"><h4>{voucher.name}</h4>{usable?<button type="button" className="ws-cta" disabled={!!activeCode} onClick={()=>onUse(voucher.code,voucher.name,voucher.targets)}>{t(selected?'vouchers.selected':'vouchers.use')}</button>:<small className="ws-vouchers__status">{t(status==='READY'?'vouchers.otherShop':`vouchers.status.${status}`)}</small>}</div>
+        <div className="ws-vouchers__main"><span className="ws-loyalty-ico" aria-hidden="true"><VoucherIcon/></span><h4>{voucher.name}</h4>{usable?<button type="button" className="ws-cta" disabled={!!activeCode} onClick={()=>onUse(voucher.code,voucher.name,voucher.targets)}>{t(selected?'vouchers.selected':'vouchers.use')}</button>:<small className="ws-vouchers__status">{t(status==='READY'?'vouchers.otherShop':`vouchers.status.${status}`)}</small>}</div>
         <div className="ws-vouchers__meta"><small>{status==='UPCOMING'&&voucher.validFrom&&<>{t('vouchers.starts',{date:formatDate(voucher.validFrom)})}<br/></>}{voucher.validTo?t('vouchers.expires',{date:formatDate(voucher.validTo)}):t('loyalty.noExpiry')}</small><code>{voucher.code}</code></div>
         {onBrowse&&browseTargets.length>0&&<div className="ws-vouchers__browse">{browseTargets.map(target=><button type="button" className="ws-linkbtn" key={`${target.kind}:${target.id}`} onClick={()=>onBrowse(target)}>{browseTargets.length===1?t(target.kind==='product'?'vouchers.seeProduct':'vouchers.seeProducts'):target.name}</button>)}</div>}
       </article>;
