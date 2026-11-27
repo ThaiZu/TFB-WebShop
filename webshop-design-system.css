@@ -1797,3 +1797,17 @@ body { background: var(--color-bg); }
 .ws-checkout .ws-b2b .ws-acc__field > span { font-size: 11px; font-weight: 500; letter-spacing: .08em; color: var(--color-text-muted); }
 .ws-checkout .ws-b2b .ws-acc__input { height: 46px; min-height: 46px; border-radius: 10px; font-size: 15px; }
 .ws-checkout .ws-b2b textarea.ws-acc__input { height: auto; min-height: 72px; padding: 12px 14px; resize: vertical; }
+
+/* Mes commandes: each card folds under its order line (summary); details drop down. */
+.ws-purchase-fold > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+.ws-purchase-fold > summary::-webkit-details-marker { display: none; }
+.ws-purchase-fold > summary > .ws-acc__k { flex: 1 1 auto; min-width: 0; }
+.ws-purchase-fold > summary > .ws-acc__badge { flex: none; white-space: nowrap; }
+.ws-purchase-fold__chev { flex: none; color: var(--color-text-muted); transition: transform .2s; }
+.ws-purchase-fold[open] > summary .ws-purchase-fold__chev { transform: rotate(180deg); }
+.ws-purchase-fold > summary:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; border-radius: 6px; }
+.ws-acc2 .ws-purchase-filters ~ .ws-purchase-fold:not([open]) > summary.ws-acc__card-head { padding-bottom: 0; }
+.ws-acc2 .ws-purchase-filters ~ .ws-purchase-fold[open] > summary.ws-acc__card-head { padding-bottom: 6px; }
+.ws-purchase-fold__body { display: flex; flex-direction: column; }
+@media (prefers-reduced-motion: reduce) { .ws-purchase-fold__chev { transition: none; } }
+.ws-purchase-fold > summary > * { margin-top: 0 !important; margin-bottom: 0 !important; align-self: center; }

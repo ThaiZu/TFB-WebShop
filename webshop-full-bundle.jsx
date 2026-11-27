@@ -3419,12 +3419,17 @@ function AccountPurchases({ refreshRevision = 0, onDetailsChange }) {
       {!loading && !error && visibleOrders.length === 0 && (
         <div className="ws-acc__card ws-acc__card--empty"><p className="ws-acc__note">{t('acc.orders.empty')}</p></div>
       )}
-      {visibleOrders.map((order) => (
-        <div key={order.orderRef} className={'ws-acc__card' + (statusKey(order.status) === 'cancelled' ? ' ws-purchase--cancelled' : paymentStatusName(order.payment?.status) === 'paid' ? ' ws-purchase--paid' : '')}>
-          <div className="ws-acc__card-head">
+      {visibleOrders.map((order) => {
+        const needsPayment = order.payment?.method === 'stripe' && ['pending', 'failed'].includes(paymentStatusName(order.payment?.status)) && !['cancelled', 'completed'].includes(statusKey(order.status));
+        // Folded card: the order line is the summary; details drop down under it. An order waiting for payment opens by default.
+        return (
+        <details key={order.orderRef} open={needsPayment || undefined} className={'ws-acc__card ws-purchase-fold' + (statusKey(order.status) === 'cancelled' ? ' ws-purchase--cancelled' : paymentStatusName(order.payment?.status) === 'paid' ? ' ws-purchase--paid' : '')}>
+          <summary className="ws-acc__card-head">
             <span className="ws-acc__k">{order.orderRef} · {t('acc.orders.source.' + (order.source === 'store' ? 'store' : 'webshop'))}</span>
             <span className="ws-acc__badge ws-acc__badge--pending">{statusText(order.status)}</span>
-          </div>
+            <svg className="ws-purchase-fold__chev" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg>
+          </summary>
+          <div className="ws-purchase-fold__body">
           <div className="ws-acc__card-row">
             <span className="ws-acc__k">{order.mode === 'delivery' ? t('acc.orders.delivery') : t('acc.orders.pickup')}</span>
             <span className="ws-acc__v">{formatDate(order.slot?.dateTime)}</span>
@@ -3437,7 +3442,7 @@ function AccountPurchases({ refreshRevision = 0, onDetailsChange }) {
             <span className="ws-acc__k">{t('acc.orders.payment')}</span>
             <span className={statusKey(order.status) === 'cancelled' ? 'ws-acc__v' : 'ws-purchase-payment ws-purchase-payment--' + paymentStatusName(order.payment?.status)}>{statusKey(order.status) === 'cancelled' ? '-' : paymentText(order.payment)}</span>
           </div>
-          {order.payment?.method === 'stripe' && ['pending', 'failed'].includes(paymentStatusName(order.payment?.status)) && !['cancelled', 'completed'].includes(statusKey(order.status)) && (
+          {needsPayment && (
             <div className="ws-purchase-payment-notice">
               <p>{t('stripe.orderBlocked')}</p>
               <StripeRetryButton orderRef={order.orderRef} verifyFirst onUpdated={() => setRevision(value => value + 1)}/>
@@ -3452,8 +3457,10 @@ function AccountPurchases({ refreshRevision = 0, onDetailsChange }) {
             </button>
           )}
           </div>
-        </div>
-      ))}
+          </div>
+        </details>
+        );
+      })}
 
     </div>
   );
