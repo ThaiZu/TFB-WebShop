@@ -63,6 +63,9 @@ const fs = require('node:fs');
     async function purchase(){
       const purchases=page.getByRole('button',{name:'Moje zamówienia',exact:true});
       if(await purchases.count())await purchases.click();
+      // Order cards fold under their order line: open the first one before using its actions.
+      await page.locator('.ws-purchase-fold').first().waitFor({state:'attached'});
+      if(!await page.locator('.ws-purchase-fold').first().evaluate(el=>el.open))await page.locator('.ws-purchase-fold > summary').first().click();
       await page.locator('.ws-purchase-actions button').first().click();
       await page.locator('.ws-purchase-invoice').waitFor();
     }

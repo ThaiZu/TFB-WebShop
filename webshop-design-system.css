@@ -1760,3 +1760,79 @@ body { background: var(--color-bg); }
   .ws .ws-nav.ws-nav--A .ws-nav__right .ws-nav__icon.ws-nav__cart { padding: 0; }
   .ws .ws-nav.ws-nav--A .ws-nav__right .ws-nav__icon.ws-nav__cart.ws-nav__cart--full { height: 34px; min-width: 34px; }
 }
+
+/* Checkout · payment step · invoice block (option 2 « liste simple », 27/11/2026):
+   no panel and no fieldset frame; the two choices are rows of one white card. */
+.ws-checkout .ws-b2b { margin-top: 18px; padding: 0; gap: 12px; border: 0; border-radius: 0; background: none; }
+.ws-invoice-buyer { margin: 0; padding: 0; border: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.ws-invoice-buyer > legend { float: left; width: 100%; margin: 0 0 10px; padding: 0; }
+.ws-invoice-buyer__types { margin: 0; padding: 0; border: 0; }
+.ws-invoice-buyer__type-label {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+.ws-invoice-buyer__choices {
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 0;
+  border: 1px solid var(--ds-field-border, rgba(34, 34, 34, .14)); border-radius: 12px;
+  background: var(--color-surface); overflow: hidden;
+}
+.ws-invoice-buyer__badge {
+  min-height: 48px; padding: 0 14px; gap: 10px;
+  border: 0; border-radius: 0; background: transparent; box-shadow: none;
+  font: 400 14px/1.3 var(--font-ui); color: var(--color-text);
+}
+.ws-invoice-buyer__badge + .ws-invoice-buyer__badge { border-top: 1px solid var(--line, rgba(34, 34, 34, .10)); }
+.ws-invoice-buyer__badge input { width: 16px; height: 16px; }
+.ws-invoice-buyer__badge:has(:checked) {
+  border-color: var(--line, rgba(34, 34, 34, .10)); box-shadow: none;
+  background: color-mix(in srgb, var(--color-primary) 5%, var(--color-surface));
+  color: var(--color-primary); font-weight: 500;
+}
+.ws-invoice-buyer__badge:focus-within { outline: none; }
+.ws-invoice-buyer__badge:has(:focus-visible) { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+.ws-invoice-buyer > p {
+  margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--color-bg-secondary);
+  color: var(--color-text-muted); font-size: 13px; line-height: 1.45;
+}
+.ws-checkout .ws-b2b .ws-acc__field { gap: 6px; }
+.ws-checkout .ws-b2b .ws-acc__field > span { font-size: 11px; font-weight: 500; letter-spacing: .08em; color: var(--color-text-muted); }
+.ws-checkout .ws-b2b .ws-acc__input { height: 46px; min-height: 46px; border-radius: 10px; font-size: 15px; }
+.ws-checkout .ws-b2b textarea.ws-acc__input { height: auto; min-height: 72px; padding: 12px 14px; resize: vertical; }
+
+/* Mes commandes: each card folds under its order line (summary); details drop down. */
+.ws-purchase-fold > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+.ws-purchase-fold > summary::-webkit-details-marker { display: none; }
+.ws-purchase-fold > summary > .ws-acc__k { flex: 1 1 auto; min-width: 0; }
+.ws-purchase-fold > summary > .ws-acc__badge { flex: none; white-space: nowrap; }
+.ws-purchase-fold__chev { flex: none; color: var(--color-text-muted); transition: transform .2s; }
+.ws-purchase-fold[open] > summary .ws-purchase-fold__chev { transform: rotate(180deg); }
+.ws-purchase-fold > summary:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; border-radius: 6px; }
+.ws-acc2 .ws-purchase-filters ~ .ws-purchase-fold:not([open]) > summary.ws-acc__card-head { padding-bottom: 0; }
+.ws-acc2 .ws-purchase-filters ~ .ws-purchase-fold[open] > summary.ws-acc__card-head { padding-bottom: 6px; }
+.ws-purchase-fold__body { display: flex; flex-direction: column; }
+@media (prefers-reduced-motion: reduce) { .ws-purchase-fold__chev { transition: none; } }
+.ws-purchase-fold > summary > * { margin-top: 0 !important; margin-bottom: 0 !important; align-self: center; }
+
+/* Fidélité on phones: balance stays on top, the whole tab fits in the sheet (tighter blocks, Bingo challenges two by two). */
+@media (max-width: 600px) {
+  .ws-points-hero { gap: 8px 12px; padding: 12px 14px; }
+  .ws-points-hero .ws-loyalty-ico { width: 36px; height: 36px; }
+  .ws-points-hero__balance strong { font-size: 24px; }
+  .ws-points-hero .ws-personal-totals { padding-top: 8px; }
+  .ws-points-hero .ws-personal-totals > div { padding-left: 10px; margin-left: 10px; }
+  .ws-points-hero .ws-personal-totals dt { font-size: 10.5px; }
+  .ws-points-hero .ws-personal-totals dd { font-size: 14px; }
+  .ws-loyalty-subtitle { margin: 14px 0 6px; }
+  .ws-loyalty-empty { padding: 9px 12px; font-size: 12.5px; }
+  .ws-bingo { margin-top: 14px; }
+  .ws-bingo__head { gap: 10px; }
+  .ws-bingo__head .ws-loyalty-ico { width: 32px; height: 32px; }
+  .ws-bingo__title h3 { font-size: 16px; }
+  .ws-bingo__title p { font-size: 11px; }
+  .ws-bingo__bar { margin: 8px 0 10px; }
+  .ws-bingo ol { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .ws-bingo li { gap: 4px; padding: 10px 10px 9px; border-radius: 12px; }
+  .ws-bingo__mark { width: 18px; height: 18px; top: 9px; right: 9px; }
+  .ws-bingo__name { padding-right: 22px; font-size: 13px; line-height: 1.3; }
+  .ws-bingo__progress { font-size: 11px; line-height: 1.35; }
+  .ws-bingo__reward { padding: 2px 6px; font-size: 10.5px; }
+}
