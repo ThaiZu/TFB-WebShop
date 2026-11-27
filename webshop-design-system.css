@@ -25,7 +25,7 @@
 @font-face { font-family: 'Gotham'; src: url('fonts/Gotham_Medium.otf') format('opentype'); font-weight: 600; font-style: normal; font-display: swap; }
 @font-face { font-family: 'Gotham'; src: url('fonts/Gotham_Medium.otf') format('opentype'); font-weight: 700; font-style: normal; font-display: swap; }
 /* Vank: stylised glyphs for base ASCII only; accented letters fall through to Gotham. */
-@font-face { font-family: 'Vank'; src: url('fonts/GC_Vank.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; unicode-range: U+0020-007E; }
+@font-face { font-family: 'Vank'; src: url('fonts/GC_Vank.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; unicode-range: U+0020-002F, U+003A-007E; /* digits fall through to Gotham */ }
 @font-face { font-family: 'Playwrite DEVA'; src: url('fonts/PlaywriteDEVA-400.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
 
 /* ---- Tokens --------------------------------------------------------------- */
@@ -1901,4 +1901,264 @@ body { background: var(--color-bg); }
     width: 30px; height: 30px; min-width: 30px; flex: 0 0 30px;
   }
   .ws .ws-nav.ws-nav--A .ws-office-menus .ws-office-manage:has(img.is-linked) { padding: 0 5px; }
+}
+
+/* =========================================================================
+   AUDIT 2 (28/11/2026) — block A + points 8–18, 19, 20, 22, 25
+   ========================================================================= */
+
+/* A1 · Cookie banner: it takes focus when it opens (screen readers announce it);
+   the focus ring of its content must not frame the whole banner in bordeaux. */
+.ws .ws-cookie-panel:focus, .ws .ws-cookie-panel:focus-visible, .ws-cookie-panel:focus-visible { outline: none; }
+/* Without analytics, « Compris » only records « no analytics »: it can be the main
+   button. With analytics the choices keep the same weight (consent rules). */
+.ws-cookie-actions[data-analytics="false"] button:last-child { background: var(--color-primary); color: #fff; }
+.ws-cookie-actions[data-analytics="false"] button:last-child:hover { background: var(--color-primary-hover); }
+.ws-cookie-actions[data-analytics="false"] button:first-child:not(:last-child) { border-color: var(--color-border-secondary); color: var(--color-text); }
+
+/* A2 · Selected mode on a closed day: keep it readable (white on bordeaux),
+   « Fermé » is a lighter suffix; only an unselected closed mode is faded. */
+.ws .ws-mode.is-active.is-disabled { opacity: 1; }
+.ws .ws-mode__cutoff { font-size: 11px; font-weight: 400; opacity: .8; }
+
+/* A4 · Windows keep their close button and handle in view while they scroll. */
+.ws-modal__handle { background: transparent; }
+.ws-modal__handle::before {
+  content: ''; position: absolute; left: -100vw; right: -100vw; top: -40px; bottom: -8px;
+  background: var(--sheet-top, var(--color-surface));
+}
+.ws-modal__handle::after {
+  content: ''; position: absolute; inset: 0; border-radius: 3px; background: rgba(20, 14, 10, .18);
+}
+.ws-modal__panel--split { --sheet-top: var(--color-bg-secondary); }
+@media (max-width: 720px) {
+  .ws-modal__panel > .ws-modal__close {
+    position: sticky; top: 10px; float: right; z-index: 4;
+    margin: -19px -6px -40px 0;
+  }
+  .ws-modal__panel--split > .ws-modal__close { margin: 0 12px -40px 0; }
+}
+/* Account (desktop): a fixed band under the close button; content scrolls beneath it. */
+@media (min-width: 761px) {
+  .ws-acc2__main { padding-top: 20px; }
+  .ws-acc2__main::before {
+    content: ''; display: block; position: sticky; top: -20px; z-index: 2; pointer-events: none;
+    height: 64px; margin: -20px -40px 0;
+    background: linear-gradient(var(--color-surface) 75%, rgba(255, 255, 255, 0));
+  }
+}
+/* Loyalty card: title and close stay at the top of the card. */
+.ws-loyalty-wallet:not(.ws-loyalty-wallet--scan) > header {
+  position: sticky; top: -28px; z-index: 3;
+  margin: -28px -28px 0; padding: 28px 28px 10px;
+  background: var(--color-surface);
+}
+@media (max-width: 720px) {
+  .ws-loyalty-wallet:not(.ws-loyalty-wallet--scan) > header { top: -20px; margin: -20px -18px 0; padding: 20px 18px 8px; }
+}
+.pdm-handle::before { display: none; }
+
+/* A6 · Order status badges from the palette (no more single mustard yellow). */
+.ws-acc__badge--progress { background: var(--color-bg-secondary); color: var(--color-text); }
+.ws-acc__badge--ready { background: rgba(141, 29, 44, 0.08); color: var(--color-primary); }
+.ws-acc__badge--done { background: transparent; color: var(--color-text-muted); box-shadow: inset 0 0 0 1px var(--color-border-tertiary); }
+.ws-acc__badge--off { background: var(--color-bg-secondary); color: var(--color-text-muted); }
+
+/* 8 · Bordeaux only for actions and selection: amounts and points in ink,
+   decorative icons in ink/muted, navigation and secondary actions neutral. */
+.ws-card__price, .ws-basket__total-amount, .ws-checkout__foot-v, .ws-tx-summary__total strong,
+.ws-points-hero__balance strong, .ws-personal-history__pts, .ws-bingo__count { color: var(--color-text); }
+.ws-points-hero__balance strong { font-family: var(--font-ui); font-weight: 500; font-size: 32px; }
+.ws-transaction-source, .ws-loyalty-ico, .ws-loyalty-ico svg, .ws-bingo__done { color: var(--color-text-muted); }
+.ws .ws-cats .ws-categories-back { border: 0; background: var(--color-bg-secondary); color: var(--color-text); }
+@media (hover: hover) { .ws .ws-cats .ws-categories-back:hover { background: var(--color-bg); } }
+.ws-acc2__sidefoot .ws-acc__logout { color: var(--color-text); }
+.ws .ws-acc__inv-cancel { color: var(--color-text-muted); }
+
+/* 9 · Abricot is the office-delivery colour only: cart count and Bingo rewards go neutral. */
+.ws-nav__cart .ws-nav__cart-badge { background: var(--color-surface); color: var(--color-primary); }
+.ws-bingo__reward { background: var(--color-bg-secondary); color: var(--color-text); }
+
+/* 10 · One selection style per kind of control.
+   Segmented controls on a beige track: white segment, bordeaux text, soft shadow. */
+.ws-loyalty-wallet__formats button[aria-pressed="true"],
+.ws-loyalty-wallet__section-head > button[aria-pressed="true"] {
+  background: var(--color-surface); color: var(--color-primary);
+  box-shadow: 0 1px 2px rgba(34, 34, 34, .08), 0 4px 12px -4px rgba(141, 29, 44, .25);
+}
+.ws-loyalty-wallet__formats { background: var(--color-bg-secondary); }
+@media (max-width: 760px) {
+  .ws-acc2__tab.is-active { background: var(--color-surface); color: var(--color-primary); box-shadow: 0 4px 12px -4px rgba(141, 29, 44, .30); }
+  .ws-acc2__tab { background: transparent; }
+}
+/* Current shop: the approved soft red shadow, and a plain bordeaux « Actuelle » label. */
+.ws .ws-shopcard.is-current {
+  border-color: color-mix(in srgb, var(--color-primary) 22%, transparent);
+  box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--color-primary) 45%, transparent);
+}
+.ws .ws-shopcard__active { background: none; color: var(--color-primary); padding: 0; font-size: 11px; font-weight: 500; }
+
+/* 11 · Inputs in faint beige, as the design system says; white once focused.
+   A read-only value (locked e-mail) is plain: no fill. */
+.ws-field > input, .ws-field > textarea, .ws-field > select, .ws-acc__input,
+.ws-phone select, .ws-phone input, .ws-office-search input {
+  background: var(--color-bg-secondary); border-color: transparent;
+}
+.ws-field > input:focus, .ws-field > textarea:focus, .ws-field > select:focus, .ws-acc__input:focus,
+.ws-phone select:focus, .ws-phone input:focus, .ws-office-search input:focus { background: var(--color-surface); }
+.ws-field > input:is([readonly], :disabled):not([type=checkbox]):not([type=radio]), .ws-acc__input:is([readonly], :disabled) {
+  background: transparent; border-color: var(--color-border-tertiary); color: var(--color-text-muted);
+}
+
+/* 12 · Titles: panel titles in Vank; in « Mon compte » and on the loyalty card the
+   selected tab already names the page, so its repeated title is kept for screen
+   readers only (about 60 px gained per screen). */
+.ws-basket__title, .ws .ws-drawer__panel .ws-basket__title { font-family: var(--font-title); font-weight: 400; font-size: 26px; line-height: 1.1; }
+.ws-acc2__title, .ws-vouchers__heading h3 {
+  position: absolute; width: 1px; height: 1px; margin: 0; padding: 0; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.ws-vouchers__heading { justify-content: flex-end; }
+
+/* 13 · Codes (vouchers, card number) in Gotham, slightly spaced: no third typeface. */
+.ws code, .ws-modal code, .ws-loyalty-wallet code, .ws-vouchers code {
+  font-family: var(--font-ui); font-weight: 500; letter-spacing: .06em; font-size: 12.5px;
+}
+.ws .ws-co-voucher__code, .ws .ws-co-avail__code { font-family: var(--font-ui); letter-spacing: .06em; }
+
+/* 14 · One close button everywhere (40 px beige circle, ink cross, no shadow) and
+   one window radius (24 px). On a beige sheet top the circle turns white. */
+.pdm-close, .al-modal__close, .ws-office-heading > button, .ws-loyalty-wallet__close, .ws-modal__close {
+  width: 40px; height: 40px; min-width: 40px; border: 0; border-radius: 50%;
+  background: var(--color-bg-secondary); color: var(--color-text);
+  box-shadow: none; backdrop-filter: none;
+  display: inline-grid; place-items: center; font-size: 22px; font-weight: 300; line-height: 1;
+}
+@media (hover: hover) { .pdm-close:hover, .al-modal__close:hover, .ws-office-heading > button:hover { background: var(--color-bg); } }
+@media (max-width: 760px) { .ws-modal__panel--split > .ws-modal__close { background: var(--color-surface); } }
+@media (min-width: 721px) { .al-modal__panel { border-radius: 24px; border: 0; } }
+
+/* 16 · Touch targets of at least 44 px (the drawing keeps its size; an invisible
+   margin around it catches the tap) and no text under 11 px. */
+.ws-card .ws-iconcircle, .ws-card .ws-add, .ws-line__remove, .ws-checkout__back,
+.ws-form .ws-linkbtn, .ws-vouchers .ws-linkbtn, .ws-tx-row__open, .ws-tx-row__doc { position: relative; }
+.ws-card .ws-iconcircle::after, .ws-card .ws-add::after, .ws-line__remove::after,
+.ws-checkout__back::after, .ws-form .ws-linkbtn::after, .ws-vouchers .ws-linkbtn::after {
+  content: ''; position: absolute; left: 50%; top: 50%;
+  width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%);
+}
+@media (max-width: 760px) { .ws-acc2__tab { height: 44px; min-height: 44px; } }
+.ws-loyalty-wallet__formats button { min-height: 40px; }
+.ws-personal-totals dt { font-size: 12px; }
+.ws-bingo__progress, .ws-bingo__head p, .ws-bingo li small { font-size: 12px; }
+
+/* 17 · On touch screens a tapped element keeps :hover: hover colours only apply with a mouse. */
+@media (hover: none) {
+  .ws-cta:not(:disabled):hover, .ws-odm .ws-office-manage-action:hover,
+  .ws-cookie-actions[data-analytics="false"] button:last-child:hover { background: var(--color-primary); }
+  .ws .ws-basket .ws-line__remove:hover { background: transparent; color: inherit; }
+  .ws .ws-tx-row__actions .ws-transaction-action:hover:not(:disabled), .ws-iconbtn:hover:not(:disabled) { background: inherit; color: inherit; box-shadow: none; }
+  .ws-daytile:hover:not(:disabled):not(.is-sel) { background: inherit; box-shadow: none; }
+  .ws-office-list__manage:hover { border-color: inherit; }
+  .ws-office-list__manage:hover .ws-office-list__manage-chev, .ws-cats__arrow:hover, .ws-acc__fold > summary:hover { color: inherit; }
+}
+
+/* 18 · Illustrations. « Tout » gets a line drawing when the catalogue sends none.
+   Category drawings come in two inks (thin brown, heavy black): one soft brown-grey
+   tint for all, without touching the images. Product photos melt into the beige tile. */
+.ws-cat__all { width: 58%; height: 58%; color: #8c8076; }
+.ws-cat__tile img, .ws-subcat__tile img, .ws-category-card__image { filter: grayscale(1) sepia(.45) contrast(.5) brightness(1.2); }
+.ws .ws-cat.is-active .ws-cat__tile img, .ws .ws-subcat.is-active .ws-subcat__tile img { filter: grayscale(1) sepia(.45) contrast(.7) brightness(1.05); }
+.ws-card__photo-img:not(.ws-card__photo-img--lineart) { mix-blend-mode: multiply; }
+/* With the repeated title gone, the refresh buttons sit at the end of the first row
+   (order filters, voucher summary); that row keeps room for them. */
+.ws-acc2 .ws-acc__foot:has(.ws-purchases-refresh), .ws-acc2__main .ws-vouchers__heading { top: 84px; }
+@media (max-width: 760px) { .ws-acc2 .ws-acc__foot:has(.ws-purchases-refresh), .ws-acc2__main .ws-vouchers__heading { top: 20px; } }
+.ws-acc2__main .ws-purchase-filters { margin-right: 52px; }
+.ws-acc2__main .ws-vouchers__filter { padding-right: 52px; min-height: 40px; align-items: center; }
+
+/* 19 · Product card in one block under the photo: name and price on the left,
+   « + » on the right; a 4:3 photo. About twice as many products per screen.
+   On phones the « i » goes: tapping the card opens the same sheet. */
+.ws-grid .ws-card:not(.ws-category-card) {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "photo photo" "body icons" "allerg allerg";
+}
+.ws-grid .ws-card:not(.ws-category-card) > .ws-card__photo { grid-area: photo; aspect-ratio: 4 / 3; }
+.ws-grid .ws-card:not(.ws-category-card) > .ws-card__metaStrip { display: contents; }
+.ws-grid .ws-card:not(.ws-category-card) .ws-card__metaStrip > .al-row { grid-area: allerg; padding: 0 12px 10px; }
+.ws-grid .ws-card:not(.ws-category-card) .ws-card__icons { grid-area: icons; align-self: end; margin: 0; padding: 0 10px 12px 4px; }
+.ws-grid .ws-card:not(.ws-category-card) > .ws-card__body { grid-area: body; padding: 10px 4px 12px 12px; gap: 2px; }
+.ws-grid .ws-card:not(.ws-category-card) .ws-card__name { font-size: 14px; line-height: 1.25; }
+.ws-grid .ws-card:not(.ws-category-card) .ws-card__price { font-size: 14px; }
+@media (max-width: 760px) { .ws-grid .ws-card:not(.ws-category-card) .ws-iconcircle { display: none; } }
+
+/* 20 · Shop cards, compact: every shop fits on the first screen.
+   Phone: a row (photo 96 px · name and address · arrow). Desktop: 4 columns. */
+@media (max-width: 760px) {
+  .ws-shopselect__card, .ws .ws-shopcard {
+    display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; align-items: stretch; min-height: 0;
+  }
+  .ws-shopselect__card .ws-shop-photo, .ws-shopcard .ws-shop-photo { width: 96px; height: 100%; min-height: 96px; aspect-ratio: auto; }
+  .ws-shopselect__cardcopy { padding: 12px 8px 12px 14px; min-height: 0; align-content: center; gap: 3px; }
+  .ws-shopselect__cardcopy strong { font-size: 20px; }
+  .ws-shopselect__card .ws-shopselect__choose { position: static; align-self: center; transform: none; margin: 0 12px 0 0; }
+  .ws-shopselect__grid { gap: 10px; }
+  .ws .ws-shopcard .ws-shopcard__body { padding: 12px 14px; align-self: center; }
+  .ws .ws-shopcard .ws-shopcard__svcs { display: none; }
+  .ws-modal__grid:has(.ws-shopcard) { gap: 10px; }
+}
+@media (min-width: 761px) {
+  .ws-shopselect__main { width: min(1120px, 100%); }
+  .ws-shopselect__grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .ws-shopselect__card .ws-shop-photo, .ws-shopcard .ws-shop-photo { aspect-ratio: 16 / 10; }
+  .ws-modal__grid:has(.ws-shopcard) { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+  .ws .ws-shopcard__addr { min-height: 2.6em; }
+}
+
+/* 22 · Basket: mode, day and shop in one line under the title; − / + on each simple
+   line; a single hairline before the subtotal. */
+.ws .ws-basket .ws-basket__mode {
+  display: flex; align-items: flex-start; gap: 10px; margin: 4px 0 6px;
+  padding: 10px 12px; border-radius: 12px; background: var(--color-bg-secondary);
+  letter-spacing: 0; text-transform: none; font-weight: 400; font-size: 12.5px; line-height: 1.35;
+}
+.ws .ws-basket .ws-basket__mode-dot { margin-top: 5px; flex: none; }
+.ws-basket__mode-txt { display: grid; gap: 1px; min-width: 0; }
+.ws-basket__mode-txt strong { font-weight: 500; color: var(--color-text); }
+.ws-basket__mode-txt span { color: var(--color-text-muted); }
+.ws .ws-basket .ws-basket__sums { border-top: 0; }
+.ws .ws-basket .ws-line__stepper {
+  display: inline-flex; align-items: center; height: 30px; border-radius: 9px;
+  background: var(--color-bg-secondary);
+}
+.ws .ws-basket .ws-line__stepper button {
+  position: relative; width: 28px; height: 30px; padding: 0; border: 0; background: none;
+  color: var(--color-text); font: 400 17px/1 var(--font-ui); cursor: pointer;
+}
+.ws .ws-basket .ws-line__stepper button::after { content: ''; position: absolute; inset: -7px -2px; }
+.ws .ws-basket .ws-line__stepper span { min-width: 18px; text-align: center; font: 500 13px/1 var(--font-ui); font-variant-numeric: tabular-nums; }
+.ws .ws-basket .ws-line { gap: 10px; }
+
+/* 25 · Loyalty card: a smaller code with the Code-barres / QR choice as a small
+   switch under it; on a computer two columns (card left, Points/Bingo/Vouchers
+   right) so everything is visible at once. The expanded scan view stays full size. */
+.ws-loyalty-wallet__identity { display: flex; flex-direction: column; align-items: center; padding: 14px; }
+.ws-loyalty-wallet__identity > p:first-child { margin: 0 0 8px; }
+.ws-loyalty-wallet__identity .ws-loyalty-wallet__formats { order: 3; margin: 10px 0 0; padding: 3px; }
+.ws-loyalty-wallet__identity .ws-loyalty-wallet__formats button { min-height: 32px; padding: 0 12px; font-size: 12.5px; }
+.ws-loyalty-wallet__identity .ws-loyalty-wallet__expand, .ws-loyalty-wallet__identity .ws-loyalty-wallet__scan-hint { order: 4; }
+.ws-loyalty-wallet__identity .ws-loyalty-wallet__barcode, .ws-loyalty-wallet__identity .ws-loyalty-wallet__qr { margin: 0; align-self: stretch; }
+.ws-loyalty-wallet__identity .ws-loyalty-wallet__barcode svg { height: 92px; }
+.ws-loyalty-wallet__identity .ws-loyalty-wallet__qr { align-self: center; max-width: 196px; padding: 8px; }
+@media (min-width: 900px) {
+  .ws-loyalty-wallet[open]:not(.ws-loyalty-wallet--scan) {
+    width: min(960px, calc(100% - 48px));
+    display: grid; grid-template-columns: 340px minmax(0, 1fr); grid-template-rows: auto auto 1fr;
+    column-gap: 28px; align-content: start;
+  }
+  .ws-loyalty-wallet[open]:not(.ws-loyalty-wallet--scan) > header { grid-column: 1 / -1; }
+  .ws-loyalty-wallet[open]:not(.ws-loyalty-wallet--scan) > .ws-loyalty-wallet__identity { grid-column: 1; grid-row: 2 / 4; align-self: start; margin: 4px 0 0; }
+  .ws-loyalty-wallet[open]:not(.ws-loyalty-wallet--scan) > .ws-loyalty-wallet__section-head { grid-column: 2; grid-row: 2; margin-top: 4px; }
+  .ws-loyalty-wallet[open]:not(.ws-loyalty-wallet--scan) > .ws-loyalty-wallet__programs { grid-column: 2; grid-row: 3; }
 }

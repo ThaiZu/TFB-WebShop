@@ -15,7 +15,7 @@ function Bingo({campaign, t, lang, busy, join}) {
     <header className="ws-bingo__head">
       <span className="ws-loyalty-ico"><BingoIcon size={22}/></span>
       <div className="ws-bingo__title">
-        <h3>{t('personal.BINGO')} · {campaign.name}</h3>
+        <h3>{/bingo/i.test(campaign.name || '') ? campaign.name : `${t('personal.BINGO')} · ${campaign.name}`}</h3>
         <p>{dateLabel(campaign.starts_at, lang, true)} – {dateLabel(campaign.ends_at, lang, true)}</p>
       </div>
       {campaign.tasks.length > 0 && <span className="ws-bingo__count" aria-hidden="true">{done} / {campaign.tasks.length}</span>}
@@ -34,7 +34,7 @@ function Bingo({campaign, t, lang, busy, join}) {
         <span className="ws-bingo__progress">{t('personal.' + task.type)} · {quantity(task.progress)} / {quantity(task.target)}</span>
         <span className="ws-bingo__track" aria-hidden="true"><span style={{ width: `${Math.round(ratio * 100)}%` }}/></span>
         {task.min_cents > 0 && <small>{t('personal.minimum')} {money.format(task.min_cents / 100)}</small>}
-        <span className="ws-bingo__reward">{t('personal.points')}: {task.points}</span>
+        <span className="ws-bingo__reward">{t('personal.reward', { count: task.points })}</span>
         {task.complete && <strong className="ws-bingo__done">✓ {t('personal.complete')}</strong>}
       </li>;
     })}</ol>

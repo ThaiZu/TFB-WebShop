@@ -181,7 +181,7 @@ export function AccountTransactions({ receiptToken, t, locale, onReceiptHandled 
       <table className="ws-tx-lines">
         <thead><tr>
           <th scope="col">{t('acc.orders.quantity')}</th>
-          <th scope="col">{t('acc.orders.items', { count: detail.lines.length })}</th>
+          <th scope="col">{detail.lines.length === 1 ? t('acc.orders.itemsOne') : t('acc.orders.items', { count: detail.lines.length })}</th>
           <th scope="col">{t('acc.orders.unitPrice')}</th>
           <th scope="col">{t('acc.orders.lineTotal')}</th>
         </tr></thead>

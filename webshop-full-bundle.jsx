@@ -525,7 +525,7 @@ function DatePill({ mode, value, onChange, shopId,
             })}
           </div>
           <button type="button" className="ws-datepop__more" aria-expanded={showMonth} onClick={() => setShowMonth(v => !v)}>
-            {t('common.seeMore')}
+            {t(showMonth ? 'common.seeLess' : 'common.seeMore')}
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={showMonth ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6'}/></svg>
           </button>
           {showMonth && <>
@@ -2169,7 +2169,7 @@ function PromotionReceiptProgress({ promotion, t }) {
   </span>;
 }
 
-function Basket({ hidePrices, contextLabel, officeName, shop, mode, basket, quoteState, onClose, onCheckout, onRemove, onNote, notesEnabled, deliveryFeeResult,
+function Basket({ hidePrices, contextLabel, officeName, shop, mode, basket, quoteState, onClose, onCheckout, onRemove, onQty, onNote, notesEnabled, deliveryFeeResult,
                   date, slotTime, onCrossAdd }) {
   // Display the authoritative API quote for this cart.
   const { t } = wsUseT();
@@ -2187,9 +2187,14 @@ function Basket({ hidePrices, contextLabel, officeName, shop, mode, basket, quot
         <span className="ws-basket__title">{t('cart.title')}</span>
       </div>
 
+      {/* Mode, day and shop on one line under the title (the address used to sit
+          at the very bottom, under the order button). */}
       <div className={`ws-basket__mode ws-basket__mode--${mode}`}>
         <span className="ws-basket__mode-dot"/>
-        {t(mode === 'collect' ? 'cart.mode.collect' : 'cart.mode.delivery')}
+        <span className="ws-basket__mode-txt">
+          <strong>{t(mode === 'collect' ? 'cart.mode.collect' : 'cart.mode.delivery')}{date instanceof Date ? ' · ' + wsCap(date.toLocaleDateString(wsLocale(), { weekday: 'short', day: 'numeric', month: 'short' })) : ''}</strong>
+          {mode === 'collect' && shop?.address && <span>{shop.name} · {shop.address}</span>}
+        </span>
       </div>
 
       {mode === 'delivery' && officeName && <div className="ws-basket__office">{officeName}</div>}
@@ -2204,7 +2209,13 @@ function Basket({ hidePrices, contextLabel, officeName, shop, mode, basket, quot
           const displayName = groupedPromotion && row.promotion ? row.promotion.display_name : l.name;
           const promotionNote = pricesReady && row.promotion ? wsPromotionBasketNote(row.promotion, t) : null;
           return <div key={row.key} className={`ws-line${groupedPromotion ? ' ws-line--promotion' : ''}`}>
-            <div className="ws-line__qty">×{groupedPromotion ? 1 : row.quantity}</div>
+            {typeof onQty === 'function' && !groupedPromotion && !(l.options || []).length && !l.bundleId && !l.bundle && !l.bundleSlots
+              ? <div className="ws-line__stepper" role="group" aria-label={t('cart.quantityOf', { name: displayName })}>
+                  <button type="button" onClick={() => onQty(row.lines.map((line) => line.line), -1)} aria-label={t('cart.less')}>−</button>
+                  <span aria-live="polite">{row.quantity}</span>
+                  <button type="button" onClick={() => onQty(row.lines.map((line) => line.line), 1)} aria-label={t('cart.more')}>+</button>
+                </div>
+              : <div className="ws-line__qty">×{groupedPromotion ? 1 : row.quantity}</div>}
             <div className="ws-line__body">
               <div className="ws-line__name">{displayName}</div>
               {groupedPromotion
@@ -2323,9 +2334,6 @@ function Basket({ hidePrices, contextLabel, officeName, shop, mode, basket, quot
         <Pict d={<path d="M5 12h14M13 5l7 7-7 7"/>} s={13}/>
       </button>
 
-      <div className="ws-basket__foot">
-        <Pict d={ICONS.pin} s={11}/> {shop.address}
-      </div>
     </aside>
   );
 }
@@ -2484,7 +2492,7 @@ function CategoryRow({ active, sub, onSelect, onSelectSub, onBack, accent, tint,
             {/* Première position : état « Tout » (icône ws_param, libellé i18n) */}
             <button key="all" className={`ws-cat${active === 'all' ? ' is-active' : ''}`}
                     {...wsTap(() => onSelect('all'))} style={active === 'all' ? activeStyle : {}}>
-              <span className="ws-cat__tile">{icons.all ? <img src={icons.all} alt=""/> : null}</span>
+              <span className="ws-cat__tile">{icons.all ? <img src={icons.all} alt=""/> : <svg className="ws-cat__all" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></svg>}</span>
               <span className="ws-cat__lbl">{t('nav.category.all')}</span>
             </button>
             {cats.map((c) => {
@@ -2944,7 +2952,7 @@ function CpField({ cp, locality, onCp, onLocality, onOpts, variant, disabled = f
         <input className={inputCls} value={cp} disabled={disabled} onChange={(e) => {
           setOpts([]); if (onOpts) onOpts([]); onLocality(''); onCp(e.target.value);
         }}
-          autoComplete="postal-code" maxLength={16} placeholder="1000 / 00-001" required/>
+          autoComplete="postal-code" maxLength={16} placeholder="1500" required/>
         {opts.length === 1 && locality && <p className="ws-cp-locality" style={locHint}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 21s-6-5.6-6-11a6 6 0 0 1 12 0c0 5.4-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></svg> {locality}</p>}
       </label>
       {opts.length === 0 && CP_RE.test(String(cp).trim()) && (
@@ -3345,6 +3353,9 @@ const ACCOUNT_TAB_LS = 'ws.accountTab';
 // l'ERP du franchisé a poussé (numéro, PDF). Le contrôle de demande n'apparaît
 // que si la colonne to_invoice existe en base (capacité serveur).
 // =========================================================================
+// Status badge colour, from the palette: in progress = beige, ready to collect =
+// bordeaux text (the customer has something to do), finished = muted.
+const ORDER_STATUS_TONE = { new: 'progress', paid: 'progress', inProduction: 'progress', ready: 'ready', completed: 'done', cancelled: 'off', notCollected: 'off' };
 const ORDER_FILTERS = [
   { key: 'all', status: null },
   { key: 'new', status: 'new' },
@@ -3426,7 +3437,7 @@ function AccountPurchases({ refreshRevision = 0, onDetailsChange }) {
         <details key={order.orderRef} open={needsPayment || undefined} className={'ws-acc__card ws-purchase-fold' + (statusKey(order.status) === 'cancelled' ? ' ws-purchase--cancelled' : paymentStatusName(order.payment?.status) === 'paid' ? ' ws-purchase--paid' : '')}>
           <summary className="ws-acc__card-head">
             <span className="ws-acc__k">{order.orderRef} · {t('acc.orders.source.' + (order.source === 'store' ? 'store' : 'webshop'))}</span>
-            <span className="ws-acc__badge ws-acc__badge--pending">{statusText(order.status)}</span>
+            <span className={`ws-acc__badge ws-acc__badge--${ORDER_STATUS_TONE[statusKey(order.status)] || 'off'}`}>{statusText(order.status)}</span>
             <svg className="ws-purchase-fold__chev" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg>
           </summary>
           <div className="ws-purchase-fold__body">
@@ -3435,7 +3446,7 @@ function AccountPurchases({ refreshRevision = 0, onDetailsChange }) {
             <span className="ws-acc__v">{formatDate(order.slot?.dateTime)}</span>
           </div>
           <div className="ws-acc__card-row">
-            <span className="ws-acc__k">{t('acc.orders.items', { count: order.itemsCount || 0 })}</span>
+            <span className="ws-acc__k">{(order.itemsCount || 0) === 1 ? t('acc.orders.itemsOne') : t('acc.orders.items', { count: order.itemsCount || 0 })}</span>
             <span className="ws-acc__v">{formatTotal(order.total)}</span>
           </div>
           <div className="ws-acc__card-row">
@@ -5504,6 +5515,28 @@ function ShopFrame({ variant }) {
     const h = Math.floor(mins / 60), m = mins % 60;
     return `${h}h${m > 0 ? String(m).padStart(2,'0') : ''}`;
   }
+  // A closed day, or today once its cutoff has passed, is never the starting date:
+  // until the customer picks a date or fills the basket, move to the first open day.
+  const datePickedByHand = React.useRef(false);
+  useEffect(() => {
+    const api = window.WSAvailability;
+    if (datePickedByHand.current || basket.length || !shopId || !api?.listAvailableDays) return;
+    const todayClosed = mode === 'delivery' ? deliveryCutoffPassed : collectCutoffPassed;
+    const start = new Date(date); start.setHours(0, 0, 0, 0);
+    const end = new Date(start); end.setDate(end.getDate() + 13);
+    let alive = true;
+    api.listAvailableDays({ shopId, mode, from: api.isoOf(start), to: api.isoOf(end) }).then(rows => {
+      if (!alive || datePickedByHand.current) return;
+      const closed = new Set((rows || []).filter(row => row.available === false).map(row => row.iso));
+      for (let k = 0; k < 14; k++) {
+        const d = new Date(start); d.setDate(d.getDate() + k);
+        if ((k === 0 && todayClosed) || closed.has(api.isoOf(d))) continue;
+        if (k > 0) setDate(d);
+        return;
+      }
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, [shopId, mode, date, basket.length, collectCutoffPassed, deliveryCutoffPassed]);
   const deliveryCutoffLabel = fmtCutoff(deliveryCutoffMinutes);
   const collectCutoffLabel  = fmtCutoff(collectCutoffMinutes);
   // Minimum lead days required by any item currently in basket
@@ -5974,6 +6007,21 @@ function ShopFrame({ variant }) {
   function handleNote(lineId, note) {
     setBasket((b) => b.map((l) => (l.line === lineId ? { ...l, note } : l)));
   }
+  // − / + on a basket row: the last line of the row carries the change; « + » goes
+  // through the same stock check as adding from the catalogue, « − » at one unit
+  // removes the line.
+  function handleQty(lineIds, delta) {
+    const ids = new Set(lineIds);
+    const target = [...basket].reverse().find((l) => ids.has(l.line));
+    if (!target) return;
+    if (delta > 0) {
+      if (!canAddProduct(target.productId, 1, target.portion)) return;
+      setBasket((b) => b.map((l) => (l.line === target.line ? { ...l, qty: (Number(l.qty) || 1) + 1 } : l)));
+    } else if ((Number(target.qty) || 1) > 1) {
+      setStockErr('');
+      setBasket((b) => b.map((l) => (l.line === target.line ? { ...l, qty: Number(l.qty) - 1 } : l)));
+    } else handleRemove([target.line]);
+  }
 
   const [detailProduct, setDetailProduct] = useState(null);
   // Le catalogue (grille) ne porte que le drapeau has_menu_options, pas la
@@ -6170,6 +6218,7 @@ function ShopFrame({ variant }) {
     setNotice(null);
   }
   function handleDate(next) {
+    datePickedByHand.current = true;
     const a = date instanceof Date ? date.toDateString() : String(date);
     const b = next instanceof Date ? next.toDateString() : String(next);
     if (a === b) return;
@@ -6488,7 +6537,7 @@ function ShopFrame({ variant }) {
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>
         </button>
 
-        <Basket hidePrices={hidePrices} contextLabel={basket.length ? contextLabel : null} officeName={userOffice?.name || ''} shop={cartShop} mode={mode} basket={basket} quoteState={quoteState} onCheckout={handleCheckout} onRemove={handleRemove} onNote={handleNote} notesEnabled={lineNotesEnabled} deliveryFeeResult={deliveryFeeResult} date={date} slotTime={crossSlotTime} onCrossAdd={Number(cartShopId) === Number(shopId) && cartContext.mode === 'standard' && browseContext.mode === 'standard' ? handleCrossAdd : undefined}/>
+        <Basket hidePrices={hidePrices} contextLabel={basket.length ? contextLabel : null} officeName={userOffice?.name || ''} shop={cartShop} mode={mode} basket={basket} quoteState={quoteState} onCheckout={handleCheckout} onRemove={handleRemove} onQty={handleQty} onNote={handleNote} notesEnabled={lineNotesEnabled} deliveryFeeResult={deliveryFeeResult} date={date} slotTime={crossSlotTime} onCrossAdd={Number(cartShopId) === Number(shopId) && cartContext.mode === 'standard' && browseContext.mode === 'standard' ? handleCrossAdd : undefined}/>
       </div>
 
       {/* Mobile navigation with direct access to the customer loyalty QR. */}
@@ -6525,7 +6574,7 @@ function ShopFrame({ variant }) {
           <div className="ws-drawer__panel">
             <button className="ws-drawer__close" onClick={() => setCartDrawerOpen(false)} aria-label={t('common.close2')}>×</button>
             <div className="ws-drawer__handle" aria-hidden="true"/>
-            <Basket hidePrices={hidePrices} contextLabel={basket.length ? contextLabel : null} officeName={userOffice?.name || ''} shop={cartShop} mode={mode} basket={basket} quoteState={quoteState} onCheckout={handleCheckout} onRemove={handleRemove} onNote={handleNote} notesEnabled={lineNotesEnabled} date={date} slotTime={crossSlotTime} onCrossAdd={Number(cartShopId) === Number(shopId) && cartContext.mode === 'standard' && browseContext.mode === 'standard' ? handleCrossAdd : undefined}/>
+            <Basket hidePrices={hidePrices} contextLabel={basket.length ? contextLabel : null} officeName={userOffice?.name || ''} shop={cartShop} mode={mode} basket={basket} quoteState={quoteState} onCheckout={handleCheckout} onRemove={handleRemove} onQty={handleQty} onNote={handleNote} notesEnabled={lineNotesEnabled} date={date} slotTime={crossSlotTime} onCrossAdd={Number(cartShopId) === Number(shopId) && cartContext.mode === 'standard' && browseContext.mode === 'standard' ? handleCrossAdd : undefined}/>
           </div>
         </div>
       )}
