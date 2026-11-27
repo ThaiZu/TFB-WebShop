@@ -69,6 +69,7 @@ const fs = require('node:fs');
     await page.goto('https://webshop.tfbuddy.local/?shop=2');await page.locator('.ws-card').first().waitFor();
     await page.getByRole('button',{name:/^(Odrzuć opcjonalne|Rozumiem)$/}).click();
     await account();
+    await page.locator('.ws-acc__fold:has(.ws-billing-companies) > summary').click();
     const companySection=page.locator('.ws-billing-companies');await companySection.locator('input').waitFor();
     await companySection.locator('input').fill('0123456789');await companySection.getByRole('button',{name:'Dodaj firmę',exact:true}).click();
     await companySection.getByText('Company 50',{exact:true}).waitFor();

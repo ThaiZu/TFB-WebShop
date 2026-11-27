@@ -84,19 +84,19 @@ export function PersonalLoyalty({view = 'all'}) {
   return <>
     {view !== 'bingo' && <section className="ws-acc__section ws-loyalty-points">
       <div className="ws-points-hero">
-        <span className="ws-loyalty-ico ws-loyalty-ico--lg"><PointsIcon size={28}/></span>
+        <span className="ws-loyalty-ico"><PointsIcon size={22}/></span>
         <h3 className="ws-points-hero__balance">
           <span className="ws-points-hero__label">{t('personal.balance')}</span><span className="ws-vh">: </span>
           <strong>{wallet.balance.toLocaleString(lang)}</strong>
         </h3>
+        {POINT_SOURCES.every(source => Number.isInteger(wallet.totals?.[source])) &&
+          <dl className="ws-personal-totals">
+            {POINT_SOURCES.map(source => <div key={source}>
+              <dt>{t('personal.total.' + source)}</dt>
+              <dd>{wallet.totals[source].toLocaleString(lang)}</dd>
+            </div>)}
+          </dl>}
       </div>
-      {POINT_SOURCES.every(source => Number.isInteger(wallet.totals?.[source])) &&
-        <dl className="ws-personal-totals">
-          {POINT_SOURCES.map(source => <div key={source}>
-            <dt>{t('personal.total.' + source)}</dt>
-            <dd>{wallet.totals[source].toLocaleString(lang)}</dd>
-          </div>)}
-        </dl>}
 
       <h4 className="ws-loyalty-subtitle">{t('personal.history')}</h4>
       {wallet.history.length === 0 ? <p className="ws-loyalty-empty">{t('personal.noEntries')}</p> :

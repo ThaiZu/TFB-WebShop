@@ -88,6 +88,7 @@ async function simulateAutofill(field, value) {
       assert.equal(await card.count(), 1);
 
       await profile.click();
+      await page.locator('.ws-acc__fold:has(input[name="current-password"]) > summary').click();
       const passwordForm = page.locator('form').filter({ has: page.locator('input[name="current-password"]') });
       await passwordForm.locator('input[name="current-password"]').fill('example-old');
       await passwordForm.locator('input[name="new-password"]').fill('example-new');
