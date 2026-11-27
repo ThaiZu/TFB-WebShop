@@ -15,7 +15,7 @@ function extract(name) {
 }
 const context = { React, useState: React.useState, useEffect: React.useEffect,
   wsUseT: () => ({ t: key => key }), wsText: key => key, wsMessage: value => value,
-  wsNumber: value => Number(value).toFixed(2), Pict: () => null, LoyaltyBasketIcons: () => null,
+  wsNumber: value => Number(value).toFixed(2), wsCurrency: value => `€${Number(value).toFixed(2)}`, Pict: () => null, LoyaltyBasketIcons: () => null,
   wsArrondi: value => Math.round(value * 100) / 100 };
 vm.runInNewContext(transformSync(['wsMoney','wsCheckoutQuoteComparable','wsQuoteLineKey','wsQuoteTotals','wsBasketDisplayRows','wsPromotionDisplayTotal','wsHasPromotionSelection','wsSelectedAutomaticPromotionId','wsRemoveBasketLines','CheckoutStep3'].map(extract).join('\n'), { loader: 'jsx' }).code, context);
 const quote = voucher => ({ items: [{ line_key: 'web-1', unit_gross_price: '10.00', total_gross_value_after_discount: '8.50' }],

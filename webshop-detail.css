@@ -100,7 +100,7 @@
   background: var(--pdm-accent);
   color: #fff;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 /* INFO PANEL ------------------------------------------------------ */
@@ -410,7 +410,7 @@
   background: var(--pdm-accent);
   color: #fff;
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   max-width: calc(100% - 24px);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
@@ -695,7 +695,7 @@
 }
 .pdm-qty {
   display: inline-flex; align-items: center; gap: 2px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--color-bg, #faf7f2);
   padding: 3px;
   flex-shrink: 0;
@@ -829,7 +829,7 @@
   .pdm-imgchip { min-height: 48px; }
   .pdm-qty__btn { width: 38px; height: 38px; position: relative; }
   /* zone de tap réelle ~46px sans grossir le visuel */
-  .pdm-qty__btn::before { content: ''; position: absolute; inset: -4px; border-radius: 999px; }
+  .pdm-qty__btn::before { content: ''; position: absolute; inset: -4px; border-radius: var(--radius-pill); }
   .pdm-close { width: 44px; height: 44px; }
 }
 
@@ -853,7 +853,7 @@
 .pdm-bcard__lines li { font-size: 12.5px; color: var(--color-text); display: flex; justify-content: space-between; gap: 10px; }
 .pdm-bcard__lines li span:last-child { color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
 .pdm-bcard__save {
-  display: inline-block; margin-left: 8px; padding: 2px 7px; border-radius: 999px;
+  display: inline-block; margin-left: 8px; padding: 2px 7px; border-radius: var(--radius-pill);
   font-size: 11px; font-weight: 700; color: #fff; background: var(--color-primary);
 }
 .pdm-bcard__strike { font-weight: 400; color: var(--color-text-muted); text-decoration: line-through; margin-right: 6px; }

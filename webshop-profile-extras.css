@@ -130,7 +130,7 @@
   padding: 10px 16px;
   background: transparent;
   border: 1px solid color-mix(in oklab, var(--color-text, #1a1a1a) 18%, transparent);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 14px; font-weight: 500;
   cursor: pointer;
   color: color-mix(in oklab, var(--color-text, #1a1a1a) 75%, transparent);
@@ -197,7 +197,7 @@
 .ws-pref-nudge__btns { display: flex; gap: 8px; flex-shrink: 0; }
 .ws-pref-nudge__yes,
 .ws-pref-nudge__no {
-  border: 0; border-radius: 999px;
+  border: 0; border-radius: var(--radius-pill);
   padding: 8px 14px;
   font-size: 13px; font-weight: 600;
   cursor: pointer;

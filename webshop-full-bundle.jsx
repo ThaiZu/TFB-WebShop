@@ -436,6 +436,26 @@ function DatePill({ mode, value, onChange, shopId,
   function pad(n) { return String(n).padStart(2, '0'); }
   function isoOf(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
 
+  // The day strip shows the next seven days; load them even when they cross into next month.
+  React.useEffect(() => {
+    const api = window.WSAvailability || window.WSCalendar;
+    if (!open || !api || typeof api.listAvailableDays !== 'function') return;
+    let alive = true;
+    const start = new Date(); start.setHours(0, 0, 0, 0);
+    const end = new Date(start); end.setDate(end.getDate() + 6);
+    api.listAvailableDays({ shopId, mode, from: isoOf(start), to: isoOf(end) })
+      .then((rows) => {
+        if (!alive) return;
+        const map = {};
+        for (const row of (rows || [])) map[row.iso] = row;
+        setDayMap((prev) => ({ ...prev, ...map }));
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [open, shopId, mode]);
+  // Desktop opens on the strip (month behind « Voir plus »); phones keep the month open.
+  const [showMonth, setShowMonth] = React.useState(() => window.matchMedia('(max-width: 767px)').matches);
+
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const firstDow = (new Date(view.getFullYear(), view.getMonth(), 1).getDay() + 6) % 7;
   const daysInMonth = new Date(view.getFullYear(), view.getMonth()+1, 0).getDate();
@@ -483,7 +503,32 @@ function DatePill({ mode, value, onChange, shopId,
   const todayOk = !todayBlocked && !isCellDisabled(today).disabled;
 
   const calendar = (
-        <div ref={calendarRef} className={`ws-datepop ws-datepop--${mode}`} onClick={(e) => e.stopPropagation()}>
+        <div ref={calendarRef} className={`ws-datepop ws-datepop--${mode}${showMonth ? ' is-month' : ''}`} onClick={(e) => e.stopPropagation()}>
+          <div className="ws-datepop__striphead">
+            <span className="ws-datepop__striptitle">{mode === 'delivery' ? wsText("ui.delivery") : wsText("ui.collect")}</span>
+            {cutoffPassed && cutoffLabel && <span className="ws-datepop__cutoff">{cutoffTitle}</span>}
+          </div>
+          <div className="ws-datepop__strip">
+            {Array.from({ length: 7 }, (_, k) => { const d = new Date(today); d.setDate(d.getDate() + k); return d; }).map((d) => {
+              const { disabled, reason } = isCellDisabled(d);
+              const isSel = sameDay(d, value);
+              return (
+                <button key={isoOf(d)} type="button" disabled={disabled} title={cellTitle(d, reason)}
+                  className={`ws-daytile${isSel ? ' is-sel' : ''}${disabled ? ' is-off' : ''}`}
+                  aria-pressed={isSel}
+                  onClick={() => { onChange(d); setOpen(false); }}>
+                  <span className="ws-daytile__wd">{wsCap(d.toLocaleDateString(wsLocale(), { weekday: 'short' }))}</span>
+                  <strong className="ws-daytile__n">{d.getDate()}</strong>
+                  <span className="ws-daytile__m">{d.toLocaleDateString(wsLocale(), { month: 'short' })}</span>
+                </button>
+              );
+            })}
+          </div>
+          <button type="button" className="ws-datepop__more" aria-expanded={showMonth} onClick={() => setShowMonth(v => !v)}>
+            {t('common.seeMore')}
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={showMonth ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6'}/></svg>
+          </button>
+          {showMonth && <>
           <div className="ws-datepop__head">
             <button className="ws-datepop__nav" onClick={() => shift(-1)} aria-label={t('cal.prevMonth')}>‹</button>
             <span className="ws-datepop__title">
@@ -522,16 +567,17 @@ function DatePill({ mode, value, onChange, shopId,
               title={!todayOk && todayBlocked ? cutoffTitle : undefined}
               onClick={() => { onChange(today); setOpen(false); }}> {wsText("ui.today")} </button>
           </div>
+          </>}
         </div>
   );
 
   return (
     <div ref={wrapRef} className="ws-datepill">
       <button className="ws-nav__date" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
-        <Pict d={ICONS.cal} s={12}/>
-        <span>{t(mode === 'delivery' ? 'nav.datepill.delivery' : 'nav.datepill.pickup')}</span>
-        <strong>· {wsFormatPill(value)}</strong>
-        <Pict d={ICONS.chev} s={10}/>
+        <Pict d={ICONS.cal} s={16}/>
+        <span className="ws-nav__date-k">{t(mode === 'delivery' ? 'nav.datepill.delivery' : 'nav.datepill.pickup')}</span>
+        <strong><i className="ws-nav__date-sep">· </i>{wsFormatPill(value)}<span className="ws-nav__date-m"> {value.toLocaleDateString(wsLocale(), { month: 'short' })}</span></strong>
+        <svg className="ws-nav__date-chev" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
       </button>
       {open && (mobileCalendar ? createPortal(
         <div className="ws-date-backdrop" onClick={() => setOpen(false)}>{calendar}</div>, document.body
@@ -673,24 +719,17 @@ function ModePills({ shopId, mode, onChange, collectCutoffPassed, collectCutoffL
           Il est SORTI du rail : depuis que le sélecteur est un segment à deux
           colonnes, un troisième enfant tombait en seconde ligne et débordait
           sous le rail. Frère du rail, il reste à côté sans le déformer. */}
-      <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', flex: 'none', marginLeft: 4 }}
+      <span className="ws-office-info-wrap"
         onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
         <button ref={tipAnchor} className="ws-nav__office-info" type="button" aria-label={t('office.notYet')} aria-describedby={hover ? tipId : undefined}
           onFocus={() => setHover(true)} onBlur={() => setHover(false)} onKeyDown={event => { if (event.key === 'Escape') setHover(false); }}
-          onClick={(e) => { e.stopPropagation(); e.preventDefault(); const url = new URL(import.meta.env.BASE_URL + 'landing/livraison-bureau.html', window.location.origin); url.searchParams.set('shop', String(shopId)); url.searchParams.set('lang', window.WSI18n?.getLang?.() || 'en'); window.location.assign(url.href); }}
-          style={{ borderRadius: '50%', border: 'none', cursor: 'pointer', flex: 'none',
-                   background: '#c17a2a', color: '#fff', font: '700 11px/1 system-ui',
-                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                   animation: 'wsBureauPulse 2.2s infinite' }}>i</button>
+          onClick={(e) => { e.stopPropagation(); e.preventDefault(); const url = new URL(import.meta.env.BASE_URL + 'landing/livraison-bureau.html', window.location.origin); url.searchParams.set('shop', String(shopId)); url.searchParams.set('lang', window.WSI18n?.getLang?.() || 'en'); window.location.assign(url.href); }}>
+          <svg className="ws-nav__office-info-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M4 21V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v16"/><path d="M2 21h14"/><path d="M8 8h2M8 12h2M8 16h2"/><path d="M19 9v6M16 12h6"/>
+          </svg>
+        </button>
         {hover && createPortal(
-          <span id={tipId} role="tooltip" style={{ position: 'fixed', ...tipPosition, width: 216, maxWidth: '78vw', pointerEvents: 'none',
-            boxSizing: 'border-box', whiteSpace: 'normal', wordBreak: 'break-word',
-            background: '#e8a15c', color: '#241a16', borderRadius: 14, padding: '11px 13px',
-            font: '600 11.5px/1.45 system-ui', boxShadow: '0 10px 28px rgba(36,26,22,.28)',
-            border: '1px solid rgba(36,26,22,.10)', zIndex: 10020, textAlign: 'left' }}>
-            <span aria-hidden="true" style={{ position: 'absolute', top: -5, right: 15, width: 11, height: 11,
-              background: '#e8a15c', borderTop: '1px solid rgba(36,26,22,.10)', borderLeft: '1px solid rgba(36,26,22,.10)',
-              transform: 'rotate(45deg)', borderRadius: 3 }} />
+          <span id={tipId} role="tooltip" className="ws-office-tip" style={{ top: tipPosition.top, left: tipPosition.left }}>
             {t('office.notYetTip')}
           </span>, document.body
         )}
@@ -734,7 +773,7 @@ function portionOptionList(p) {
 // Libellé des portions d'une carte produit : types proposés avec le PRIX de
 // chaque portion : ex. « Entière €24.00 · 1/2 €14.90 · 1/4 €8.90 ».
 function portionPriceHint(p) {
-  return portionOptionList(p).map((o) => `${o.name} €${wsNumber(o.price)}`).join(' · ');
+  return portionOptionList(p).map((o) => `${o.name} ${wsCurrency(o.price)}`).join(' · ');
 }
 
 // Single "portions available" glyph used on the product card, a quartered
@@ -777,7 +816,7 @@ function PortionOptions({ value, onChange, product }) {
                 <svg viewBox="0 0 24 24" width="14" height="14">{o.d}</svg>
               </span>
               <span className="pdm-seg__lbl">{o.name}</span>
-              <span className="pdm-seg__delta">€{wsNumber(price)}</span>
+              <span className="pdm-seg__delta">{wsCurrency(price)}</span>
             </button>
           );
         })}
@@ -1455,7 +1494,7 @@ function ProductDetail({ open, product, mode, activeVoucher, onClose, onAdd, onP
                               className={'pdm-seg__btn' + (on ? ' is-on' : '')}
                               {...wsTap(() => setOpt(o.id, c.id))}>
                               <span className="pdm-seg__lbl">{c.label}</span>
-                              {c.delta > 0 && <span className="pdm-seg__delta">+{wsNumber(c.delta)} €</span>}
+                              {c.delta > 0 && <span className="pdm-seg__delta">+{wsCurrency(c.delta)}</span>}
                             </button>
                           );
                         })}
@@ -1519,7 +1558,7 @@ function ProductDetail({ open, product, mode, activeVoucher, onClose, onAdd, onP
                        {...wsTap(() => setOfferOn(false), { open: true })}>
                     <div className="pdm-bcard__top">
                       <span className="pdm-bcard__name">{t('pd.offerAlone', { name: product.name })}</span>
-                      <span className="pdm-bcard__price">€{wsNumber(unit + bundleDelta + upsellDelta)}</span>
+                      <span className="pdm-bcard__price">{wsCurrency(unit + bundleDelta + upsellDelta)}</span>
                     </div>
                     <p className="pdm-bcard__desc">{t('pd.offerAloneDesc')}</p>
                   </div>
@@ -1529,13 +1568,13 @@ function ProductDetail({ open, product, mode, activeVoucher, onClose, onAdd, onP
                     <div className="pdm-bcard__top">
                       <span className="pdm-bcard__name">{bundleOffer.name}</span>
                       <span className="pdm-bcard__price">
-                        <span className="pdm-bcard__strike">€{wsNumber(bundleOffer.regular)}</span>€{wsNumber(bundleOffer.price)}
+                        <span className="pdm-bcard__strike">{wsCurrency(bundleOffer.regular)}</span>{wsCurrency(bundleOffer.price)}
                         <span className="pdm-bcard__save">{t('pd.offerSave', { amount: wsNumber(bundleOffer.saving).replace('.', ',') })}</span>
                       </span>
                     </div>
                     <ul className="pdm-bcard__lines" aria-label={t('pd.offerIn')}>
                       {bundleOffer.items.map((it, k) => (
-                        <li key={k}><span>{it.qty} × {it.name}{it.portionLabel ? ', ' + it.portionLabel : ''}</span><span>€{wsNumber(it.unit * it.qty)}</span></li>
+                        <li key={k}><span>{it.qty} × {it.name}{it.portionLabel ? ', ' + it.portionLabel : ''}</span><span>{wsCurrency(it.unit * it.qty)}</span></li>
                       ))}
                     </ul>
                   </div>
@@ -1572,7 +1611,7 @@ function ProductDetail({ open, product, mode, activeVoucher, onClose, onAdd, onP
                         <div className="pdm-bcard__top">
                           <span className="pdm-bcard__name">{b.name}</span>
                           <span className={'pdm-bcard__price' + (b.price_modifier > 0 ? '' : ' pdm-bcard__price--free')}>
-                            {b.menu_id ? wsNumber(b.base_total) + ' €' : b.price_modifier > 0 ? '+' + wsNumber(b.price_modifier) + ' €' : t('pd.included')}
+                            {b.menu_id ? wsCurrency(b.base_total) : b.price_modifier > 0 ? '+' + wsCurrency(b.price_modifier) : t('pd.included')}
                           </span>
                         </div>
                         <p className="pdm-bcard__desc">{b.description}</p>
@@ -1686,7 +1725,7 @@ function ProductDetail({ open, product, mode, activeVoucher, onClose, onAdd, onP
                   <input type="checkbox" checked={personalChoices.includes(option.id)}
                     disabled={!personalChoices.includes(option.id) && group.options.filter(o=>personalChoices.includes(o.id)).length>=group.max_select}
                     onChange={e=>setPersonalChoices(current=>e.target.checked?[...current,option.id]:current.filter(id=>id!==option.id))}/>
-                  <span>{option.name}</span><strong>+€{wsNumber(Number(option.price_delta))}</strong>
+                  <span>{option.name}</span><strong>+{wsCurrency(Number(option.price_delta))}</strong>
                 </label>)}
               </fieldset>)}
               <p>{t('personalization.exclusive')}</p>
@@ -1732,7 +1771,7 @@ function ProductDetail({ open, product, mode, activeVoucher, onClose, onAdd, onP
             <button className="pdm-cta" aria-busy={adding} disabled={adding || (selectedPromotion && promotionPreviewPending) || product.is_weighted || !valid || deliveryBlocked || (deliveryStockLeft !== null && qty > deliveryStockLeft)} {...wsTap(handleConfirm, { shield: true })}>
               <span>{deliveryBlocked ? t('pd.notForDelivery') : (uninitialized ? t('stock.checkAvailability') : deliveryStockLeft === 0 ? t('pd.outOfStock') : (valid ? (selectedPromotion || offerPicked ? t('pd.offerAdd') : t('pd.addToCart')) : t('pd.chooseOptions')))}</span>
               <span className="pdm-cta__total" key={pulse}>
-                <span className="pdm-cta__total-anim">€{wsNumber(product.is_weighted ? product.price : displayedTotal)}{product.is_weighted ? ' / kg' : ''}</span>
+                <span className="pdm-cta__total-anim">{wsCurrency(product.is_weighted ? product.price : displayedTotal)}{product.is_weighted ? ' / kg' : ''}</span>
               </span>
             </button>
           </div>
@@ -1825,11 +1864,11 @@ const ProductCard = React.memo(function ProductCard({ p, onAdd, onOpen, mode, ba
         )}
         <div className="ws-card__name">{p.name}</div>
         <div className="ws-card__meta">
-          <span className="ws-card__price">€{wsNumber(price)}{p.is_weighted ? ' / kg' : ''}{hasOptions && <span className="ws-card__from"> · {t('card.fromPrice')}</span>}</span>
+          <span className="ws-card__price">{wsCurrency(price)}{p.is_weighted ? ' / kg' : ''}{hasOptions && <span className="ws-card__from"> · {t('card.fromPrice')}</span>}</span>
           {p.bundleOffer && (
             <span className="ws-card__offerprice" title={p.bundleOffer.name}>
-              <span>{t('card.offer')} €{wsNumber(p.bundleOffer.price)}</span>
-              <s>€{wsNumber(p.bundleOffer.regular)}</s>
+              <span>{t('card.offer')} {wsCurrency(p.bundleOffer.price)}</span>
+              <s>{wsCurrency(p.bundleOffer.regular)}</s>
             </span>
           )}
           {/* Compteur « X dispo » retiré des vignettes (demandé le 15/08) : il
@@ -2060,7 +2099,7 @@ function CrossSell({ shopId, mode, date, time, basket, placement, onAdd }) {
           {it.img ? <img className="ws-xsell__img" src={it.img} alt="" onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }}/>
                   : <span className="ws-xsell__img"/>}
           <span className="ws-xsell__n">{it.name}</span>
-          <span className="ws-xsell__p">€{wsNumber(Number(it.price))}</span>
+          <span className="ws-xsell__p">{wsCurrency(Number(it.price))}</span>
           <button type="button" className="ws-xsell__add" aria-label={t('xsell.addItem', { name: it.name })} title={t('xsell.add')}
             onClick={() => {
               const base = window.WSCatalog && window.WSCatalog.crossSellStatsEndpoint;
@@ -2175,7 +2214,7 @@ function Basket({ hidePrices, contextLabel, officeName, shop, mode, basket, quot
               {groupedPromotion && pricesReady && row.promotionDiscount > 0 && <div className="ws-line__offer">{t('cart.promotionDiscount', { amount: wsCurrency(row.promotionDiscount) })}</div>}
               {row.weekdayDiscount > 0 && (
                 <div className="ws-line__offer">
-                  {t('sum.weekdayDiscount')} {row.weekdayPercent > 0 && `(${wsNumber(row.weekdayPercent)}%)`} · −€{wsNumber(row.weekdayDiscount)}
+                  {t('sum.weekdayDiscount')} {row.weekdayPercent > 0 && `(${wsNumber(row.weekdayPercent)}%)`} · −{wsCurrency(row.weekdayDiscount)}
                 </div>
               )}
               {notesEnabled && typeof onNote === 'function' && (
@@ -2192,7 +2231,7 @@ function Basket({ hidePrices, contextLabel, officeName, shop, mode, basket, quot
                 </div>
               )}
             </div>
-            <div className="ws-line__price">{pricesReady ? `€${wsNumber(row.price)}` : '—'}</div>
+            <div className="ws-line__price">{pricesReady ? `${wsCurrency(row.price)}` : '—'}</div>
             {typeof onRemove === 'function' && (
               <button
                 type="button"
@@ -2228,51 +2267,51 @@ function Basket({ hidePrices, contextLabel, officeName, shop, mode, basket, quot
         {basket.length > 0 && (
           <div className="ws-basket__row">
             <span>{t('cart.subtotal')}</span>
-            <span>{pricesReady ? `€${wsNumber(subtotal)}` : '—'}</span>
+            <span>{pricesReady ? `${wsCurrency(subtotal)}` : '—'}</span>
           </div>
         )}
 
         {T.remise > 0 && (
           <div className="ws-basket__row ws-basket__row--promo">
             <span>{t('co.promo.title')}</span>
-            <span>−€{wsNumber(T.remise)}</span>
+            <span>−{wsCurrency(T.remise)}</span>
           </div>
         )}
         {pricesReady && quoteState.quote?.loyalty_preview?.status === 'available' && Number.isInteger(quoteState.quote.loyalty_preview.points?.points) &&
           <div className="ws-basket__row"><span>{t('personal.estimated')}</span><strong>{quoteState.quote.loyalty_preview.points.points}</strong></div>}
-        {T.reward > 0 && <div className="ws-basket__row ws-basket__row--promo"><span>{t('loyaltyUse.title')}</span><span>−€{wsNumber(T.reward)}</span></div>}
+        {T.reward > 0 && <div className="ws-basket__row ws-basket__row--promo"><span>{t('loyaltyUse.title')}</span><span>−{wsCurrency(T.reward)}</span></div>}
         {T.bon > 0 && <div className="ws-basket__row ws-basket__row--promo">
-          <span>{t('sum.code')} {quoteState.quote.voucher.code}</span><span>−€{wsNumber(T.bon)}</span>
+          <span>{t('sum.code')} {quoteState.quote.voucher.code}</span><span>−{wsCurrency(T.bon)}</span>
         </div>}
         {T.weekday > 0 && (
           <div className="ws-basket__row ws-basket__row--promo">
             <span>{t('sum.weekdayDiscount')}{T.weekdayPercent > 0 && ` (${wsNumber(T.weekdayPercent)}%)`}</span>
-            <span>−€{wsNumber(T.weekday)}</span>
+            <span>−{wsCurrency(T.weekday)}</span>
           </div>
         )}
         {T.weekday === 0 && !T.weekdayThresholdMet && T.weekdayMinimum > 0 && (
           <div className="ws-basket__row ws-basket__row--fee-nudge">
-            <span>{t('sum.weekdayDiscountMinimum', { amount: `€${wsNumber(T.weekdayMinimum)}`, remaining: `€${wsNumber(T.weekdayRemaining)}` })}</span>
+            <span>{t('sum.weekdayDiscountMinimum', { amount: `${wsCurrency(T.weekdayMinimum)}`, remaining: `${wsCurrency(T.weekdayRemaining)}` })}</span>
           </div>
         )}
 
         {deliveryFeeResult && mode === 'delivery' && (
           <div className={`ws-basket__row${deliveryFee === 0 ? ' ws-basket__row--free' : ''}`}>
             <span>{t('cart.deliveryFee')}{deliveryFee === 0 && deliveryFeeResult.free_delivery_minimum > 0
-              ? ' · ' + t('cart.deliveryFreeFrom', { amount: '€' + wsNumber(deliveryFeeResult.free_delivery_minimum) })
+              ? ' · ' + t('cart.deliveryFreeFrom', { amount: wsCurrency(deliveryFeeResult.free_delivery_minimum) })
               : ''}</span>
-            <span>{deliveryFee === 0 ? t('cart.deliveryFree') : `+€${wsNumber(deliveryFee)}`}</span>
+            <span>{deliveryFee === 0 ? t('cart.deliveryFree') : `+${wsCurrency(deliveryFee)}`}</span>
           </div>
         )}
         {deliveryFeeResult && mode === 'delivery' && deliveryFee > 0 && deliveryFeeResult.free_delivery_minimum > 0 && deliveryFeeResult.amount_remaining_for_free > 0 && (
           <div className="ws-basket__row ws-basket__row--fee-nudge">
-            <span>{t('cart.deliveryRemaining', { amount: '€' + wsNumber(deliveryFeeResult.amount_remaining_for_free) })}</span>
+            <span>{t('cart.deliveryRemaining', { amount: wsCurrency(deliveryFeeResult.amount_remaining_for_free) })}</span>
           </div>
         )}
 
         <div className="ws-basket__total">
           <span>{t('cart.total')}</span>
-          <span className="ws-basket__total-amount">{pricesReady ? `€${wsNumber(total)}` : '—'}</span>
+          <span className="ws-basket__total-amount">{pricesReady ? `${wsCurrency(total)}` : '—'}</span>
         </div>
       </div>
 
@@ -2398,6 +2437,23 @@ function CategoryRow({ active, sub, onSelect, onSelectSub, onBack, accent, tint,
       strip.removeEventListener('dragstart', preventImageDrag);
     };
   }, []);
+  // Arrows appear only when the strip has hidden categories on that side (mouse users
+  // otherwise had no cue that "Viennoiserie" or "Noël" sit past the edge).
+  const [edges, setEdges] = React.useState({ left: false, right: false });
+  React.useEffect(() => {
+    const strip = stripRef.current;
+    if (!strip) return;
+    const update = () => setEdges({ left: strip.scrollLeft > 4, right: strip.scrollLeft + strip.clientWidth < strip.scrollWidth - 4 });
+    update();
+    strip.addEventListener('scroll', update, { passive: true });
+    const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(update) : null;
+    ro?.observe(strip);
+    return () => { strip.removeEventListener('scroll', update); ro?.disconnect(); };
+  }, [categories, assortments, active, sub]);
+  const nudgeStrip = dir => {
+    const strip = stripRef.current;
+    if (strip) strip.scrollBy({ left: dir * Math.max(240, strip.clientWidth * 0.7), behavior: 'smooth' });
+  };
   const prevLevel = React.useRef(subLevel);
   const [announce, setAnnounce] = React.useState('');
   React.useEffect(() => {
@@ -2413,8 +2469,14 @@ function CategoryRow({ active, sub, onSelect, onSelectSub, onBack, accent, tint,
   const icons = navIcons || {};
 
   return (
-    <div className="ws-cats-wrap">
+    <div className={`ws-cats-wrap${edges.left ? ' has-left' : ''}${edges.right ? ' has-right' : ''}`}>
       <span className="ws-vh" aria-live="polite" role="status">{announce}</span>
+      {edges.left && <button type="button" className="ws-cats__arrow ws-cats__arrow--left" tabIndex={-1} aria-hidden="true" onClick={() => nudgeStrip(-1)}>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+      </button>}
+      {edges.right && <button type="button" className="ws-cats__arrow ws-cats__arrow--right" tabIndex={-1} aria-hidden="true" onClick={() => nudgeStrip(1)}>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+      </button>}
       <div className="ws-cats" ref={stripRef}
            aria-label={subLevel ? t('nav.category.subsOf', { category: catName }) : t('nav.category.cats')}>
         {!subLevel && (
@@ -2513,11 +2575,14 @@ function NavbarA({ shop, mode, onMode, onSwitchShop, cartCount, date, onDate, us
   return (
     <header className="ws-nav ws-nav--A">
       <div className="ws-nav__left">
-        <button className="ws-nav__shopchip" onClick={onSwitchShop}>
-          <span className="ws-nav__shopchip-dot"/>
-          <span>{shop.name}</span>
-          <Pict d={ICONS.chev} s={10}/>
-        </button>
+        <div className="ws-nav__brandblock">
+          <img className="ws-nav__logo" src={import.meta.env.BASE_URL + 'logo.png'} alt="L'Atelier By"/>
+          <button className="ws-nav__shopchip" onClick={onSwitchShop}>
+            <span className="ws-nav__shopchip-dot"/>
+            <span>{shop.name}</span>
+            <Pict d={ICONS.chev} s={10}/>
+          </button>
+        </div>
         <DatePill mode={mode} value={date} onChange={onDate} shopId={shop.id}
           collectCutoffPassed={collectCutoffPassed} collectCutoffLabel={collectCutoffLabel}
           deliveryCutoffPassed={deliveryCutoffPassed} deliveryCutoffLabel={deliveryCutoffLabel}
@@ -2536,9 +2601,11 @@ function NavbarA({ shop, mode, onMode, onSwitchShop, cartCount, date, onDate, us
             ? <span className="ws-nav__avatar" aria-hidden="true">{user.firstName?.[0] || user.email?.[0]?.toUpperCase() || '·'}</span>
             : <Pict d={ICONS.user} s={15}/>}
         </button>
-        <button className="ws-nav__icon ws-nav__cart" aria-label={t('nav.cartAria')}>
-          <Pict d={ICONS.bag} s={15}/>
-          {cartCount > 0 && <span className="ws-nav__cart-badge">{cartCount}</span>}
+        <button className={`ws-nav__icon ws-nav__cart${cartCount > 0 ? ' ws-nav__cart--full' : ''}`} aria-label={t('nav.cartAria')}>
+          <span className="ws-nav__cart-ico">
+            <Pict d={ICONS.bag} s={17}/>
+            {cartCount > 0 && <span className="ws-nav__cart-badge">{cartCount}</span>}
+          </span>
         </button>
       </div>
       <div className="ws-nav__ordering">
@@ -2706,7 +2773,7 @@ function useSwipeDownToClose(onClose, scrollEl) {
   }, []);
 }
 
-function ModalShell({ onClose, children, narrow }) {
+function ModalShell({ onClose, children, narrow, split }) {
   const { t } = wsUseT();
   const backdropPress = React.useRef(false);
   const panelRef = useSwipeDownToClose(onClose);
@@ -2742,7 +2809,7 @@ function ModalShell({ onClose, children, narrow }) {
         backdropPress.current = false;
         if (startedOnBackdrop && event.target === event.currentTarget) onClose();
       }}>
-      <div ref={panelRef} className={`ws-modal__panel${narrow ? ' ws-modal__panel--narrow' : ''}`} onClick={(e) => e.stopPropagation()}>
+      <div ref={panelRef} className={`ws-modal__panel${narrow ? ' ws-modal__panel--narrow' : ''}${split ? ' ws-modal__panel--split' : ''}`} onClick={(e) => e.stopPropagation()}>
         <span className="ws-modal__handle" aria-hidden="true"/>
         <button className="ws-modal__close" onClick={onClose} aria-label={t('common.close2')}><Pict d={ICONS.close} s={14}/></button>
         {children}
@@ -2878,7 +2945,7 @@ function CpField({ cp, locality, onCp, onLocality, onOpts, variant, disabled = f
           setOpts([]); if (onOpts) onOpts([]); onLocality(''); onCp(e.target.value);
         }}
           autoComplete="postal-code" maxLength={16} placeholder="1000 / 00-001" required/>
-        {opts.length === 1 && locality && <p style={locHint}>📍 {locality}</p>}
+        {opts.length === 1 && locality && <p className="ws-cp-locality" style={locHint}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 21s-6-5.6-6-11a6 6 0 0 1 12 0c0 5.4-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></svg> {locality}</p>}
       </label>
       {opts.length === 0 && CP_RE.test(String(cp).trim()) && (
         <label className={fieldCls}>{lbl(wsText("ui.locality"))}
@@ -3196,13 +3263,13 @@ function LoginModal({ open, onClose, onLogin, onRegister, onGoToAccount, shopId,
       ) : (
       <>
       <h2 className="ws-modal__title">{tRich(t, tab === 'login' ? 'auth.welcomeBack' : 'auth.createTitle')}</h2>
-      {tab !== 'login' && <p className="ws-registration-privacy">{wsText("privacy.notice")} <PolicyLinks/></p>}
       <p className="ws-modal__lede">{tab === 'login' ? wsText("ui.loginHint") : wsText("ui.registerHint")}</p>
+      {tab !== 'login' && <p className="ws-registration-privacy">{wsText("privacy.notice")} <PolicyLinks/></p>}
       <div className="ws-tabs">
         <button className={`ws-tab${tab === 'login' ? ' is-active' : ''}`} onClick={() => { setTab('login'); setErr(''); }}>{t('auth.login')}</button>
         <button className={`ws-tab${tab === 'register' ? ' is-active' : ''}`} onClick={() => { setTab('register'); setErr(''); }}>{t('auth.createAccount')}</button>
       </div>
-      <form className="ws-form" onSubmit={submit} noValidate>
+      <form className={`ws-form${tab === 'register' ? ' ws-form--register' : ''}`} onSubmit={submit} noValidate>
         {tab === 'register' && (
           <>
             <div className="ws-form__row2">
@@ -3870,14 +3937,32 @@ function AccountModal({ open, requestedTab, requestedReceipt, onReceiptHandled, 
     }
   }
   return (
-    <ModalShell onClose={onClose} narrow>
-      <p className="ws-modal__eyebrow">{t('auth.myAccount')}</p>
-      <h2 className="ws-modal__title">{tRich(t, 'acc.hello', { name: form.firstName || user.firstName })}</h2>
-      <p className="ws-modal__lede">{user.email}</p>
-      <button type="button" className="ws-linkbtn ws-account-cookie-settings" onClick={() => {
-        onClose();
-        window.setTimeout(() => window.WSConsent?.open(), 0);
-      }}>{t('cookies.settings')}</button>
+    <ModalShell onClose={onClose} split>
+      <div className="ws-acc2">
+      <aside className="ws-acc2__side">
+        <div className="ws-acc2__hello">
+          <p className="ws-modal__eyebrow">{t('auth.myAccount')}</p>
+          <h2 className="ws-modal__title">{tRich(t, 'acc.hello', { name: form.firstName || user.firstName })}</h2>
+          <p className="ws-modal__lede">{user.email}</p>
+        </div>
+        {/* Onglets : positions dérivées d'ACCOUNT_TABS, actif persisté. */}
+        <div className="ws-acc2__nav ws-account-tabs" role="tablist" aria-orientation="vertical" aria-label={t('acc.sectionsAria')}>
+          {visibleTabs.map((t) => (
+            <button key={t.key} type="button" role="tab" aria-selected={activeTab === t.key}
+              className={'ws-acc2__tab' + (activeTab === t.key ? ' is-active' : '')}
+              onClick={() => selectTab(t.key)}>{t.label}</button>
+          ))}
+        </div>
+        <div className="ws-acc2__sidefoot">
+          <button type="button" className="ws-linkbtn ws-account-cookie-settings" onClick={() => {
+            onClose();
+            window.setTimeout(() => window.WSConsent?.open(), 0);
+          }}>{t('cookies.settings')}</button>
+          <button type="button" className="ws-acc__logout" onClick={() => { onLogout(); onClose(); }}>{t('acc.signout')}</button>
+        </div>
+      </aside>
+      <section className="ws-acc2__main">
+      <h3 className="ws-acc2__title">{visibleTabs.find(item => item.key === activeTab)?.label}</h3>
       {user.activationRequired === true && <section className="ws-acc__section">
         <p>{t('activation.accountWarning')}</p>
         <button type="button" className="ws-cta" disabled={activationSending} onClick={resendAccountActivation}>
@@ -3889,15 +3974,6 @@ function AccountModal({ open, requestedTab, requestedReceipt, onReceiptHandled, 
       </section>}
 
 
-      {/* Onglets : positions dérivées d'ACCOUNT_TABS, actif persisté. */}
-      <div className="ws-toggle ws-account-tabs" role="tablist" aria-label={t('acc.sectionsAria')}>
-        {visibleTabs.map((t) => (
-          <button key={t.key} type="button" role="tab" aria-selected={activeTab === t.key}
-            className={'ws-toggle__opt' + (activeTab === t.key ? ' is-active' : '')}
-            onClick={() => selectTab(t.key)}>{t.label}</button>
-        ))}
-      </div>
-
       {activeTab === 'achats' && <AccountPurchases refreshRevision={purchaseRevision} onDetailsChange={setPurchaseDetailsOpen} />}
       {activeTab === 'transactions' && <AccountTransactions key={user.id} t={t} locale={wsLocale()}
         receiptToken={requestedReceipt} onReceiptHandled={onReceiptHandled} />}
@@ -3907,7 +3983,6 @@ function AccountModal({ open, requestedTab, requestedReceipt, onReceiptHandled, 
 
 
       {activeTab === 'profil' && <>
-      <button type="button" className="ws-cta ws-cta--block ws-account-purchases-link" onClick={() => selectTab('achats')}>{t('acc.orders.title')}</button>
       <form className="ws-acc__section" onSubmit={saveProfile}>
         <div className="ws-acc__section-h">{t('acc.contact')}</div>
         <div className="ws-acc__form">
@@ -3928,7 +4003,7 @@ function AccountModal({ open, requestedTab, requestedReceipt, onReceiptHandled, 
                 l'email sert d'identifiant (connexion, rattachement bureau). */}
             <input type="email" className="ws-acc__input" value={form.email} readOnly disabled
               title={t('acc.emailIsLogin')} />
-            <span style={{ font: '400 10.5px var(--font-ui, sans-serif)', color: 'var(--color-text-muted, #8a7c6e)' }}>{t('acc.emailIsLoginShort')}</span>
+            <span className="ws-acc__field-help">{t('acc.emailIsLoginShort')}</span>
           </label>
           <label className="ws-acc__field">
             <span className="ws-acc__field-label">{t('form.phone')}</span>
@@ -4036,9 +4111,10 @@ function AccountModal({ open, requestedTab, requestedReceipt, onReceiptHandled, 
       )}
       </>}
 
-      <div className="ws-acc__foot">
-        {activeTab === 'achats' && !purchaseDetailsOpen && <button type="button" className="ws-cta ws-payment-refresh ws-purchases-refresh" onClick={() => setPurchaseRevision(value => value + 1)}>{t('stock.refresh')}</button>}
-        {activeTab === 'profil' && <button className="ws-acc__logout" onClick={() => { onLogout(); onClose(); }}>{t('acc.signout')}</button>}
+      {activeTab === 'achats' && !purchaseDetailsOpen && <div className="ws-acc__foot">
+        <button type="button" className="ws-iconbtn ws-purchases-refresh" title={t('stock.refresh')} onClick={() => setPurchaseRevision(value => value + 1)}><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg><span className="ws-vh">{t('stock.refresh')}</span></button>
+      </div>}
+      </section>
       </div>
     </ModalShell>
   );
@@ -4425,8 +4501,9 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
         {step === 3 && paymentMethods.length === 0 && <div className="ws-checkout__pay-err" role="alert">{t('error.noPayments')}</div>}
         <div className="ws-checkout__foot-total">
           <span className="ws-checkout__foot-k">{t('sum.total')}</span>
-          <span className="ws-checkout__foot-v">€{wsNumber(total)}</span>
+          <span className="ws-checkout__foot-v">{wsCurrency(total)}</span>
         </div>
+        {!!user && step === 2 && !step2Valid() && <p className="ws-checkout__hint" role="status">{t('co.slot.pickToContinue')}</p>}
         <div className="ws-checkout__foot-actions">
           {step > 1 && <button className="ws-btn-ghost" {...wsTap(() => setStep((s) => s - 1), { shield: true })} disabled={paying}>{t('co.prev')}</button>}
           <button
@@ -4435,7 +4512,7 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
             disabled={paying || quoteState.status !== 'ready' || (!!user && ((step === 1 && !step1Valid()) || (step === 2 && !step2Valid()) || (step === 3 && !step3Valid())))}
             onClick={next}
           >
-            {!user ? t('co.auth.signin') : paying ? t('co.processing') : step === 3 ? (companyBilling || payment === 'shop' ? t('officeAccess.confirmOrder') : t('co.payAmount', { amount: '€' + wsNumber(total) })) : t('co.continue')}
+            {!user ? t('co.auth.signin') : paying ? t('co.processing') : step === 3 ? (companyBilling || payment === 'shop' ? t('officeAccess.confirmOrder') : t('co.payAmount', { amount: wsCurrency(total) })) : t('co.continue')}
             {!paying && step < 3 && <Pict d={<path d="M5 12h14M13 5l7 7-7 7"/>} s={13}/>}
           </button>
         </div>
@@ -4496,7 +4573,7 @@ function CheckoutStep1({ mode, shop, user, office, tour, contact, setContact, fo
               v={feeResult.free_delivery
                 ? wsText("ui.free")
                 : feeResult.fee_amount > 0
-                  ? `€${wsNumber(feeResult.fee_amount)}${feeResult.free_delivery_minimum > 0 ? ' (' + wsText('ui.freeDeliveryThreshold', { amount: wsCurrency(feeResult.free_delivery_minimum) }) + ')' : ''}`
+                  ? `${wsCurrency(feeResult.fee_amount)}${feeResult.free_delivery_minimum > 0 ? ' (' + wsText('ui.freeDeliveryThreshold', { amount: wsCurrency(feeResult.free_delivery_minimum) }) + ')' : ''}`
                   : wsText("ui.free")}/>
           )}
           {feeResult && feeResult.payment_type === 'deferred' && (
@@ -4635,6 +4712,39 @@ function SlotChangeModal({ items, targetLabel, onConfirm, onCancel }) {
   );
 }
 
+// Seven days from the earliest possible pickup, same tiles as the header date picker.
+function CheckoutDayStrip({ mode, shopId, date, minLeadDays, basket, onPick, label }) {
+  const [closed, setClosed] = React.useState({});
+  const start = new Date(); start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() + Math.max(0, Number(minLeadDays) || 0));
+  const days = Array.from({ length: 7 }, (_, k) => { const d = new Date(start); d.setDate(d.getDate() + k); return d; });
+  const api = window.WSAvailability || window.WSCalendar;
+  const iso = d => (api?.isoOf ? api.isoOf(d) : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+  React.useEffect(() => {
+    if (!api || typeof api.listAvailableDays !== 'function') return;
+    let alive = true;
+    api.listAvailableDays({ shopId, mode, basket, from: iso(days[0]), to: iso(days[6]) })
+      .then(rows => { if (!alive) return; const map = {}; for (const row of (rows || [])) if (row.available === false) map[row.iso] = true; setClosed(map); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [shopId, mode, minLeadDays, basket]);
+  const selected = date instanceof Date ? iso(date) : '';
+  return <div className="ws-co-daystrip" role="group" aria-label={label}>
+    <span className="ws-co-daystrip__label">{label}</span>
+    <div className="ws-datepop__strip">
+      {days.map(d => {
+        const key = iso(d); const off = !!closed[key]; const sel = key === selected;
+        return <button key={key} type="button" disabled={off} aria-pressed={sel}
+          className={`ws-daytile${sel ? ' is-sel' : ''}${off ? ' is-off' : ''}`} onClick={() => onPick(new Date(d.getFullYear(), d.getMonth(), d.getDate()))}>
+          <span className="ws-daytile__wd">{wsCap(d.toLocaleDateString(wsLocale(), { weekday: 'short' }))}</span>
+          <strong className="ws-daytile__n">{d.getDate()}</strong>
+          <span className="ws-daytile__m">{d.toLocaleDateString(wsLocale(), { month: 'short' })}</span>
+        </button>;
+      })}
+    </div>
+  </div>;
+}
+
 function CheckoutStep2({ mode, shop, office, tour, slot, setSlot, date, onDate, selectedSiteId, minLeadDays, basket }) {
   const { t, lang } = wsUseT();
   const [slots, setSlots] = React.useState([]);
@@ -4691,7 +4801,11 @@ function CheckoutStep2({ mode, shop, office, tour, slot, setSlot, date, onDate, 
       <div className="ws-co-day">
         <Pict d={ICONS.cal} s={13}/> <span>{dateLabel}</span>
       </div>
+      <CheckoutDayStrip mode={mode} shopId={shop?.id} date={date} minLeadDays={minLeadDays} basket={basket}
+        onPick={d => { setSlot(null); onDate?.(d); }} label={t('co.slot.changeDate')}/>
+      <details className="ws-co-otherday"><summary>{t('common.seeMore')}</summary>
       <label className="ws-field"><span>{t('co.slot.changeDate')}</span><input type="date" value={window.WSAvailability.isoOf(date)} onChange={event=>{if(event.target.value){setSlot(null);onDate?.(new Date(event.target.value+'T12:00:00'));}}}/></label>
+      </details>
       {loading && <p role="status">{t('common.loading2')}</p>}
       {!loading && (failed || noAvailableSlots) && <p role={failed?'alert':'status'}>{t(failed?'co.slot.loadError':'co.slot.noneAvailable')}</p>}
       {noAvailableSlots && mode === 'collect' && <p className="ws-co-step__lede" role="status">{t('co.slot.cartRestriction')}</p>}
@@ -4706,7 +4820,7 @@ function CheckoutStep2({ mode, shop, office, tour, slot, setSlot, date, onDate, 
               bloquant « Complet » s'affiche. */}
           return (
             <button key={id}
-              className={`ws-slot${selectedId === id ? ' is-active' : ''}${full ? ' is-full' : ''}`}
+              className={`ws-slot${selectedId === id ? ' is-active' : ''}${full ? ' is-full' : ''}${full && s.reason === 'cutoff_passed' ? ' is-past' : ''}`}
               disabled={full}
               title={full ? wsText("ui.slotFull") : undefined}
               onClick={() => !full && setSlot({ id, label })}>
@@ -4751,7 +4865,7 @@ function CheckoutStep3({ basket, subtotal, totaux, total, payment, setPayment, s
       {shop && <section className="ws-co-ordering-shop" aria-label={shop.name}>
         <strong>{shop.name}</strong>
         <span>{shop.address}</span>
-        <span>{t('privacy.seller')}: {shop.legal_name || shop.representative_name || shop.name}</span>
+        <span>{t('privacy.seller')}{window.WSI18n.getLang() === 'fr' ? '\u202F:' : ':'} {shop.legal_name || shop.representative_name || shop.name}</span>
         {shop.vat_number && <span>VAT: {shop.vat_number}</span>}
         {shop.email && <span>{shop.email}</span>}
       </section>}
@@ -4771,7 +4885,7 @@ function CheckoutStep3({ basket, subtotal, totaux, total, payment, setPayment, s
         {voucherApplied && voucherApplied.ok ? (
           <div className="ws-co-voucher__row ws-co-voucher__row--ok">
             <code className="ws-co-voucher__code">{voucherApplied.voucher.code}</code>
-            <span className="ws-co-voucher__amt">{quoteState.status === 'ready' ? `−€${wsNumber(voucherDiscount)}` : '…'}</span>
+            <span className="ws-co-voucher__amt">{quoteState.status === 'ready' ? `−${wsCurrency(voucherDiscount)}` : '…'}</span>
             <button type="button" className="ws-co-voucher__remove" onClick={removeVoucher}>{t('common.remove')}</button>
           </div>
         ) : (
@@ -4808,31 +4922,31 @@ function CheckoutStep3({ basket, subtotal, totaux, total, payment, setPayment, s
               <span className="ws-co-summary__name">{row.isPromotion && row.promotion ? row.promotion.display_name : row.line.name}
                 {row.isPromotion && row.lines.map(line => <small className="ws-co-summary__portion" key={line.line}>{line.qty} × {(line.portion_label || (line.options || []).map(option => option.label).join(', ')).replace(/^1\/1$/, '')} {line.name}</small>)}
               </span>
-              <span className="ws-co-summary__amt">€{wsNumber(row.price)}</span>
+              <span className="ws-co-summary__amt">{wsCurrency(row.price)}</span>
             </li>
           ))}
         </ul>
-        <div className="ws-co-summary__row"><span>{t('sum.subtotal')}</span><span>€{wsNumber(subtotal)}</span></div>
+        <div className="ws-co-summary__row"><span>{t('sum.subtotal')}</span><span>{wsCurrency(subtotal)}</span></div>
         {totaux && totaux.croise > 0 && (
           <div className="ws-co-summary__row ws-co-summary__row--promo">
-            <span>{t('sum.crossOffer')}</span><span>−€{wsNumber(totaux.croise)}</span></div>)}
+            <span>{t('sum.crossOffer')}</span><span>−{wsCurrency(totaux.croise)}</span></div>)}
         {totaux && totaux.remise > 0 && (
           <div className="ws-co-summary__row ws-co-summary__row--promo">
             <span>{t('co.promo.title')}</span>
-            <span>−€{wsNumber(totaux.remise)}</span></div>)}
+            <span>−{wsCurrency(totaux.remise)}</span></div>)}
         {totaux && totaux.weekday > 0 && (
           <div className="ws-co-summary__row ws-co-summary__row--promo">
             <span>{t('sum.weekdayDiscount')} {totaux.weekdayPercent > 0 && `(${wsNumber(totaux.weekdayPercent)}%)`}</span>
-            <span>−€{wsNumber(totaux.weekday)}</span></div>)}
+            <span>−{wsCurrency(totaux.weekday)}</span></div>)}
         {totaux && totaux.weekday === 0 && !totaux.weekdayThresholdMet && totaux.weekdayMinimum > 0 && (
           <div className="ws-co-summary__row ws-co-summary__row--promo">
-            <span>{t('sum.weekdayDiscountMinimum', { amount: `€${wsNumber(totaux.weekdayMinimum)}`, remaining: `€${wsNumber(totaux.weekdayRemaining)}` })}</span>
+            <span>{t('sum.weekdayDiscountMinimum', { amount: `${wsCurrency(totaux.weekdayMinimum)}`, remaining: `${wsCurrency(totaux.weekdayRemaining)}` })}</span>
           </div>)}
-        {totaux?.reward > 0 && <div className="ws-co-summary__row ws-co-summary__row--promo"><span>{t('loyaltyUse.title')}</span><span>−€{wsNumber(totaux.reward)}</span></div>}
+        {totaux?.reward > 0 && <div className="ws-co-summary__row ws-co-summary__row--promo"><span>{t('loyaltyUse.title')}</span><span>−{wsCurrency(totaux.reward)}</span></div>}
         {voucherDiscount > 0 && voucherApplied && (
           <div className="ws-co-summary__row ws-co-summary__row--promo">
             <span>{t('sum.code')} <strong>{voucherApplied.voucher.code}</strong></span>
-            <span>−€{wsNumber(voucherDiscount)}</span>
+            <span>−{wsCurrency(voucherDiscount)}</span>
           </div>
         )}
         {deliveryFeeResult && mode === 'delivery' && (
@@ -4841,13 +4955,13 @@ function CheckoutStep3({ basket, subtotal, totaux, total, payment, setPayment, s
                 <span className="ws-co-summary__row-note"> {wsText("ui.freeFrom")}{wsNumber(deliveryFeeResult.free_delivery_minimum)}</span>
               )}
             </span>
-            <span>{deliveryFee === 0 ? wsText("cart.deliveryFree") : `€${wsNumber(deliveryFee)}`}</span>
+            <span>{deliveryFee === 0 ? wsText("cart.deliveryFree") : `${wsCurrency(deliveryFee)}`}</span>
           </div>
         )}
         {mode === 'delivery' && deliveryFeeErr && (
           <p className="ws-co-error" role="alert">{wsMessage(deliveryFeeErr)}</p>
         )}
-        <div className="ws-co-summary__row ws-co-summary__row--total"><span>{t('sum.total')}</span><span>€{wsNumber(total)}</span></div>
+        <div className="ws-co-summary__row ws-co-summary__row--total"><span>{t('sum.total')}</span><span>{wsCurrency(total)}</span></div>
       </div>
 
       <div className="ws-pay">

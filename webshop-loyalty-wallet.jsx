@@ -1,6 +1,7 @@
 import {renderLoyaltyBarcode,isLoyaltyCardCode,isShortLoyaltyCardCode} from './webshop-loyalty-barcode.js';
 import {PersonalLoyalty} from './webshop-personal-loyalty.jsx';
 import {AccountVouchers} from './webshop-vouchers.jsx';
+import {PointsIcon, BingoIcon, VoucherIcon} from './webshop-loyalty-icons.jsx';
 import './webshop-loyalty-wallet.css';
 
 export function LoyaltyCardIcon({size=26,active=false,updated=false}) {
@@ -78,9 +79,9 @@ export function LoyaltyWallet({identity,shopId,user,onClose,onUseVoucher,activeV
       </>:identity.status==='error'||(identity.status==='ready'&&!svg)?<div role="alert"><p>{t('loyaltyWallet.error')}</p><button type="button" className="ws-linkbtn" onClick={identity.retry}>{t('loyalty.retry')}</button></div>:<div className="ws-loyalty-wallet__loading" role="status">{t('loyaltyWallet.loading')}</div>}
     </section>
     <div className="ws-loyalty-wallet__section-head">
-      <button id="ws-wallet-programs" type="button" aria-pressed={view==='programs'} aria-controls="ws-wallet-content" onClick={()=>setView('programs')}>{t('personal.points')}</button>
-      <button id="ws-wallet-bingo" type="button" aria-pressed={view==='bingo'} aria-controls="ws-wallet-content" onClick={()=>setView('bingo')}>Bingo</button>
-      <button id="ws-wallet-vouchers" type="button" aria-pressed={view==='vouchers'} aria-controls="ws-wallet-content" onClick={()=>setView('vouchers')}>{t('loyaltyWallet.vouchers')}</button>
+      <button id="ws-wallet-programs" type="button" aria-pressed={view==='programs'} aria-controls="ws-wallet-content" onClick={()=>setView('programs')}><PointsIcon/>{t('personal.points')}</button>
+      <button id="ws-wallet-bingo" type="button" aria-pressed={view==='bingo'} aria-controls="ws-wallet-content" onClick={()=>setView('bingo')}><BingoIcon/>Bingo</button>
+      <button id="ws-wallet-vouchers" type="button" aria-pressed={view==='vouchers'} aria-controls="ws-wallet-content" onClick={()=>setView('vouchers')}><VoucherIcon/>{t('loyaltyWallet.vouchers')}</button>
     </div>
     <section id="ws-wallet-content" className="ws-loyalty-wallet__programs" aria-labelledby={'ws-wallet-' + view}>
       {view === 'vouchers'

@@ -46,6 +46,9 @@ import '../webshop-i18n-react.jsx';
 import '../webshop-allergens.jsx';
 import '../webshop-full-bundle.jsx';
 
+// Design-system layer (Claude Design) : loaded after every component stylesheet.
+import '../webshop-design-system.css';
+
 import { createGa4Adapter } from '../webshop-ga4.js';
 window.WSConsent?.register('ga4', createGa4Adapter());
 

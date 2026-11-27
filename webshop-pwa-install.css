@@ -2,7 +2,7 @@
    the PWA or Safari can explain its native Add to Home Screen flow. */
 .ws-pwa-install { position: fixed; z-index: 1200; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: 20px 12px 0; background: rgba(34, 24, 21, .48); animation: ws-pwa-fade-in .2s ease-out both; }
 .ws-pwa-install__sheet { width: min(100%, 540px); max-height: calc(100dvh - 20px); overflow: auto; padding: 12px 20px calc(20px + env(safe-area-inset-bottom)); border-radius: 24px 24px 0 0; background: var(--color-bg-secondary, #F4EFE8); box-shadow: 0 -12px 40px rgba(32, 18, 20, .22); animation: ws-pwa-sheet-in .28s cubic-bezier(.2,.8,.25,1) both; }
-.ws-pwa-install__handle { display: block; width: 42px; height: 4px; margin: 0 auto 18px; border-radius: 999px; background: rgba(34, 34, 34, .22); }
+.ws-pwa-install__handle { display: block; width: 42px; height: 4px; margin: 0 auto 18px; border-radius: var(--radius-pill); background: rgba(34, 34, 34, .22); }
 .ws-pwa-install__heading { display: flex; align-items: center; gap: 14px; }
 .ws-pwa-install__icon { width: 56px; height: 56px; flex: 0 0 auto; border-radius: 14px; box-shadow: 0 3px 10px rgba(34, 24, 21, .18); }
 .ws-pwa-install__heading h2 { margin: 0; color: var(--color-text, #222); font: 600 19px/1.18 var(--font-ui, sans-serif); }
