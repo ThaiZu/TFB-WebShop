@@ -3530,6 +3530,16 @@ if (typeof document !== 'undefined' && !document.getElementById('ws-bureau-style
 const allowBillingCompanyLinking = true;
 const allowOfficeLinking = true;
 
+// Collapsible block of the Profil tab: the whole tab fits in the window, sections open on demand.
+function AccFold({ title, children }) {
+  return <details className="ws-acc__fold">
+    <summary><span>{title}</span>
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+    </summary>
+    <div className="ws-acc__fold-body">{children}</div>
+  </details>;
+}
+
 function AccountModal({ open, requestedTab, requestedReceipt, onReceiptHandled, user, onClose, onLogout, onRequestOffice, onUpdateUser, shops, currentShopId, onChangePreferredShop, office, tour, onManageOffices, onUseVoucher, activeVoucherCode, onClearVoucher, onVouchersViewed, onBrowseVoucher }) {
   const { t } = wsUseT();
   const [form, setForm] = useState({
@@ -4021,9 +4031,12 @@ function AccountModal({ open, requestedTab, requestedReceipt, onReceiptHandled, 
         </div>
       </form>
 
+      <AccFold title={t('acc.companies')}>
       <BillingCompanies key={user.id} allowAdd={allowBillingCompanyLinking}/>
+      </AccFold>
 
       {/* ── Sécurité ── */}
+      <AccFold title={t('acc.security')}>
       <form className="ws-acc__section" onSubmit={savePassword}>
         <div className="ws-acc__section-h">{t('acc.security')}</div>
         <div className="ws-acc__form">
@@ -4052,7 +4065,9 @@ function AccountModal({ open, requestedTab, requestedReceipt, onReceiptHandled, 
           <button type="submit" className="ws-cta" disabled={!canSavePassword}> {wsText("ui.changePassword")} </button>
         </div>
       </form>
+      </AccFold>
 
+      <AccFold title={t('acc.prefs')}>
       <div className="ws-acc__section">
         <div className="ws-acc__section-h">{t('acc.prefs')}</div>
 
@@ -4083,15 +4098,16 @@ function AccountModal({ open, requestedTab, requestedReceipt, onReceiptHandled, 
           <button type="button" className="ws-linkbtn" onClick={() => selectTab('fidelite')}>{t('loyalty.title')}</button>
         </div>}
       </div>
+      </AccFold>
 
-      {allowOfficeLinking && <div className="ws-acc__section">
+      {allowOfficeLinking && <AccFold title={t('officeAccess.title')}><div className="ws-acc__section">
         <div className="ws-acc__section-h">{t('officeAccess.title')}</div>
         <p className="ws-acc__note">{t('officeAccess.intro')}</p>
         <button type="button" className="ws-cta" onClick={onManageOffices}>{t('officeAccess.manage')}</button>
-      </div>}
+      </div></AccFold>}
 
       {linkedCompanies.length > 0 && (
-        <div className="ws-acc__section">
+        <AccFold title={t('acc.b2bAccounts')}><div className="ws-acc__section">
           <div className="ws-acc__section-h">{t('acc.b2bAccounts')}</div>
           {linkedCompanies.map((c) => (
             <div key={c.id} className="ws-acc__card ws-acc__card--ok">
@@ -4100,14 +4116,14 @@ function AccountModal({ open, requestedTab, requestedReceipt, onReceiptHandled, 
               <div className="ws-acc__card-row"><span className="ws-acc__k">{t('acc.billing')}</span><span className="ws-acc__v">{c.deferredBilling ? wsText("ui.deferred") : wsText("ui.directPayment")}</span></div>
             </div>
           ))}
-        </div>
+        </div></AccFold>
       )}
 
       {window.LangMenu && (
-        <div className="ws-acc__section">
+        <AccFold title={t('acc.language')}><div className="ws-acc__section">
           <div className="ws-acc__section-h">{t('acc.language')}</div>
           <window.LangMenu />
-        </div>
+        </div></AccFold>
       )}
       </>}
 

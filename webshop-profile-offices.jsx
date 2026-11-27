@@ -37,6 +37,10 @@ export function ProfileOffices({ currentShopName, onManage }) {
       </span>
       <span className="ws-office-row__state">{t('officeAccess.connected')}</span>
     </li>)}</ul> : <p>{t('officeAccess.none')}</p>)}
-    {onManage && <button type="button" className="ws-cta ws-office-list__manage" onClick={onManage}>{t('acc.offices.manageShop', { name: currentShopName || '' })}</button>}
+    {onManage && <button type="button" className="ws-office-list__manage" onClick={onManage}>
+      <span className="ws-office-row__logo ws-office-list__manage-ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 21V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v16"/><path d="M2 21h14"/><path d="M8 8h2M8 12h2M8 16h2"/><path d="M19 9v6M16 12h6"/></svg></span>
+      <span className="ws-office-list__manage-txt">{t('acc.offices.manageShop', { name: currentShopName || '' })}</span>
+      <svg className="ws-office-list__manage-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+    </button>}
   </section>;
 }

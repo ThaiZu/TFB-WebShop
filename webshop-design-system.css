@@ -20,7 +20,7 @@
    Same files as before, mapped on the weight ladder used by the mockups:
    400 = Gotham Regular, 500/600/700 = Gotham Medium. */
 @font-face { font-family: 'Gotham'; src: url('fonts/Gotham_Light.otf') format('opentype'); font-weight: 300; font-style: normal; font-display: swap; }
-@font-face { font-family: 'Gotham'; src: url('fonts/Gotham_Regular.otf') format('opentype'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Gotham'; src: url('fonts/Gotham_Book.otf') format('opentype'); font-weight: 400; font-style: normal; font-display: swap; }
 @font-face { font-family: 'Gotham'; src: url('fonts/Gotham_Medium.otf') format('opentype'); font-weight: 500; font-style: normal; font-display: swap; }
 @font-face { font-family: 'Gotham'; src: url('fonts/Gotham_Medium.otf') format('opentype'); font-weight: 600; font-style: normal; font-display: swap; }
 @font-face { font-family: 'Gotham'; src: url('fonts/Gotham_Medium.otf') format('opentype'); font-weight: 700; font-style: normal; font-display: swap; }
@@ -221,27 +221,31 @@ body { background: var(--color-bg); }
   }
   .ws .ws-nav.ws-nav--A .ws-nav__icon:hover { background: var(--color-bg-secondary); }
   .ws .ws-nav.ws-nav--A .ws-nav__lang { height: 44px; }
-  .ws .ws-nav.ws-nav--A .ws-nav__icon:has(.ws-nav__avatar) { padding: 0; min-width: 0; margin-left: 4px; }
-  .ws .ws-nav.ws-nav--A .ws-nav__icon:has(.ws-nav__avatar):hover { background: transparent; }
+  /* Avatar and cart sized like the other header icons (40 px hit area, ~20-32 px visual). */
+  .ws .ws-nav.ws-nav--A .ws-nav__icon:has(.ws-nav__avatar) { padding: 0 4px; min-width: 40px; }
   .ws .ws-nav.ws-nav--A .ws-nav__avatar {
-    width: 44px; height: 44px;
-    border: 2px solid var(--color-surface);
-    box-shadow: 0 0 0 1.5px var(--color-primary);
+    width: 34px; height: 34px;
+    border: 0; box-shadow: none;
     background: var(--color-primary); color: #fff;
-    font-size: 15px; font-weight: 500;
+    font-size: 13px; font-weight: 500;
   }
   .ws .ws-nav.ws-nav--A .ws-nav__cart {
-    width: 48px; height: 48px; min-width: 48px; padding: 0;
+    width: 40px; height: 44px; min-width: 40px; padding: 0;
     display: inline-flex; align-items: center; justify-content: center;
-    border-radius: 12px;
-    border: 0.5px solid var(--color-border-secondary);
+    border-radius: 10px; border: 0; background: transparent;
     color: var(--color-text);
-    transition: background .3s, color .3s, box-shadow .3s;
+    transition: background .3s, color .3s;
   }
-  .ws .ws-nav.ws-nav--A .ws-nav__cart--full {
-    border-color: transparent;
+  .ws .ws-nav.ws-nav--A .ws-nav__cart:hover { background: var(--color-bg-secondary); }
+  .ws .ws-nav.ws-nav--A .ws-nav__icon.ws-nav__cart.ws-nav__cart--full {
+    width: 34px; height: 34px; min-width: 34px; min-height: 34px; max-height: 34px; aspect-ratio: 1;
+    flex: 0 0 34px; align-self: center; margin: 0 3px; border-radius: 8px;
     background: var(--color-primary); color: #fff;
-    box-shadow: 0 6px 18px rgba(141, 29, 44, 0.28);
+  }
+  .ws .ws-nav.ws-nav--A .ws-nav__cart--full svg { width: 18px; height: 18px; }
+  .ws .ws-nav.ws-nav--A .ws-nav__cart .ws-nav__cart-badge {
+    top: -13px; right: -14px; min-width: 16px; height: 16px; padding: 0 4px;
+    border-radius: 5px; border-width: 1px; font-size: 10px;
   }
   .ws .ws-nav.ws-nav--A .ws-nav__cart--full:hover { background: var(--color-primary-hover); }
 }
@@ -695,6 +699,60 @@ body { background: var(--color-bg); }
 .ws-office-modal .ws-cta, .ws-office-search button { min-height: var(--ds-field-h); border-radius: 10px; }
 .ws-office-secondary, .ws-office-manage-action { border-radius: 10px; }
 @media (max-width: 480px) { .ws-office-modal { padding: 24px 20px; } }
+
+/* Office windows: muted body copy (Gotham Regular in full ink read as bold), even spacing. */
+.ws-office-modal { width: min(560px, 100%); font-weight: 400; }
+.ws-office-modal > p, .ws-office-modal > h2 + p { margin: 10px 0 0; color: var(--color-text-muted); font-size: 14px; line-height: 1.55; }
+.ws-office-modal > h2 { margin: 0; font-family: var(--font-title); font-weight: 400; font-size: 26px; line-height: 1.1; }
+.ws-office-modal .ws-office-confirm-actions { margin-top: 24px; gap: 10px; align-items: stretch; }
+.ws-office-modal .ws-office-confirm-actions > button { margin: 0; height: var(--ds-field-h); min-height: var(--ds-field-h); padding: 0 20px; border-radius: 10px; font: 500 14px/1 var(--font-ui); }
+.ws-office-modal .ws-office-secondary { border-color: var(--ds-field-border); color: var(--color-text); }
+
+/* « Livraison au bureau » (OfficeDeliveryModal) */
+.ws-odm { display: flex; flex-direction: column; gap: 16px; }
+.ws-odm > * { margin: 0; }
+.ws-odm .ws-odm__head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 16px; margin-bottom: 4px; }
+.ws-odm__ico {
+  width: 48px; height: 48px; display: grid; place-items: center; border-radius: 14px;
+  background: color-mix(in srgb, var(--color-secondary) 55%, #fff); color: var(--color-on-abricot);
+}
+.ws-odm__ico svg { width: 24px; height: 24px; }
+.ws-odm__titles { display: grid; gap: 6px; padding-top: 2px; }
+.ws-odm__titles h2 { margin: 0; font-family: var(--font-title); font-weight: 400; font-size: 26px; line-height: 1.1; }
+.ws-odm__intro { margin: 0; color: var(--color-text-muted); font-size: 14px; line-height: 1.5; }
+.ws-odm .ws-field { display: grid; gap: 8px; margin: 0; }
+.ws-odm .ws-field > select { width: 100%; }
+.ws-odm__status { color: var(--color-text-muted); font-size: 13px; }
+.ws-odm__empty {
+  padding: 16px 18px; border-radius: 14px; background: var(--color-bg-secondary);
+  color: var(--color-text); font-size: 14px; line-height: 1.5;
+}
+.ws-odm__note {
+  padding: 12px 14px; border-radius: 12px; background: var(--color-bg-secondary);
+  color: var(--color-text-muted); font-size: 13px; line-height: 1.5;
+}
+.ws-odm__note--basket { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; color: var(--color-text); }
+.ws-odm__note--basket svg { margin-top: 1px; color: var(--color-primary); }
+.ws-odm .ws-co-error { padding: 12px 14px; border-radius: 12px; background: var(--color-bg-secondary); font-size: 13px; }
+.ws-odm .ws-co-error button { margin-left: 6px; border: 0; background: none; color: var(--color-primary); font: 500 13px var(--font-ui); text-decoration: underline; cursor: pointer; }
+.ws-odm .ws-acc__toggle { margin: 0; padding: 2px 0; background: none; }
+.ws-odm .ws-office-confirm-actions { margin-top: 8px; }
+.ws-odm .ws-office-manage-action { margin: 0; gap: 8px; border: 0; background: var(--color-primary); color: #fff; }
+.ws-odm .ws-office-manage-action:hover { background: var(--color-primary-hover, #6e1622); color: #fff; }
+.ws-odm .ws-office-manage-action svg { width: 18px; height: 18px; }
+@media (max-width: 720px) {
+  .ws-odm .ws-odm__head { gap: 12px; align-items: center; }
+  .ws-odm__titles { display: contents; }
+  .ws-odm__titles h2 { grid-column: 2; grid-row: 1; }
+  .ws-odm .ws-odm__head > button { grid-column: 3; grid-row: 1; }
+  .ws-odm__intro { grid-column: 1 / -1; grid-row: 2; }
+  .ws-odm__ico { width: 40px; height: 40px; border-radius: 12px; }
+  .ws-odm__ico svg { width: 20px; height: 20px; }
+  .ws-odm__titles h2 { font-size: 24px; }
+  .ws-office-modal .ws-office-confirm-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
+  .ws-office-modal .ws-office-confirm-actions > button { padding: 0 12px; }
+  .ws-office-modal .ws-office-confirm-actions > button:only-child { grid-column: 1 / -1; }
+}
 
 /* More edge stripes replaced by plain fills */
 .ws-co-ordering-shop,
@@ -1564,3 +1622,141 @@ body { background: var(--color-bg); }
 .ws-acc2 .ws-acc__foot:has(.ws-purchases-refresh) { position: absolute; top: 76px; right: 40px; margin: 0; }
 .ws-acc2 .ws-acc__foot .ws-purchases-refresh { margin: 0; min-height: 0; }
 @media (max-width: 760px) { .ws-acc2 .ws-acc__foot:has(.ws-purchases-refresh) { top: 14px; right: 20px; } }
+
+/* Fidélité, compact: balance and totals in one block; numbers in Gotham (Vank's 0 is a stylised glyph) */
+.ws-points-hero {
+  display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: 12px 16px;
+  padding: 14px 16px; border-radius: 14px;
+}
+.ws-points-hero .ws-loyalty-ico { width: 40px; height: 40px; background: var(--color-surface); }
+.ws-points-hero__label { font-size: 12px; }
+.ws-points-hero__balance strong { font-family: var(--font-ui); font-weight: 500; font-size: 26px; line-height: 1.1; }
+.ws-points-hero .ws-personal-totals {
+  margin: 0; display: flex; justify-content: flex-end; gap: 0;
+}
+.ws-points-hero .ws-personal-totals > div {
+  padding: 2px 0 2px 16px; margin-left: 16px; border: 0; border-radius: 0; background: none;
+  box-shadow: -0.5px 0 0 var(--color-border-secondary);
+}
+.ws-points-hero .ws-personal-totals > div:first-child { margin-left: 0; box-shadow: none; }
+.ws-points-hero .ws-personal-totals dt { font-size: 11px; line-height: 1.3; max-width: 110px; }
+.ws-points-hero .ws-personal-totals dd { margin-top: 2px; font-size: 15px; }
+.ws-loyalty-subtitle { margin: 18px 0 8px; }
+.ws-loyalty-empty { padding: 12px 14px; font-size: 13px; text-align: left; }
+.ws-bingo { margin-top: 20px; }
+.ws-bingo__head .ws-loyalty-ico { width: 36px; height: 36px; }
+.ws-bingo__title h3 { font-size: 18px; }
+.ws-bingo__bar { margin: 10px 0 12px; }
+@media (max-width: 600px) {
+  .ws-points-hero { grid-template-columns: auto minmax(0, 1fr); }
+  .ws-points-hero .ws-personal-totals { grid-column: 1 / -1; justify-content: space-between; padding-top: 10px; box-shadow: 0 -0.5px 0 var(--color-border-secondary); }
+  .ws-points-hero .ws-personal-totals > div { flex: 1; padding-left: 12px; margin-left: 12px; }
+}
+
+/* Mes commandes, compact cards */
+.ws-acc2 .ws-purchase-filters ~ .ws-acc__card:not(.ws-acc__card--empty) {
+  padding: 12px 14px; margin: 0 0 8px; border-radius: 12px; gap: 0;
+}
+.ws-acc2 .ws-purchase-filters ~ .ws-acc__card .ws-acc__card-head { padding: 0 0 6px; font-size: 12px; }
+.ws-acc2 .ws-purchase-filters ~ .ws-acc__card .ws-acc__card-head .ws-acc__k { font-weight: 500; color: var(--color-text); }
+.ws-acc2 .ws-purchase-filters ~ .ws-acc__card .ws-acc__badge { padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; }
+.ws-acc2 .ws-purchase-filters ~ .ws-acc__card .ws-acc__card-row { padding: 4px 0; font-size: 13px; }
+.ws-acc2 .ws-purchase-filters ~ .ws-acc__card .ws-acc__card-row + .ws-acc__card-row { border-top: 0.5px solid var(--color-border-tertiary); }
+.ws-acc2 .ws-purchase-filters ~ .ws-acc__card .ws-acc__k { font-size: 12px; font-weight: 400; color: var(--color-text-muted); }
+.ws-acc2 .ws-purchase-filters ~ .ws-acc__card .ws-acc__v { font-size: 13px; font-weight: 500; }
+.ws-acc2 .ws-purchase-payment { padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; }
+.ws-acc2 .ws-purchase-payment-notice {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin: 8px 0; padding: 8px 8px 8px 12px; border-radius: 10px; font-size: 12px; line-height: 1.4;
+}
+.ws-acc2 .ws-purchase-payment-notice p { margin: 0; }
+.ws-acc2 .ws-purchase-payment-notice .ws-cta, .ws-acc2 .ws-purchase-payment-notice button {
+  flex: none; min-height: 34px; padding: 0 12px; margin: 0; font-size: 12.5px; border-radius: 8px; white-space: nowrap;
+}
+.ws-acc2 .ws-purchase-actions { margin-top: 4px; }
+.ws-acc2 .ws-purchase-actions .ws-linkbtn, .ws-acc2 .ws-purchase-actions .ws-acc__inv-cancel { font-size: 12.5px; padding: 4px 0; }
+@media (max-width: 520px) { .ws-acc2 .ws-purchase-payment-notice { flex-direction: column; align-items: stretch; } }
+
+/* Mes bureaux: the manage action is a full-width row aligned with the list */
+.ws-acc2 .ws-acc__hint { font-size: 12px; line-height: 1.5; }
+.ws-acc2 .ws-office-list__manage, .ws-office-list__manage {
+  display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; gap: 14px;
+  width: 100%; margin-top: 10px; padding: 12px 16px;
+  border: 1px dashed rgba(34, 34, 34, 0.22); border-radius: 16px;
+  background: var(--color-surface); color: var(--color-text);
+  font: 500 14px/1.35 var(--font-ui); text-align: left; cursor: pointer;
+  transition: background .2s, border-color .2s;
+}
+.ws-acc2 .ws-office-list__manage:hover, .ws-office-list__manage:hover { background: var(--color-bg-secondary) !important; border-color: var(--color-primary); }
+.ws-office-list__manage-ico { color: var(--color-primary); }
+.ws-office-list__manage-chev { color: var(--color-text-muted); }
+.ws-office-list__manage:hover .ws-office-list__manage-chev { color: var(--color-primary); }
+
+/* Fidélité history rows, tighter */
+.ws-personal-history li { grid-template-columns: 32px minmax(0, 1fr) auto; gap: 12px; padding: 9px 14px; }
+.ws-personal-history .ws-loyalty-ico { width: 32px; height: 32px; border-radius: 8px; }
+.ws-personal-history .ws-loyalty-ico svg { width: 16px; height: 16px; }
+.ws-personal-history__main strong { font-size: 13px; }
+.ws-personal-history__main small { font-size: 11.5px; }
+.ws-personal-history__pts { font-size: 14px; }
+
+/* =========================================================================
+   PROFIL — everything in one window: compact contact form + collapsible sections
+   ========================================================================= */
+.ws-acc2__main > form.ws-acc__section:first-of-type { margin-bottom: 18px; }
+.ws-acc2__main > form.ws-acc__section:first-of-type > .ws-acc__section-h { display: none; }
+.ws-acc2__main > form.ws-acc__section:first-of-type .ws-acc__form {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;
+}
+.ws-acc2__main > form.ws-acc__section:first-of-type .ws-acc__field--full { grid-column: span 2; }
+.ws-acc2__main > form.ws-acc__section:first-of-type .ws-acc__field { gap: 6px; }
+.ws-acc2__main > form.ws-acc__section:first-of-type .ws-acc__input { height: 44px; min-height: 44px; font-size: 14px; }
+.ws-acc2__main > form.ws-acc__section:first-of-type .ws-acc__field-help { font-size: 11px; }
+.ws-acc2__main > form.ws-acc__section:first-of-type .ws-acc__form-foot { margin-top: 14px; }
+.ws-acc2__main > form.ws-acc__section:first-of-type .ws-cta { min-height: 40px; }
+
+.ws-acc__fold { border-top: 0.5px solid var(--color-border-secondary); }
+.ws-acc__fold:last-of-type { border-bottom: 0.5px solid var(--color-border-secondary); }
+.ws-acc__fold > summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: 48px; padding: 0 4px; cursor: pointer; list-style: none;
+  font-size: 14px; font-weight: 500; color: var(--color-text);
+}
+.ws-acc__fold > summary::-webkit-details-marker { display: none; }
+.ws-acc__fold > summary svg { color: var(--color-text-muted); transition: transform .25s var(--ds-ease); }
+.ws-acc__fold[open] > summary svg { transform: rotate(180deg); color: var(--color-primary); }
+.ws-acc__fold > summary:hover { color: var(--color-primary); }
+.ws-acc__fold-body { padding: 2px 4px 18px; animation: dsFadeIn .25s ease; }
+/* the summary already names the section */
+.ws-acc__fold-body > .ws-acc__section > .ws-acc__section-h:first-child { display: none; }
+.ws-acc2 .ws-acc__fold-body > .ws-acc__section { margin: 0; }
+@media (max-width: 760px) {
+  .ws-acc2__main > form.ws-acc__section:first-of-type .ws-acc__form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ws-acc2__main > form.ws-acc__section:first-of-type .ws-acc__field--full { grid-column: 1 / -1; }
+}
+/* Profil: two field rows (Prénom · Nom · Téléphone / E-mail · Code postal), tighter top */
+@media (min-width: 761px) {
+  .ws-acc2__main > form.ws-acc__section:first-of-type .ws-acc__form > :nth-child(1) { order: 1; }
+  .ws-acc2__main > form.ws-acc__section:first-of-type .ws-acc__form > :nth-child(2) { order: 2; }
+  .ws-acc2__main > form.ws-acc__section:first-of-type .ws-acc__form > :nth-child(4) { order: 3; }
+  .ws-acc2__main > form.ws-acc__section:first-of-type .ws-acc__form > :nth-child(3) { order: 4; }
+  .ws-acc2__main > form.ws-acc__section:first-of-type .ws-acc__form > :nth-child(n+5) { order: 5; }
+  .ws-acc2__main:has(> form.ws-acc__section:first-of-type) { padding-top: 64px; }
+  .ws-acc2__main:has(> form.ws-acc__section:first-of-type) .ws-acc2__title { margin-bottom: 16px; }
+  .ws-acc__fold > summary { min-height: 44px; }
+}
+.ws-odm__titles:not(:has(.ws-odm__intro)) { align-self: center; padding-top: 0; }
+
+/* Header (desktop): every icon drawn at the same 18 px, every button the same 40 × 44 hit area;
+   avatar and full cart share the same 34 px shape. */
+@media (min-width: 768px) {
+  .ws .ws-nav.ws-nav--A .ws-nav__right .ws-nav__icon,
+  .ws .ws-nav.ws-nav--A .ws-office-menus .ws-office-manage { min-width: 40px; height: 44px; padding: 0 10px; }
+  .ws .ws-nav.ws-nav--A .ws-nav__right .ws-nav__icon svg,
+  .ws .ws-nav.ws-nav--A .ws-office-menus .ws-office-manage img {
+    width: 18px; height: 18px; min-width: 18px; flex: 0 0 18px;
+  }
+  .ws .ws-nav.ws-nav--A .ws-nav__right .ws-nav__icon:has(.ws-nav__avatar) { padding: 0 3px; }
+  .ws .ws-nav.ws-nav--A .ws-nav__right .ws-nav__icon.ws-nav__cart { padding: 0; }
+  .ws .ws-nav.ws-nav--A .ws-nav__right .ws-nav__icon.ws-nav__cart.ws-nav__cart--full { height: 34px; min-width: 34px; }
+}

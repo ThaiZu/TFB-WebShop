@@ -32,9 +32,19 @@
   var OTHER = '__other__';
   var root = document.getElementById('root');
 
-  // Palette locale (la page ne charge pas les tokens --lp-* de la landing B2B).
-  var INK = '#241a16', CREAM = '#fdf6f0', CARD = '#ffffff', RUBY = '#8D1D2C',
-      ABRICOT = '#E8A15C', MUTED = '#6b5d54', LINE = '#ece3da';
+  // Mise en page : classes lb-* de livraison-bureau.css (design system du webshop).
+  var logo = new URL('../logo.png', location.href).href;
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+  function officeIcon() {
+    var svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('width', '30'); svg.setAttribute('height', '30');
+    svg.setAttribute('fill', 'none'); svg.setAttribute('stroke', 'currentColor'); svg.setAttribute('stroke-width', '1.6');
+    svg.setAttribute('stroke-linecap', 'round'); svg.setAttribute('stroke-linejoin', 'round'); svg.setAttribute('aria-hidden', 'true');
+    ['M4 21V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v16', 'M14 9h5a1 1 0 0 1 1 1v11', 'M2 21h20', 'M8 8h2M8 12h2M8 16h2M17 13h0M17 17h0'].forEach(function (d) {
+      var path = document.createElementNS(SVG_NS, 'path'); path.setAttribute('d', d); svg.appendChild(path);
+    });
+    return svg;
+  }
 
   function el(tag, attrs, children) {
     var e = document.createElement(tag);
@@ -50,45 +60,42 @@
   }
 
   function header() {
-    return el('header', { style: 'position:sticky;top:0;z-index:10;background:rgba(253,246,240,.92);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid ' + LINE }, [
-      el('div', { style: 'max-width:960px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px' }, [
-        el('a', { href: back.href, style: 'font-family:var(--font-display,Vank),serif;font-size:21px;color:' + RUBY + ';text-decoration:none;letter-spacing:.02em', text: "L'Atelier By" }),
-        el('a', { href: back.href, style: 'font:500 13px var(--font-ui,system-ui);color:' + MUTED + ';text-decoration:none', text: tr("← Retour à la boutique") }),
+    return el('header', { class: 'lb-header' }, [
+      el('div', { class: 'lb-header__in' }, [
+        el('a', { class: 'lb-logo', href: back.href, 'aria-label': "L'Atelier By" }, [ el('img', { src: logo, alt: "L'Atelier By" }) ]),
+        el('a', { class: 'lb-back', href: back.href, text: tr("← Retour à la boutique") }),
       ]),
     ]);
   }
 
   function footer() {
-    return el('footer', { style: 'text-align:center;padding:34px 20px 48px;color:#9b8f86;font:400 12px var(--font-ui,system-ui)' }, [
+    return el('footer', { class: 'lb-footer' }, [
       el('span', { text: tr("© 2026 L’Atelier By — Maison de pains et viennoiseries · Belgique.") }),
     ]);
   }
 
-  function fieldStyle() {
-    return 'width:100%;box-sizing:border-box;padding:11px 13px;font:inherit;color:' + INK +
-      ';background:#fff;border:1px solid ' + LINE + ';border-radius:10px;outline:none';
-  }
 
   function render(zones) {
     root.innerHTML = '';
     root.appendChild(header());
 
-    var wrap = el('main', { style: 'max-width:640px;margin:0 auto;padding:28px 20px 8px' });
+    var wrap = el('main', { class: 'lb-main' });
 
     // ── Hero ──
-    wrap.appendChild(el('div', { style: 'text-align:center;padding:10px 0 22px' }, [
-      el('h1', { style: 'font-family:var(--font-display,Vank),serif;font-size:34px;line-height:1.1;color:' + INK + ';margin:0 0 12px', text: tr("Livraison au bureau") }),
-      el('p', { style: 'font:400 15px/1.55 var(--font-ui,system-ui);color:' + MUTED + ';margin:0 auto;max-width:520px', text: tr("L’Atelier By livre vos bureaux — pains, viennoiseries et traiteur, directement au travail.") }),
+    wrap.appendChild(el('div', { class: 'lb-hero' }, [
+      el('span', { class: 'lb-hero__ico' }, [ officeIcon() ]),
+      el('h1', { text: tr("Livraison au bureau") }),
+      el('p', { text: tr("L’Atelier By livre vos bureaux — pains, viennoiseries et traiteur, directement au travail.") }),
     ]));
 
     // ── Carte : le formulaire (ancre #contact) ──
-    var card = el('div', { id: 'contact', style: 'scroll-margin-top:88px;background:' + CARD + ';border:1px solid ' + LINE + ';border-radius:16px;padding:24px 22px;box-shadow:0 12px 34px rgba(36,26,22,.06)' });
+    var card = el('div', { id: 'contact', class: 'lb-card' });
 
-    card.appendChild(el('div', { style: 'font:600 18px var(--font-ui,system-ui);color:' + INK + ';margin-bottom:6px', text: tr("Où livrons-nous ?") }));
-    card.appendChild(el('p', { style: 'font:400 13px/1.55 var(--font-ui,system-ui);color:' + MUTED + ';margin:0 0 16px', text: tr("Choisissez votre zone pour consulter les horaires habituels. La disponibilité exacte est confirmée lors de la commande.") }));
+    card.appendChild(el('h2', { text: tr("Où livrons-nous ?") }));
+    card.appendChild(el('p', { class: 'lb-card__lede', text: tr("Choisissez votre zone pour consulter les horaires habituels. La disponibilité exacte est confirmée lors de la commande.") }));
 
     // Droplist groupée par zone principale
-    var sel = el('select', { class: 'lb-select', style: fieldStyle() + ';appearance:auto', 'aria-label': tr("Zone de livraison") });
+    var sel = el('select', { class: 'lb-select', 'aria-label': tr("Zone de livraison") });
     sel.appendChild(el('option', { value: '', text: tr("Choisissez votre zone de livraison…") }));
     var groups = {}; var order = [];
     zones.forEach(function (z) {
@@ -105,30 +112,29 @@
     });
     sel.appendChild(el('option', { value: OTHER, text: tr("Ma zone n'est pas dans la liste") }));
 
-    card.appendChild(el('label', { class: 'lb-field', style: 'display:block;margin:0 0 4px' }, [
-      el('span', { style: 'display:block;margin-bottom:6px;font:600 12px var(--font-ui,system-ui);color:' + INK, text: tr("Votre zone") }),
+    card.appendChild(el('label', { class: 'lb-label' }, [
+      el('span', { text: tr("Votre zone") }),
       sel,
     ]));
 
     // Zone couverte : confirmation
-    var covered = el('div', { style: 'display:none;margin-top:14px;padding:12px 14px;border-radius:10px;background:#eef6ef;border:1px solid #d3e6d5;color:#2d7a3e;font:500 13px var(--font-ui,system-ui)' });
+    var covered = el('div', { class: 'lb-covered', style: 'display:none' });
     card.appendChild(covered);
 
     // Formulaire « hors zone »
-    var form = el('div', { style: 'display:none;margin-top:16px' });
-    var cp   = el('input', { class: 'lb-input', style: fieldStyle(), type: 'text', maxlength: '20', required: '', placeholder: '1348' });
-    var city = el('input', { class: 'lb-input', style: fieldStyle(), type: 'text', placeholder: 'Louvain-la-Neuve' });
-    var comp = el('input', { class: 'lb-input', style: fieldStyle(), type: 'text', placeholder: tr("Nom de la société") });
-    var head = el('input', { class: 'lb-input', style: fieldStyle(), type: 'number', min: '1', max: '100000', step: '1', placeholder: 'ex. 25' });
-    var mail = el('input', { class: 'lb-input', style: fieldStyle(), type: 'email', required: '', maxlength: '254', placeholder: 'vous@societe.be' });
-    var lbl = function (t, node) { return el('label', { style: 'display:block;flex:1;min-width:150px;margin:0 0 12px' }, [
-      el('span', { style: 'display:block;margin-bottom:6px;font:600 12px var(--font-ui,system-ui);color:' + INK, text: t }), node ]); };
-    form.appendChild(el('p', { style: 'font:400 12.5px/1.55 var(--font-ui,system-ui);color:' + MUTED + ';margin:2px 0 14px', text: tr("Indiquez votre adresse et votre e-mail pour que le magasin puisse étudier votre demande.") }));
-    form.appendChild(el('div', { style: 'display:flex;gap:12px;flex-wrap:wrap' }, [ lbl(tr("Code postal *"), cp), lbl(tr("Commune"), city) ]));
+    var form = el('div', { class: 'lb-form', style: 'display:none' });
+    var cp   = el('input', { class: 'lb-input', type: 'text', maxlength: '20', required: '', placeholder: '1348' });
+    var city = el('input', { class: 'lb-input', type: 'text', placeholder: 'Louvain-la-Neuve' });
+    var comp = el('input', { class: 'lb-input', type: 'text', placeholder: tr("Nom de la société") });
+    var head = el('input', { class: 'lb-input', type: 'number', min: '1', max: '100000', step: '1', placeholder: 'ex. 25' });
+    var mail = el('input', { class: 'lb-input', type: 'email', required: '', maxlength: '254', placeholder: 'vous@societe.be' });
+    var lbl = function (t, node) { return el('label', { class: 'lb-label' }, [ el('span', { text: t }), node ]); };
+    form.appendChild(el('p', { class: 'lb-form__intro', text: tr("Indiquez votre adresse et votre e-mail pour que le magasin puisse étudier votre demande.") }));
+    form.appendChild(el('div', { class: 'lb-row' }, [ lbl(tr("Code postal *"), cp), lbl(tr("Commune"), city) ]));
     form.appendChild(lbl(tr("Société"), comp));
-    form.appendChild(el('div', { style: 'display:flex;gap:12px;flex-wrap:wrap' }, [ lbl(tr("Nombre de collaborateurs"), head), lbl(tr("E-mail de contact *"), mail) ]));
-    var send = el('button', { type: 'button', style: 'margin-top:4px;background:' + RUBY + ';color:#fff;border:none;border-radius:999px;padding:13px 24px;font:600 14px var(--font-ui,system-ui);cursor:pointer', text: tr("Envoyer ma demande") });
-    var fmsg = el('div', { style: 'margin-top:12px;font:500 13px var(--font-ui,system-ui);color:' + RUBY });
+    form.appendChild(el('div', { class: 'lb-row' }, [ lbl(tr("Nombre de collaborateurs"), head), lbl(tr("E-mail de contact *"), mail) ]));
+    var send = el('button', { type: 'button', class: 'lb-send', text: tr("Envoyer ma demande") });
+    var fmsg = el('div', { class: 'lb-msg' });
     form.appendChild(send); form.appendChild(fmsg);
     card.appendChild(form);
 
@@ -144,8 +150,8 @@
       if (!isCov) return;
       var z = zones.filter(function (x) { return String(x.id) === v; })[0];
       covered.innerHTML = '';
-      covered.appendChild(el('div', { style: 'font-weight:600', text: tr("Zone desservie : ") + (z ? (z.zoneSecondary || z.tour) : '') }));
-      var mod = el('div', { style: 'margin-top:6px;font-weight:400;color:#37503f', text: tr("Chargement des modalités…") });
+      covered.appendChild(el('div', { class: 'lb-covered__title', text: tr("Zone desservie : ") + (z ? (z.zoneSecondary || z.tour) : '') }));
+      var mod = el('div', { class: 'lb-covered__details', text: tr("Chargement des modalités…") });
       covered.appendChild(mod);
       // « pilote tout » : la zone choisie affiche les vraies modalités de la boutique qui livre.
       request('/delivery-zones/' + encodeURIComponent(v))
@@ -180,7 +186,7 @@
           send.disabled = false;
           if (res.ok && res.j.saved === true) {
             form.innerHTML = '';
-            form.appendChild(el('p', { style: 'font:500 14px/1.5 var(--font-ui,system-ui);color:#2d7a3e', text: tr("Merci ! Votre demande est enregistrée — nous vous recontactons si une tournée ouvre près de chez vous.") }));
+            form.appendChild(el('p', { class: 'lb-done', role: 'status', text: tr("Merci ! Votre demande est enregistrée — nous vous recontactons si une tournée ouvre près de chez vous.") }));
           } else {
             fmsg.textContent = res.j && res.j.description === 'DELIVERY_INTEREST_RATE_LIMIT' ? tr("Trop de demandes. Réessayez plus tard.") : tr("Une erreur est survenue, réessayez.");
           }
@@ -191,11 +197,12 @@
   }
 
   if (!shop || !/^[1-9][0-9]*$/.test(shop) || !window.WS_API_BASE_URL) {
-    root.textContent = tr("Sélectionnez une boutique avant de consulter les zones de livraison.");
+    root.appendChild(header());
+    root.appendChild(el('p', { class: 'lb-empty', text: tr("Sélectionnez une boutique avant de consulter les zones de livraison.") }));
   } else {
     request('/delivery-zones').then(function(zones){render(zones);}).catch(function(error){
       render([]);
-      var notice=el('p', {role:'alert',text:error.message});
+      var notice=el('p', {role:'alert',class:'lb-alert',text:error.message});
       root.querySelector('main').prepend(notice);
     });
   }
