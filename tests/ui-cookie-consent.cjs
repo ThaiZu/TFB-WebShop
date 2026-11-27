@@ -56,6 +56,8 @@ const config = { schemaVersion: 1, scope: 'atelierby', policyVersion: 'atelierby
   // Dismissing a banner must keep all purposes denied.
   await panel.getByRole('button', { name: 'Zamknij bez zmiany wyboru' }).click();
   assert.equal(await page.evaluate(() => window.WSConsent.allows('analytics')), false);
+  // The settings sit in the « Cookies » fold of the footer.
+  await page.locator('.ws-policy-drop > summary').click();
   await page.getByRole('button', { name: 'Ustawienia cookies', exact: true }).click();
   await panel.getByRole('button', { name: 'Akceptuj wszystkie', exact: true }).click();
   assert.equal(await page.evaluate(() => window.WSConsent.get().advertising), false);
