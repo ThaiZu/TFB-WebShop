@@ -1436,6 +1436,8 @@ function ProductDetail({ open, product, mode, activeVoucher, onClose, onAdd, onP
           )}
           <div className="pdm-scroll" ref={scrollRef}>
             <div className="pdm-head">
+              {/* Desktop only: the photo banner is hidden there, a thumbnail sits beside the title. */}
+              <img className="pdm-thumb" src={product.img || getPlaceholder(product)} alt="" aria-hidden="true"/>
               <p className="pdm-eyebrow">{product.cat === 'sandwiches' ? t('pd.eyebrow.sandwich') : product.cat === 'plats' ? t('pd.eyebrow.dish') : t('pd.eyebrow.selection')}</p>
               <h2 className="pdm-title">{product.name}</h2>
 
