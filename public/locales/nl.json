@@ -1,7 +1,7 @@
 {
-  "personal.total.PURCHASE": "Punten uit aankopen",
-  "personal.total.BINGO": "Punten uit Bingo",
-  "personal.total.RETURN": "Correcties voor retouren",
+  "personal.total.PURCHASE": "Aankopen",
+  "personal.total.BINGO": "Bingo",
+  "personal.total.RETURN": "Retouren",
   "personal.unavailable": "Het puntensaldo en Bingo konden niet worden geladen.",
   "billing.error.VIES_BUSY": "VIES is overbelast. Probeer het zo opnieuw.",
   "billing.error.BILLING_BUSY": "De bedrijfsgegevens worden verwerkt. Probeer het zo opnieuw.",

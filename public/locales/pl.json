@@ -1,7 +1,7 @@
 {
-  "personal.total.PURCHASE": "Punkty za zakupy",
-  "personal.total.BINGO": "Punkty z Bingo",
-  "personal.total.RETURN": "Korekty za zwroty",
+  "personal.total.PURCHASE": "Zakupy",
+  "personal.total.BINGO": "Bingo",
+  "personal.total.RETURN": "Zwroty",
   "personal.unavailable": "Nie udało się pobrać salda punktów i Bingo.",
   "billing.error.VIES_BUSY": "VIES jest przeciążony. Spróbuj ponownie za chwilę.",
   "billing.error.BILLING_BUSY": "Trwa przetwarzanie danych tej firmy. Spróbuj ponownie za chwilę.",
