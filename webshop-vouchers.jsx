@@ -55,7 +55,7 @@ export function AccountVouchers({shopId,onUse,activeCode,onClear,onViewed,onBrow
   const formatDate=value=>new Intl.DateTimeFormat(lang,{dateStyle:'medium',timeStyle:'short'}).format(new Date(value));
   if(!shopId)return <p>{t('loyalty.chooseShop')}</p>;
   return <section className="ws-vouchers" aria-label={t('vouchers.title')}>
-    <div className="ws-vouchers__heading"><h3>{t('vouchers.title')}</h3><button type="button" className="ws-linkbtn" disabled={state.busy} onClick={()=>setRevision(value=>value+1)}>{t('loyalty.refresh')}</button></div>
+    <div className="ws-vouchers__heading"><h3>{t('vouchers.title')}</h3><button type="button" className="ws-iconbtn ws-vouchers__refresh" disabled={state.busy} title={t('loyalty.refresh')} onClick={()=>setRevision(value=>value+1)}><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={state.busy?'is-spinning':''}><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg><span className="ws-vh">{t('loyalty.refresh')}</span></button></div>
     {state.status==='ready'&&(hiddenCount>0||showAll)&&<div className="ws-vouchers__filter"><span>{!showAll&&t('vouchers.hidden',{count:hiddenCount})}</span><button type="button" className="ws-linkbtn" aria-pressed={showAll} onClick={()=>setShowAll(value=>!value)}>{t(showAll?'vouchers.onlyAvailable':'vouchers.showAll')}</button></div>}
     {activeCode&&<div className="ws-vouchers__selection" role="status"><span>{t('vouchers.selectedInfo')}</span><button type="button" className="ws-linkbtn" onClick={onClear}>{t('vouchers.clear')}</button></div>}
     {state.status==='loading'&&<p role="status">{t('loyalty.loading')}</p>}

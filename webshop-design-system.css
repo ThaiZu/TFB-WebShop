@@ -1543,3 +1543,23 @@ body { background: var(--color-bg); }
 .ws-co-summary__row--total { margin-top: 10px; padding-top: 10px; }
 .ws-modal .ws-form > .ws-toggle { align-self: flex-start; width: auto; }
 .ws-pay__logo:empty:not([data-prov="bancontact"]):not([data-prov="visa"]):not([data-prov="apple"]) { display: none; }
+
+/* Refresh as an icon button (vouchers) */
+.ws-iconbtn {
+  width: 38px; height: 38px; flex: none;
+  display: grid; place-items: center;
+  border: 0; border-radius: 10px;
+  background: var(--color-bg-secondary); color: var(--color-text);
+  cursor: pointer; transition: background .2s, color .2s;
+}
+.ws-iconbtn:hover:not(:disabled) { background: var(--color-surface); color: var(--color-primary); box-shadow: inset 0 0 0 1px var(--color-border-secondary); }
+.ws-iconbtn:disabled { opacity: .5; cursor: default; }
+.ws-iconbtn svg.is-spinning { animation: dsSpin .9s linear infinite; }
+@keyframes dsSpin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .ws-iconbtn svg.is-spinning { animation: none; } }
+/* In Mon compte the refresh sits on the pane title line */
+.ws-acc2__main .ws-vouchers { position: static; }
+.ws-acc2__main .ws-vouchers__heading { position: absolute; top: 76px; right: 40px; margin: 0; }
+@media (max-width: 760px) { .ws-acc2__main .ws-vouchers__heading { top: 14px; right: 20px; } }
+.ws-acc2__main .ws-vouchers__filter { margin-top: 0; }
+.ws-vouchers:has([role="alert"]) .ws-vouchers__refresh { display: none; }
