@@ -224,7 +224,7 @@ body { background: var(--color-bg); }
   /* Avatar and cart sized like the other header icons (40 px hit area, ~20-32 px visual). */
   .ws .ws-nav.ws-nav--A .ws-nav__icon:has(.ws-nav__avatar) { padding: 0 4px; min-width: 40px; }
   .ws .ws-nav.ws-nav--A .ws-nav__avatar {
-    width: 32px; height: 32px;
+    width: 34px; height: 34px;
     border: 0; box-shadow: none;
     background: var(--color-primary); color: #fff;
     font-size: 13px; font-weight: 500;
@@ -1746,3 +1746,17 @@ body { background: var(--color-bg); }
   .ws-acc__fold > summary { min-height: 44px; }
 }
 .ws-odm__titles:not(:has(.ws-odm__intro)) { align-self: center; padding-top: 0; }
+
+/* Header (desktop): every icon drawn at the same 18 px, every button the same 40 × 44 hit area;
+   avatar and full cart share the same 34 px shape. */
+@media (min-width: 768px) {
+  .ws .ws-nav.ws-nav--A .ws-nav__right .ws-nav__icon,
+  .ws .ws-nav.ws-nav--A .ws-office-menus .ws-office-manage { min-width: 40px; height: 44px; padding: 0 10px; }
+  .ws .ws-nav.ws-nav--A .ws-nav__right .ws-nav__icon svg,
+  .ws .ws-nav.ws-nav--A .ws-office-menus .ws-office-manage img {
+    width: 18px; height: 18px; min-width: 18px; flex: 0 0 18px;
+  }
+  .ws .ws-nav.ws-nav--A .ws-nav__right .ws-nav__icon:has(.ws-nav__avatar) { padding: 0 3px; }
+  .ws .ws-nav.ws-nav--A .ws-nav__right .ws-nav__icon.ws-nav__cart { padding: 0; }
+  .ws .ws-nav.ws-nav--A .ws-nav__right .ws-nav__icon.ws-nav__cart.ws-nav__cart--full { height: 34px; min-width: 34px; }
+}
