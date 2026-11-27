@@ -1203,3 +1203,101 @@ body { background: var(--color-bg); }
   .ws-acc2 .ws-purchase-filters { flex-wrap: wrap; overflow: visible; }
   .ws-acc2 .ws-purchase-filters .ws-toggle__opt { flex: 0 0 auto; }
 }
+
+/* =========================================================================
+   DESKTOP AUDIT — high-priority fixes (27/11/2026)
+   ========================================================================= */
+/* 1 · A disabled action looks disabled (the basket button colour is set inline). */
+.ws .ws-basket .ws-cta:disabled,
+.ws .ws-cta:disabled {
+  background: var(--color-bg-secondary) !important;
+  color: var(--color-text-muted) !important;
+  box-shadow: none; cursor: not-allowed;
+}
+.ws .ws-basket .ws-cta:disabled svg { opacity: .5; }
+
+/* 5 · Contrast of small controls (≥ 3:1 for icons and borders) */
+.ws .ws-basket .ws-line__remove { opacity: 1; color: #6b6b6b; }
+.ws .ws-iconcircle { border-color: rgba(34, 34, 34, 0.42); color: #555; }
+.ws .ws-card .al-row { color: #5a5a5a; }
+.ws-cookie-details input[type="checkbox"] {
+  appearance: none; -webkit-appearance: none;
+  width: 22px; height: 22px; margin: 0;
+  border: 1.5px solid #6b6b6b; border-radius: 6px;
+  background: #fff; display: inline-grid; place-items: center; cursor: pointer;
+}
+.ws-cookie-details input[type="checkbox"]:checked {
+  border-color: var(--color-primary); background: var(--color-primary);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
+  background-size: 16px; background-position: center; background-repeat: no-repeat;
+}
+.ws-cookie-details input[type="checkbox"]:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 2px; }
+
+/* 3 · Category bar: arrows on the sides that still hide categories; fade only on those sides */
+.ws .ws-cats-wrap { position: relative; }
+.ws .ws-cats { -webkit-mask-image: none; mask-image: none; }
+.ws .ws-cats-wrap.has-right .ws-cats { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 72px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 72px), transparent); }
+.ws .ws-cats-wrap.has-left .ws-cats { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 72px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 72px), transparent); }
+.ws .ws-cats-wrap.has-left.has-right .ws-cats { -webkit-mask-image: linear-gradient(to right, transparent, #000 72px, #000 calc(100% - 72px), transparent); mask-image: linear-gradient(to right, transparent, #000 72px, #000 calc(100% - 72px), transparent); }
+.ws-cats__arrow {
+  position: absolute; top: 22px; z-index: 2;
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  border: 0.5px solid var(--color-border-secondary); border-radius: 12px;
+  background: var(--color-surface); color: var(--color-text);
+  box-shadow: 0 6px 16px rgba(34, 34, 34, 0.12);
+  cursor: pointer;
+}
+.ws-cats__arrow:hover { color: var(--color-primary); }
+.ws-cats__arrow--left { left: -6px; }
+.ws-cats__arrow--right { right: -6px; }
+@media (hover: none), (max-width: 720px) { .ws-cats__arrow { display: none; } }
+
+/* 4 · Date picker: 7-day strip first (as in the mockup), full month on demand */
+.ws-datepop { width: 420px; max-width: calc(100vw - 24px); }
+.ws-datepop__striphead { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 12px; }
+.ws-datepop__striptitle { font-family: var(--font-title); font-size: 18px; }
+.ws-datepop__cutoff { font-size: 12px; color: var(--color-text-muted); }
+.ws-datepop__strip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.ws-daytile {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 8px 0 7px;
+  border: 0.5px solid rgba(34, 34, 34, 0.08); border-radius: 10px;
+  background: var(--color-bg-secondary); color: var(--color-text);
+  font: inherit; cursor: pointer;
+  transition: background .2s, color .2s;
+}
+.ws-daytile:hover:not(:disabled) { background: var(--color-surface); box-shadow: inset 0 0 0 1.5px var(--color-primary); }
+.ws-daytile__wd { font-size: 11px; font-weight: 500; }
+.ws-daytile__n { font-size: 20px; font-weight: 500; line-height: 1.1; }
+.ws-daytile__m { font-size: 11px; color: var(--color-text-muted); }
+.ws-daytile.is-sel { background: var(--color-primary); color: #fff; border-color: transparent; }
+.ws-daytile.is-sel .ws-daytile__m { color: rgba(255, 255, 255, 0.8); }
+.ws-datepop--delivery .ws-daytile.is-sel { background: var(--color-secondary); color: var(--color-on-abricot); }
+.ws-daytile.is-off { opacity: .4; cursor: not-allowed; }
+.ws-datepop__more {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin: 12px 0 0; padding: 8px 2px; min-height: 36px;
+  border: 0; background: none; color: var(--color-primary);
+  font: 500 13px var(--font-ui); cursor: pointer;
+}
+.ws-datepop.is-month .ws-datepop__head { margin-top: 10px; padding-top: 14px; border-top: 0.5px solid var(--color-border-tertiary); }
+.ws-nav__date-m { display: none; }
+@media (min-width: 768px) { .ws-nav--A .ws-nav__date-m { display: inline; } }
+
+/* 6 · Checkout step 2: open slots first, expired ones quiet at the end; same day tiles as the header */
+.ws-co-day { text-transform: none; }
+.ws-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.ws-slot { border-radius: 10px; }
+.ws-slot.is-past { order: 2; min-height: 0; padding-block: 6px; opacity: .55; background: transparent; border-style: dashed; }
+.ws-slot.is-past .ws-slot__cap { display: none; }
+.ws-slot.is-past .ws-slot__lbl { text-decoration: line-through; font-weight: 400; color: var(--color-text-muted); }
+.ws-co-daystrip { display: grid; gap: 8px; margin: 14px 0 6px; }
+.ws-co-daystrip__label { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-text-muted); }
+.ws-co-daystrip .ws-datepop__strip { gap: 6px; }
+.ws-co-daystrip .ws-daytile__n { font-size: 17px; }
+.ws-co-otherday { margin: 4px 0 14px; }
+.ws-co-otherday summary { cursor: pointer; color: var(--color-primary); font-size: 13px; font-weight: 500; padding: 6px 0; list-style: none; }
+.ws-co-otherday summary::-webkit-details-marker { display: none; }
+.ws-co-otherday .ws-field { margin-top: 8px; }
+.ws-checkout__hint { margin: 0 0 10px; font-size: 13px; color: var(--color-text-muted); }

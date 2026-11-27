@@ -1242,5 +1242,6 @@
   "acc.transactions.empty": "Er staan geen transacties op dit account.",
   "acc.transactions.error": "De transacties konden niet worden geladen.",
   "acc.transactions.unavailable": "Dit kasticket is niet beschikbaar in dit account.",
-  "acc.transactions.more": "Meer transacties bekijken"
+  "acc.transactions.more": "Meer transacties bekijken",
+  "co.slot.pickToContinue": "Kies een tijdslot om verder te gaan."
 }

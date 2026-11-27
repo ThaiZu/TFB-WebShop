@@ -1242,5 +1242,6 @@
   "acc.transactions.empty": "Na tym koncie nie ma transakcji.",
   "acc.transactions.error": "Nie udało się wczytać transakcji.",
   "acc.transactions.unavailable": "Ten paragon jest niedostępny na tym koncie.",
-  "acc.transactions.more": "Pokaż więcej transakcji"
+  "acc.transactions.more": "Pokaż więcej transakcji",
+  "co.slot.pickToContinue": "Wybierz przedział czasowy, aby kontynuować."
 }

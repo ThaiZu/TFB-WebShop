@@ -1242,5 +1242,6 @@
   "acc.transactions.empty": "Aucune transaction sur ce compte.",
   "acc.transactions.error": "Impossible de charger les transactions.",
   "acc.transactions.unavailable": "Ce ticket n’est pas disponible dans ce compte.",
-  "acc.transactions.more": "Voir plus de transactions"
+  "acc.transactions.more": "Voir plus de transactions",
+  "co.slot.pickToContinue": "Choisissez un créneau pour continuer."
 }
