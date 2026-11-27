@@ -2945,7 +2945,7 @@ function CpField({ cp, locality, onCp, onLocality, onOpts, variant, disabled = f
           setOpts([]); if (onOpts) onOpts([]); onLocality(''); onCp(e.target.value);
         }}
           autoComplete="postal-code" maxLength={16} placeholder="1000 / 00-001" required/>
-        {opts.length === 1 && locality && <p style={locHint}>📍 {locality}</p>}
+        {opts.length === 1 && locality && <p className="ws-cp-locality" style={locHint}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 21s-6-5.6-6-11a6 6 0 0 1 12 0c0 5.4-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></svg> {locality}</p>}
       </label>
       {opts.length === 0 && CP_RE.test(String(cp).trim()) && (
         <label className={fieldCls}>{lbl(wsText("ui.locality"))}
@@ -3263,8 +3263,8 @@ function LoginModal({ open, onClose, onLogin, onRegister, onGoToAccount, shopId,
       ) : (
       <>
       <h2 className="ws-modal__title">{tRich(t, tab === 'login' ? 'auth.welcomeBack' : 'auth.createTitle')}</h2>
-      {tab !== 'login' && <p className="ws-registration-privacy">{wsText("privacy.notice")} <PolicyLinks/></p>}
       <p className="ws-modal__lede">{tab === 'login' ? wsText("ui.loginHint") : wsText("ui.registerHint")}</p>
+      {tab !== 'login' && <p className="ws-registration-privacy">{wsText("privacy.notice")} <PolicyLinks/></p>}
       <div className="ws-tabs">
         <button className={`ws-tab${tab === 'login' ? ' is-active' : ''}`} onClick={() => { setTab('login'); setErr(''); }}>{t('auth.login')}</button>
         <button className={`ws-tab${tab === 'register' ? ' is-active' : ''}`} onClick={() => { setTab('register'); setErr(''); }}>{t('auth.createAccount')}</button>
@@ -4003,7 +4003,7 @@ function AccountModal({ open, requestedTab, requestedReceipt, onReceiptHandled, 
                 l'email sert d'identifiant (connexion, rattachement bureau). */}
             <input type="email" className="ws-acc__input" value={form.email} readOnly disabled
               title={t('acc.emailIsLogin')} />
-            <span style={{ font: '400 10.5px var(--font-ui, sans-serif)', color: 'var(--color-text-muted, #8a7c6e)' }}>{t('acc.emailIsLoginShort')}</span>
+            <span className="ws-acc__field-help">{t('acc.emailIsLoginShort')}</span>
           </label>
           <label className="ws-acc__field">
             <span className="ws-acc__field-label">{t('form.phone')}</span>
@@ -4865,7 +4865,7 @@ function CheckoutStep3({ basket, subtotal, totaux, total, payment, setPayment, s
       {shop && <section className="ws-co-ordering-shop" aria-label={shop.name}>
         <strong>{shop.name}</strong>
         <span>{shop.address}</span>
-        <span>{t('privacy.seller')}: {shop.legal_name || shop.representative_name || shop.name}</span>
+        <span>{t('privacy.seller')}{window.WSI18n.getLang() === 'fr' ? '\u202F:' : ':'} {shop.legal_name || shop.representative_name || shop.name}</span>
         {shop.vat_number && <span>VAT: {shop.vat_number}</span>}
         {shop.email && <span>{shop.email}</span>}
       </section>}

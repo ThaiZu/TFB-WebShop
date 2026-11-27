@@ -1422,3 +1422,124 @@ body { background: var(--color-bg); }
     border-radius: 24px 24px 0 0;
   }
 }
+
+/* =========================================================================
+   DESKTOP AUDIT — remaining points 7–25 (27/11/2026)
+   ========================================================================= */
+/* Mobile sheets: the beige header fills the rounded top corners (no white band) */
+@media (max-width: 760px) {
+  .ws-modal__panel--split { background: var(--color-bg-secondary); }
+  .ws-modal__panel--split .ws-acc2__main { background: var(--color-surface); }
+  .ws-modal__panel--split .ws-acc2__sidefoot { background: var(--color-surface); }
+}
+
+/* 7 · Checkout: the page behind is dimmed while the order panel is open */
+@media (min-width: 721px) {
+  .ws-checkout { box-shadow: 0 0 0 100vmax rgba(34, 34, 34, 0.32), -16px 0 40px rgba(34, 34, 34, 0.10); }
+}
+
+/* 8 · Empty and error states: a calm centred block, one action */
+.ws-acc2__main [role="alert"], .ws-loyalty-wallet__programs [role="alert"],
+.ws-acc2__main .ws-acc__card--empty, .ws-loyalty-empty {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 28px 20px; border: 0; border-radius: 16px;
+  background: var(--color-bg-secondary); text-align: center;
+}
+.ws-acc2__main [role="alert"] p, .ws-loyalty-wallet__programs [role="alert"] p { margin: 0; font-size: 14px; color: var(--color-text); }
+.ws-acc2__main [role="alert"]::before, .ws-loyalty-wallet__programs [role="alert"]::before {
+  content: ''; width: 40px; height: 40px; border-radius: 10px; background: var(--color-surface)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238D1D2C' stroke-width='1.8' stroke-linecap='round'%3E%3Cpath d='M20 12a8 8 0 1 1-2.3-5.7'/%3E%3Cpath d='M20 4v4h-4'/%3E%3C/svg%3E") center / 20px no-repeat;
+}
+.ws-acc2__main [role="alert"] .ws-linkbtn, .ws-loyalty-wallet__programs [role="alert"] .ws-linkbtn {
+  min-height: 40px; padding: 0 16px; border: 1px solid var(--color-primary); border-radius: 10px; text-decoration: none; background: var(--color-surface);
+}
+/* one retry action, not two */
+.ws-vouchers:has([role="alert"]) .ws-vouchers__heading .ws-linkbtn { display: none; }
+
+/* 9 · Active sub-category marked like the categories (border, no inverted picture) */
+.ws .ws-subcat.is-active .ws-subcat__tile { background: var(--color-bg-secondary); border: 2px solid var(--cat-accent); }
+.ws .ws-subcat.is-active .ws-subcat__tile img { filter: none; }
+.ws .ws-subcat.is-active .ws-subcat__lbl { color: var(--cat-accent); font-weight: 500; }
+.ws .ws-subcat__tile { width: 64px; height: 64px; border-radius: 12px; background: var(--color-bg-secondary); border: 0.5px solid rgba(34, 34, 34, 0.08); }
+
+/* 10 · Shop choice: the kicker repeated the title word for word */
+.ws-shopselect__kicker { display: none; }
+
+/* 11 · Header icon buttons: one treatment, one stroke weight */
+.ws .ws-nav--A .ws-nav__icon svg { stroke-width: 1.8; }
+.ws .ws-nav .ws-nav__loyalty { background: transparent; color: var(--color-primary); }
+.ws .ws-nav .ws-nav__loyalty:hover { background: var(--color-bg-secondary); }
+.ws .ws-nav--A .ws-langchip__btn { height: 44px; padding: 0 12px; border: 0; border-radius: 10px; background: transparent; font-size: 13px; font-weight: 500; letter-spacing: .06em; }
+.ws .ws-nav--A .ws-langchip__btn:hover { background: var(--color-bg-secondary); }
+
+/* 12 · Login: Email / Téléphone is a light switch, not a second big tab bar */
+.ws-modal .ws-form > .ws-toggle { justify-self: start; display: inline-flex; padding: 3px; gap: 2px; border-radius: 10px; margin-bottom: 4px; }
+.ws-modal .ws-form > .ws-toggle .ws-toggle__opt { flex: 0 0 auto; min-height: 34px; padding: 0 14px; font-size: 13px; border-radius: 8px; }
+.ws-modal .ws-form > .ws-toggle .ws-toggle__opt.is-active { box-shadow: none; background: var(--color-surface); color: var(--color-text); }
+
+/* 13 · Placeholders read as hints, not as typed values; width change is smooth */
+.ws input::placeholder, .ws textarea::placeholder, .ws-modal input::placeholder { font-weight: 300; color: #8f8880; }
+.ws-modal__panel--narrow { transition: width .3s var(--ds-ease); }
+.ws-registration-privacy { margin: 0 0 14px; font-size: 12px; color: var(--color-text-muted); }
+
+/* 14 · Payment step: heading above the shop card in weight; readable promo field */
+.ws-co-ordering-shop strong { font-size: 18px; }
+.ws-co-step__title { font-size: 22px; }
+.ws-co-voucher input, .ws-co-voucher__input { font-size: 13px; min-width: 0; }
+.ws-co-voucher__apply:disabled { opacity: 1; background: var(--color-bg-secondary); color: #6b6b6b; cursor: not-allowed; }
+.ws-pay__logo:empty:not([data-prov]) { display: none; }
+
+/* 15 · Product modal: quick −1/−5/−10 look like buttons; missing allergen info is a note, not an error */
+.pdm-qty-subtract button { border: 1px solid rgba(34, 34, 34, 0.14); background: var(--color-surface); color: var(--color-text); min-height: 30px; }
+.pdm-allergens--unknown { color: var(--color-text-muted); font-style: normal; }
+
+/* 16 · Allergens window: same header as the other windows */
+.al-modal__eyebrow { color: var(--color-text-muted); font-size: 11px; letter-spacing: .12em; }
+.al-modal__title { font-family: var(--font-title); font-size: 30px; }
+.al-modal__title em { font-style: normal; }
+.al-modal__close { width: 40px; height: 40px; border: 0; background: var(--color-bg-secondary); }
+
+/* 17 · Cookie settings: one weight hierarchy, links aligned with the text */
+.ws-cookie-panel p { font-size: 13px; line-height: 1.5; }
+.ws-cookie-panel p:first-of-type { color: var(--color-text); }
+.ws-cookie-panel a { margin: 0 10px 0 0; padding: 0; }
+.ws-cookie-details label { font-weight: 500; color: var(--color-text); }
+
+/* 20 · Checkout steps: done = brand colour (no off-palette ochre); totals in sentence case */
+.ws-stepper { gap: 12px; }
+.ws-stepper__step.is-done .ws-stepper__num { background: var(--color-bg-secondary); color: var(--color-primary); box-shadow: inset 0 0 0 1.5px var(--color-primary); }
+.ws-stepper__step { font-size: 12px; }
+.ws-checkout__foot-k { text-transform: none; letter-spacing: 0; font-size: 14px; color: var(--color-text); }
+
+/* 21 · Profile: lock on the read-only e-mail, 12 px help, same label style everywhere */
+.ws-acc__input[type="email"]:disabled {
+  padding-right: 44px;
+  background: var(--color-bg-secondary) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666666' stroke-width='1.8' stroke-linecap='round'%3E%3Crect x='5' y='11' width='14' height='9' rx='2'/%3E%3Cpath d='M8 11V8a4 4 0 0 1 8 0v3'/%3E%3C/svg%3E") right 16px center / 18px no-repeat;
+}
+.ws-acc__field-help { font-size: 12px; color: var(--color-text-muted); }
+.ws-cp-locality { display: inline-flex; align-items: center; gap: 4px; color: var(--color-text-muted); }
+.ws-acc__field > span:first-child:not(.ws-acc__field-label) {
+  font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--color-text-muted);
+}
+
+/* 22 · Search: clear button in the brand style instead of the browser's blue one */
+.ws input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none; appearance: none; width: 18px; height: 18px; cursor: pointer;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666666' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E") center / 14px no-repeat;
+}
+
+/* 23 · Legal links: one colour, centred, with room above */
+.ws-policy-footer { margin-top: 32px; font: 12px/1.5 var(--font-ui); color: var(--color-text-muted); }
+.ws-policy-footer a, .ws-policy-footer button { color: var(--color-text-muted); text-decoration: underline; text-underline-offset: 2px; }
+
+/* 24 · Office search button as tall as its field */
+.ws-office-search button { min-height: var(--ds-field-h); }
+
+/* 25 · One keyboard focus style everywhere */
+.ws :focus-visible, .ws-modal :focus-visible, .ws-loyalty-wallet :focus-visible, .ws-datepop :focus-visible, .ws-cookie-panel :focus-visible {
+  outline: 2px solid var(--color-primary); outline-offset: 2px;
+}
+.ws input:focus-visible, .ws select:focus-visible, .ws textarea:focus-visible { outline: none; }
+.ws-co-summary__row--total { margin-top: 10px; padding-top: 10px; }
+.ws-modal .ws-form > .ws-toggle { align-self: flex-start; width: auto; }
+.ws-pay__logo:empty:not([data-prov="bancontact"]):not([data-prov="visa"]):not([data-prov="apple"]) { display: none; }

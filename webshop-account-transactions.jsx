@@ -181,7 +181,7 @@ export function AccountTransactions({ receiptToken, t, locale, onReceiptHandled 
       <table className="ws-tx-lines">
         <thead><tr>
           <th scope="col">{t('acc.orders.quantity')}</th>
-          <th scope="col"><span className="ws-vh">{t('acc.transactions.detail')}</span></th>
+          <th scope="col">{t('acc.orders.items', { count: detail.lines.length })}</th>
           <th scope="col">{t('acc.orders.unitPrice')}</th>
           <th scope="col">{t('acc.orders.lineTotal')}</th>
         </tr></thead>
@@ -203,7 +203,7 @@ export function AccountTransactions({ receiptToken, t, locale, onReceiptHandled 
           <span className="ws-tx-row__src"><TransactionSource source={item.source} t={t}/></span>
           <span className="ws-tx-row__main">
             <strong>{item.shop}</strong>
-            <span>{date(item.at)}</span>
+            <span>{date(item.at)} · {t('acc.orders.source.' + item.source)}</span>
           </span>
           <strong className="ws-tx-row__amount">{money(item.total)}</strong>
           <div className="ws-transaction-actions ws-tx-row__actions">
