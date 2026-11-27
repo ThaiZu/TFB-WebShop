@@ -4419,7 +4419,7 @@ function CheckoutWizard({ open, onClose, shop, mode, basket, quoteState, user, o
       }
       if (sess.status === 'paid') { onPlaced({ ...result, slot, payment, total: result.total }); return; }
       onPlaced({ ...result, paymentPending: true });
-      if (sess.uiMode === 'embedded' || sess.status === 'pending') {
+      if (window.WSOrders.isOnPageCheckout(sess) || sess.status === 'pending') {
         window.dispatchEvent(new CustomEvent('ws:stripe-recovery', { detail: { orderRef: result.orderRef, session: sess } }));
       } else window.location.href = sess.checkoutUrl;
       return;

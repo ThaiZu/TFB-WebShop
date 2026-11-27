@@ -29,7 +29,7 @@ export function StripeReturnDialog() {
           url.searchParams.delete('stripe'); url.searchParams.delete('orderRef');
           window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
         }
-        setCheckoutSession(event.detail?.session?.uiMode === 'embedded' ? event.detail.session : null);
+        setCheckoutSession(window.WSOrders.isOnPageCheckout(event.detail?.session) ? event.detail.session : null);
         setReference(ref);
       }
     };
@@ -114,7 +114,7 @@ export function StripeRetryButton({ orderRef, onUpdated, verifyFirst = false }) 
       const session = await window.WSOrders.pay(orderRef);
       if (session.status === 'paid') { setMessage(t('acc.orders.payment.paid')); setBusy(false); onUpdated?.(); }
       else if (session.status === 'pending') { setMessage(t('stripe.pending')); setBusy(false); onUpdated?.(); }
-      else if (session.uiMode === 'embedded') { setSession(session); setBusy(false); }
+      else if (window.WSOrders.isOnPageCheckout(session)) { setSession(session); setBusy(false); }
       else window.location.assign(session.checkoutUrl);
     } catch (error) { setMessage(error.code ? window.WSI18n.message(error.code) : t(verifyFirst ? 'stripe.statusUnknown' : 'stripe.retryError')); setBusy(false); }
   }

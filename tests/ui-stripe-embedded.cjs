@@ -6,7 +6,7 @@ const staticBuild=process.env.STRIPE_STATIC_BUILD;
 const ga4Id=process.env.GA4_TEST_ID||'';
 (async()=>{
  const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||undefined,headless:true,args:['--no-sandbox','--host-resolver-rules=MAP webshop.tfbuddy.local 127.0.0.1']});
- try {for(const width of [1440,390]){
+ try {for(const mode of ['form','embedded'])for(const width of [1440,390]){
   const context=await browser.newContext({ignoreHTTPSErrors:true,viewport:{width,height:1000},serviceWorkers:'block'});
   await context.addInitScript(()=>{sessionStorage.setItem('ws.session.v1:' + 'ws_auth_token', ((createdAt)=>JSON.stringify({value:'test', createdAt, expiresAt:createdAt+43200000}))(Date.now()));sessionStorage.setItem('ws.session.v1:' + 'ws.lang', ((createdAt)=>JSON.stringify({value:'pl', createdAt, expiresAt:createdAt+43200000}))(Date.now()));});
   const ref='WEB-2-20260918-ABCDEF';let orders=0,payments=0,statusCalls=0,status='unpaid';const errors=[];
@@ -15,7 +15,7 @@ const ga4Id=process.env.GA4_TEST_ID||'';
   await context.route('**/*',async route=>{
    const req=route.request(),u=new URL(req.url());
    if(ga4Id && u.hostname==='www.googletagmanager.com' && u.pathname==='/gtag/js')return route.fulfill({contentType:'application/javascript',body:`window.__gaCalls=Array.from(window.wsGa4Layer||[],c=>Array.from(c));window.wsGa4Layer.push=function(c){window.__gaCalls.push(Array.from(c));return Array.prototype.push.call(this,c);};`});
-   if(u.hostname==='js.stripe.com')return route.fulfill({contentType:'application/javascript',body:`window.Stripe=(key,options)=>{window.stripeInit={key,...options};return {createEmbeddedCheckoutPage:async config=>{window.checkoutSecret=await config.fetchClientSecret();let button;return {mount:target=>{button=document.createElement('button');button.textContent='Test Stripe completion';button.onclick=config.onComplete;target.appendChild(button);},destroy:()=>{window.stripeDestroyed=(window.stripeDestroyed||0)+1;button?.remove();}};}};};`});
+   if(u.hostname==='js.stripe.com')return route.fulfill({contentType:'application/javascript',body:`window.Stripe=(key,options)=>{window.stripeInit={key,...options};return {initCheckoutFormSdk:opts=>{window.formOptions={appearance:opts.appearance,fonts:opts.fonts};window.checkoutSecret=opts.clientSecret;let confirm,button;return {createForm:()=>({mount:target=>{button=document.createElement('button');button.textContent='Test Stripe completion';button.onclick=()=>confirm&&confirm({});target.appendChild(button);},on:(name,handler)=>{if(name==='confirm')confirm=handler;},destroy:()=>{window.stripeDestroyed=(window.stripeDestroyed||0)+1;button?.remove();}}),loadActions:async()=>({type:'success',actions:{confirm:async options=>{window.lastConfirm={redirect:options.redirect,hasEvent:!!options.formConfirmEvent};return {type:'success'};}}})};},createEmbeddedCheckoutPage:async config=>{window.checkoutSecret=await config.fetchClientSecret();let button;return {mount:target=>{button=document.createElement('button');button.textContent='Test Stripe completion';button.onclick=config.onComplete;target.appendChild(button);},destroy:()=>{window.stripeDestroyed=(window.stripeDestroyed||0)+1;button?.remove();}};}};};`});
    if(!['webshop.tfbuddy.local','tfb.tfbuddy.local','api.tfbuddy.local'].includes(u.hostname)){errors.push('Unexpected external request: '+u.hostname);return route.abort();}
    if(!u.pathname.includes('/api/v1/'))return staticBuild?serveBuild(route,staticBuild):route.continue();
    let data=[];
@@ -29,8 +29,8 @@ const ga4Id=process.env.GA4_TEST_ID||'';
    else if(u.pathname.endsWith('/payment-methods'))data=[{method:'stripe',family:'stripe',label:'Online'}];
    else if(u.pathname.endsWith('/webshop/orders')&&req.method()==='POST'){orders++;data={orderId:44,orderRef:ref,total:10,paymentType:'stripe'};}
    else if(u.pathname.endsWith('/stripe-checkout')){
-    payments++;assert.equal(req.postDataJSON().ui_mode,'embedded');
-    data={status:'open',uiMode:'embedded',orderRef:ref,clientSecret:'cs_test_fixture_secret_fixture',publishableKey:'pk_test_fixture',stripeAccount:'acct_fixture'};
+    payments++;assert.equal(req.postDataJSON().ui_mode,'form');
+    data={status:'open',uiMode:mode,orderRef:ref,clientSecret:'cs_test_fixture_secret_fixture',publishableKey:'pk_test_fixture',stripeAccount:'acct_fixture'};
    }
    else if(u.pathname.endsWith('/stripe-status')){statusCalls++;data={status,orderRef:ref,amountMinor:1000,currency:'eur'};}
    else if(u.pathname.endsWith('/webshop/orders/'+ref))data={orderRef:ref,payment:{method:'stripe',status:status==='paid'?'paid':'pending'},items:[],status:'new'};
@@ -73,6 +73,11 @@ const ga4Id=process.env.GA4_TEST_ID||'';
     assert.equal(calls.some(c=>c[1]==='purchase'),false,'pending Stripe is not a purchase');
   }assert.equal(await page.locator('.ws-line').count(),0);
   assert.deepEqual(await page.evaluate(()=>window.stripeInit),{key:'pk_test_fixture',stripeAccount:'acct_fixture'});
+  if(mode==='form'){
+    const options=await page.evaluate(()=>window.formOptions);
+    assert.equal(options.appearance.variables.colorPrimary,'#8D1D2C');assert.equal(options.appearance.variables.borderRadius,'10px');
+    assert.equal(options.fonts.length,2);assert.ok(options.fonts.every(f=>f.family==='Gotham'&&/^url\(https:\/\/webshop\.tfbuddy\.local\/.+\.otf\)$/.test(f.src)));
+  }
   assert.equal(new URL(page.url()).hostname,'webshop.tfbuddy.local');
   await modal.getByRole('button',{name:'Zamknij',exact:true}).click();
   assert.equal(await page.evaluate(()=>window.stripeDestroyed),1);
@@ -104,7 +109,8 @@ const ga4Id=process.env.GA4_TEST_ID||'';
     await page.evaluate(()=>window.WSConsent.track('analytics','add_to_cart',{items:[{item_id:'11',quantity:1}]}));
     assert.equal(await page.evaluate(()=>window.__gaCalls.length),before);
   }
-  console.log('PASS embedded checkout '+width+'px: connected account, no navigation, close destroys form, retry same order, server verification required');
+  if(mode==='form')assert.deepEqual(await page.evaluate(()=>window.lastConfirm),{redirect:'if_required',hasEvent:true});
+  console.log('PASS '+mode+' checkout '+width+'px: connected account, no navigation, close destroys form, retry same order, server verification required');
   await context.close();
  }} finally {await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
