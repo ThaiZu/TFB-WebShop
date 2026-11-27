@@ -44,7 +44,7 @@ export function LoyaltyWallet({identity,shopId,user,onClose,onUseVoucher,activeV
   const [viewTap,setViewTap]=React.useState(0);
   const pickView=next=>{setView(next);setViewTap(value=>value+1);};
   React.useEffect(()=>{
-    // On a computer the card sits in two columns: the tabs are already at the top.
+    // On a computer the card shows no code: the tabs are already at the top.
     if(!viewTap||window.matchMedia?.('(min-width: 900px)').matches)return;
     const box=dialog.current,head=tabs.current,content=document.getElementById('ws-wallet-content');
     if(!box||!head)return;
