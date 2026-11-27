@@ -2251,3 +2251,9 @@ body { background: var(--color-bg); }
     bottom: -48px; box-shadow: 0 1px 0 var(--color-border-tertiary);
   }
 }
+
+/* Remark 2 · Loyalty card, Vouchers tab: « actualiser » at the end of the
+   « Autres vouchers · Tout afficher » row instead of on a line of its own. */
+.ws-loyalty-wallet__programs { position: relative; }
+.ws-loyalty-wallet__programs:has(.ws-vouchers__filter) .ws-vouchers__heading { position: absolute; top: 16px; right: 0; margin: 0; }
+.ws-loyalty-wallet__programs .ws-vouchers__filter { padding-right: 52px; min-height: 40px; align-items: center; }
