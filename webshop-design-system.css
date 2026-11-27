@@ -1760,3 +1760,40 @@ body { background: var(--color-bg); }
   .ws .ws-nav.ws-nav--A .ws-nav__right .ws-nav__icon.ws-nav__cart { padding: 0; }
   .ws .ws-nav.ws-nav--A .ws-nav__right .ws-nav__icon.ws-nav__cart.ws-nav__cart--full { height: 34px; min-width: 34px; }
 }
+
+/* Checkout · payment step · invoice block (option 2 « liste simple », 27/11/2026):
+   no panel and no fieldset frame; the two choices are rows of one white card. */
+.ws-checkout .ws-b2b { margin-top: 18px; padding: 0; gap: 12px; border: 0; border-radius: 0; background: none; }
+.ws-invoice-buyer { margin: 0; padding: 0; border: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.ws-invoice-buyer > legend { float: left; width: 100%; margin: 0 0 10px; padding: 0; }
+.ws-invoice-buyer__types { margin: 0; padding: 0; border: 0; }
+.ws-invoice-buyer__type-label {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+.ws-invoice-buyer__choices {
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 0;
+  border: 1px solid var(--ds-field-border, rgba(34, 34, 34, .14)); border-radius: 12px;
+  background: var(--color-surface); overflow: hidden;
+}
+.ws-invoice-buyer__badge {
+  min-height: 48px; padding: 0 14px; gap: 10px;
+  border: 0; border-radius: 0; background: transparent; box-shadow: none;
+  font: 400 14px/1.3 var(--font-ui); color: var(--color-text);
+}
+.ws-invoice-buyer__badge + .ws-invoice-buyer__badge { border-top: 1px solid var(--line, rgba(34, 34, 34, .10)); }
+.ws-invoice-buyer__badge input { width: 16px; height: 16px; }
+.ws-invoice-buyer__badge:has(:checked) {
+  border-color: var(--line, rgba(34, 34, 34, .10)); box-shadow: none;
+  background: color-mix(in srgb, var(--color-primary) 5%, var(--color-surface));
+  color: var(--color-primary); font-weight: 500;
+}
+.ws-invoice-buyer__badge:focus-within { outline: none; }
+.ws-invoice-buyer__badge:has(:focus-visible) { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+.ws-invoice-buyer > p {
+  margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--color-bg-secondary);
+  color: var(--color-text-muted); font-size: 13px; line-height: 1.45;
+}
+.ws-checkout .ws-b2b .ws-acc__field { gap: 6px; }
+.ws-checkout .ws-b2b .ws-acc__field > span { font-size: 11px; font-weight: 500; letter-spacing: .08em; color: var(--color-text-muted); }
+.ws-checkout .ws-b2b .ws-acc__input { height: 46px; min-height: 46px; border-radius: 10px; font-size: 15px; }
+.ws-checkout .ws-b2b textarea.ws-acc__input { height: auto; min-height: 72px; padding: 12px 14px; resize: vertical; }
