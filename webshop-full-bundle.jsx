@@ -2209,7 +2209,7 @@ function Basket({ hidePrices, contextLabel, officeName, shop, mode, basket, quot
           const displayName = groupedPromotion && row.promotion ? row.promotion.display_name : l.name;
           const promotionNote = pricesReady && row.promotion ? wsPromotionBasketNote(row.promotion, t) : null;
           return <div key={row.key} className={`ws-line${groupedPromotion ? ' ws-line--promotion' : ''}`}>
-            {typeof onQty === 'function' && !groupedPromotion && !(l.options || []).length && !l.bundleId && !l.bundle && !l.bundleSlots
+            {typeof onQty === 'function' && !groupedPromotion && !(l.options || []).length && !l.bundleId && !l.bundleOfferId && !Object.keys(l.bundleSlots || {}).length && !l.menu_selection && !l.personalization_selection
               ? <div className="ws-line__stepper" role="group" aria-label={t('cart.quantityOf', { name: displayName })}>
                   <button type="button" onClick={() => onQty(row.lines.map((line) => line.line), -1)} aria-label={t('cart.less')}>−</button>
                   <span aria-live="polite">{row.quantity}</span>
