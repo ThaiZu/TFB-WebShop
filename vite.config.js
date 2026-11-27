@@ -181,6 +181,11 @@ export default defineConfig(({ command, mode }) => {
         globIgnores: ['privacy-preview/**', 'privacy/**', 'assets/product_pictures/**', 'assets/category_icons/**', 'assets/season_icons/**'],
         importScripts: ['privacy-sw-cleanup.js'],
         cleanupOutdatedCaches: true,
+        // locales/<lang>.json is fetched with ?v=<build> so that a service worker
+        // from an EARLIER version (which does not ignore v) misses its stale copy
+        // and goes to the network. This worker ignores v: offline it still serves
+        // its own precached dictionary (same build), instead of failing.
+        ignoreURLParametersMatching: [/^utm_/, /^fbclid$/, /^v$/],
         skipWaiting: true,
         clientsClaim: true,
         // PAS de fallback de navigation : le scope du SW couvre /webshop/* et
