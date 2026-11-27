@@ -5,7 +5,7 @@
    rectangles (no pills), no coloured stripes on edges.
    ========================================================================= */
 @font-face { font-family: 'Gotham'; src: url('fonts/Gotham_Light.otf') format('opentype'); font-weight: 300; font-display: swap; }
-@font-face { font-family: 'Gotham'; src: url('fonts/Gotham_Regular.otf') format('opentype'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Gotham'; src: url('fonts/Gotham_Book.otf') format('opentype'); font-weight: 400; font-display: swap; }
 @font-face { font-family: 'Gotham'; src: url('fonts/Gotham_Medium.otf') format('opentype'); font-weight: 500; font-display: swap; }
 @font-face { font-family: 'Gotham'; src: url('fonts/Gotham_Medium.otf') format('opentype'); font-weight: 600; font-display: swap; }
 @font-face { font-family: 'Vank'; src: url('fonts/GC_Vank.ttf') format('truetype'); font-weight: 400; font-display: swap; unicode-range: U+0020-007E; }
