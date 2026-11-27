@@ -2257,3 +2257,8 @@ body { background: var(--color-bg); }
 .ws-loyalty-wallet__programs { position: relative; }
 .ws-loyalty-wallet__programs:has(.ws-vouchers__filter) .ws-vouchers__heading { position: absolute; top: 16px; right: 0; margin: 0; }
 .ws-loyalty-wallet__programs .ws-vouchers__filter { padding-right: 52px; min-height: 40px; align-items: center; }
+
+/* Remark 3 · Order awaiting online payment: no cream box inside the card, one muted
+   line and the « Procéder au paiement » button directly under it. */
+.ws .ws-purchase-payment-notice { margin: 10px 0 4px; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+.ws .ws-purchase-payment-notice p { margin: 0 0 8px; font-size: 13px; line-height: 1.45; color: var(--color-text-muted); }
