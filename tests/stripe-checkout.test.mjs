@@ -19,13 +19,15 @@ test('checkout uses saved order reference, owner credentials and safe return URL
  assert.equal(calls[0].url,'https://api.test/webshop/orders/WEB-2-20260914-ABCDEF/stripe-checkout');
  assert.equal(calls[0].options.headers['X-Webshop-Order-Token'],'guest-token');
  assert.equal(calls[0].options.headers.Authorization,'Bearer user-token');
- assert.deepEqual(JSON.parse(calls[0].options.body),{return_url:'https://shop.test/',locale:'pl',ui_mode:'embedded'});
+ assert.deepEqual(JSON.parse(calls[0].options.body),{return_url:'https://shop.test/',locale:'pl',ui_mode:'form'});
 });
-test('embedded checkout returns only validated Stripe initialization data, without redirect',async()=>{
- const session={status:'open',uiMode:'embedded',clientSecret:'cs_test_fixture_secret_fixture',stripeAccount:'acct_fixture',publishableKey:'pk_test_fixture'};
- const {api}=setup(session);assert.equal((await api.pay('WEB-2-20260914-ABCDEF')).checkoutUrl,undefined);
- for(const change of [{publishableKey:'sk_test_secret'},{stripeAccount:'invalid'},{clientSecret:'pi_other_secret_fixture'}]){
-  const {api}=setup({...session,...change});await assert.rejects(api.pay('WEB-2-20260914-ABCDEF'));
+test('on-page checkout (form, or embedded from an older API) returns only validated Stripe initialization data, without redirect',async()=>{
+ for(const uiMode of ['form','embedded']){
+  const session={status:'open',uiMode,clientSecret:'cs_test_fixture_secret_fixture',stripeAccount:'acct_fixture',publishableKey:'pk_test_fixture'};
+  const {api}=setup(session);assert.equal((await api.pay('WEB-2-20260914-ABCDEF')).checkoutUrl,undefined);
+  for(const change of [{publishableKey:'sk_test_secret'},{stripeAccount:'invalid'},{clientSecret:'pi_other_secret_fixture'}]){
+   const {api}=setup({...session,...change});await assert.rejects(api.pay('WEB-2-20260914-ABCDEF'));
+  }
  }
 });
 test('checkout never redirects to untrusted, non-HTTPS or credential-bearing URLs',async()=>{

@@ -44,7 +44,16 @@
   }
 
 
+  /* Paiement Stripe dans la page. Le webshop demande le mode « form » : le
+     formulaire Stripe prend l'apparence du design system (police, couleurs,
+     arrondis). L'API peut encore répondre « embedded » (page Stripe intégrée,
+     non stylable) : les deux s'affichent dans la même fenêtre de paiement. */
+  const STRIPE_UI_MODE = 'form';
+  const ON_PAGE_MODES = ['form', 'embedded'];
+  const isOnPageCheckout = session => ON_PAGE_MODES.includes(session?.uiMode);
+
   const api = {
+    isOnPageCheckout,
     endpoint: null,
     payEndpoint: null,   // POST /payments/checkout, session de paiement hébergée
 
@@ -107,7 +116,7 @@
       const response = await window.WSAuth.authenticatedFetch(`${api.endpoint}/${encodeURIComponent(orderRef)}/stripe-checkout`, {
         method: 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json', ...authHeaders(), ...(guestToken ? { 'X-Webshop-Order-Token': guestToken } : {}) },
-        body: JSON.stringify({ return_url: returnUrl.href, locale: window.WSI18n?.getLang?.() || 'en', ui_mode: 'embedded' }),
+        body: JSON.stringify({ return_url: returnUrl.href, locale: window.WSI18n?.getLang?.() || 'en', ui_mode: STRIPE_UI_MODE }),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -118,7 +127,7 @@
         throw error;
       }
       if (result.status === 'paid') return result;
-      if (result.uiMode === 'embedded' && result.status === 'open') {
+      if (isOnPageCheckout(result) && result.status === 'open') {
         if (!/^pk_(test|live)_[A-Za-z0-9]+$/.test(result.publishableKey || '') || !/^acct_[A-Za-z0-9]+$/.test(result.stripeAccount || '') || !/^cs_[A-Za-z0-9_]+_secret_/.test(result.clientSecret || '')) throw new Error('Payment session is invalid.');
         return result;
       }
