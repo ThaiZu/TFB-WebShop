@@ -932,6 +932,7 @@
   "officeAccess.invitationError": "De uitnodiging kan niet worden geaccepteerd. De link kan ongeldig of verlopen zijn. Probeer opnieuw of neem contact op met de winkel.",
   "officeAccess.invitationAccept": "Aansluiten bij kantoor",
   "co.slot.changeDate": "Kies de afhaaldag",
+  "co.slot.changeDateDelivery": "Kies de leverdag",
   "co.slot.loadError": "Tijdvakken konden niet worden geladen. Probeer opnieuw.",
   "co.slot.noneAvailable": "Geen beschikbare tijdvakken voor deze dag. Kies een andere dag.",
   "co.slot.retry": "Tijdvakken vernieuwen",
